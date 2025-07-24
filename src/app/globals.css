@@ -1,26 +1,195 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Glassmorphism color palette with vibrant colors */
+  --color-glass-white: rgb(255 255 255 / 0.25);
+  --color-glass-white-light: rgb(255 255 255 / 0.1);
+  --color-glass-white-border: rgb(255 255 255 / 0.4);
+  --color-glass-dark: rgb(0 0 0 / 0.25);
+  --color-glass-dark-light: rgb(0 0 0 / 0.1);
+  --color-glass-dark-border: rgb(255 255 255 / 0.2);
+  
+  /* Primary brand colors */
+  --color-primary: oklch(0.69 0.25 262.83);
+  --color-primary-light: oklch(0.79 0.20 262.83);
+  --color-secondary: oklch(0.71 0.25 328.36);
+  --color-accent: oklch(0.75 0.25 180.00);
+  
+  /* Text colors - High contrast for glassmorphism */
+  --color-text-primary: oklch(0.10 0.05 285.83);
+  --color-text-secondary: oklch(0.35 0.08 285.83);
+  --color-text-light: oklch(0.98 0.03 285.83);
+  --color-text-on-glass: oklch(0.05 0.08 285.83);
+  --color-text-muted: oklch(0.25 0.06 285.83);
+  
+  /* Font configuration */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  
+  /* Spacing and sizing */
+  --spacing: 0.25rem;
+  
+  /* Border radius for glassmorphism */
+  --radius-glass: 1rem;
+  --radius-glass-lg: 1.5rem;
+  --radius-glass-xl: 2rem;
+  
+  /* Shadows for depth */
+  --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.37);
+  --shadow-glass-lg: 0 15px 50px rgba(31, 38, 135, 0.4);
+  --shadow-glass-xl: 0 25px 80px rgba(31, 38, 135, 0.5);
+  
+  /* Animation easing */
+  --ease-glass: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Custom utility classes using @utility directive */
+@utility glass {
+  background: var(--color-glass-white);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-glass-white-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-glass);
+}
+
+@utility glass-dark {
+  background: var(--color-glass-dark);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-glass-dark-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-glass);
+}
+
+@utility glass-card {
+  background: var(--color-glass-white);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-glass-white-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-glass);
+  transition: all 0.3s var(--ease-glass);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glass-lg);
+  }
+}
+
+@utility glass-button {
+  background: var(--color-glass-white);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--color-glass-white-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-glass);
+  transition: all 0.2s var(--ease-glass);
+  cursor: pointer;
+  
+  &:hover {
+    background: var(--color-glass-white-light);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-glass-lg);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@utility text-glass {
+  color: var(--color-text-on-glass);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@utility text-glass-heading {
+  color: var(--color-text-on-glass);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+}
+
+@utility text-glass-muted {
+  color: var(--color-text-muted);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Root variables for dynamic theming */
+:root {
+  --background: linear-gradient(
+    135deg,
+    oklch(0.85 0.15 300.00) 0%,
+    oklch(0.80 0.20 240.00) 25%,
+    oklch(0.75 0.25 180.00) 50%,
+    oklch(0.70 0.20 120.00) 75%,
+    oklch(0.75 0.15 60.00) 100%
+  );
+  --foreground: var(--color-text-on-glass);
+  --blur-amount: 10px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: linear-gradient(
+      135deg,
+      oklch(0.25 0.15 300.00) 0%,
+      oklch(0.20 0.20 240.00) 25%,
+      oklch(0.15 0.25 180.00) 50%,
+      oklch(0.20 0.20 120.00) 75%,
+      oklch(0.25 0.15 60.00) 100%
+    );
+    --foreground: var(--color-text-light);
   }
+}
+
+/* Base styles */
+* {
+  border-color: transparent;
 }
 
 body {
   background: var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  transition: all 0.3s var(--ease-glass);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Improve text contrast on glass elements */
+.glass h1, .glass h2, .glass h3, .glass h4, .glass h5, .glass h6 {
+  color: var(--color-text-on-glass) !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+}
+
+.glass p, .glass span, .glass div, .glass button {
+  color: var(--color-text-on-glass) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.glass .text-muted {
+  color: var(--color-text-muted) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Scrollbar styling for glassmorphism */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-glass-white);
+  border-radius: 4px;
+  backdrop-filter: blur(var(--blur-amount));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-glass-white-border);
 }

@@ -1,0 +1,1315 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { 
+  ArrowLeft, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Check, 
+  ShoppingCart, 
+  Users, 
+  Share2,
+  Eye,
+  Settings,
+  Sparkles,
+  Search,
+  Filter,
+  SortAsc,
+  MoreVertical,
+  Copy,
+  Mail,
+  Calendar,
+  Package,
+  Camera,
+  Apple,
+  Milk,
+  Beef,
+  Cookie,
+  Snowflake,
+  Home,
+  Package2,
+  Utensils,
+  Save,
+  SoapDispenserDroplet,
+  X
+} from 'lucide-react'
+import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
+import { parseShoppingListWithAI } from '@/lib/ai/gemini'
+import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
+import { useToast } from '@/lib/toast/context'
+
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+
+// Category icons mapping
+const categoryIcons: { [key: string]: any } = {
+  'Produce': Apple,
+  'Dairy': Milk,
+  'Meat': Beef,
+  'Bakery': Cookie,
+  'Pantry': Package2,
+  'Frozen': Snowflake,
+  'Hygiene': SoapDispenserDroplet,
+  'Household': Home,
+  'Other': Package2,
+  'Snacks': Cookie,
+  'Beverages': Milk,
+  'Party': Sparkles
+}
+
+// Mock data for demo mode
+const mockList = {
+  id: '1',
+  name: 'Weekly Groceries',
+  description: 'Regular weekly shopping items',
+  is_shared: true,
+  share_code: 'DEMO1234',
+  user_role: 'owner',
+  created_at: '2024-01-15T10:00:00Z',
+  list_members: [
+    {
+      id: '1',
+      role: 'owner',
+      joined_at: '2024-01-15T10:00:00Z',
+      profiles: { full_name: 'Demo User', email: 'demo@example.com', avatar_url: null }
+    },
+    {
+      id: '2', 
+      role: 'editor',
+      joined_at: '2024-01-16T10:00:00Z',
+      profiles: { full_name: 'Sarah Wilson', email: 'sarah@example.com', avatar_url: null }
+    }
+  ]
+}
+
+const mockItems = [
+  { id: '1', name: 'Milk', amount: 1, unit: 'gallon', category: 'Dairy', notes: 'Organic preferred', is_checked: false, image_url: null },
+  { id: '2', name: 'Bread', amount: 2, unit: 'loaf', category: 'Bakery', notes: null, is_checked: true, image_url: null },
+  { id: '3', name: 'Apples', amount: 6, unit: 'piece', category: 'Produce', notes: 'Honeycrisp', is_checked: false, image_url: null },
+  { id: '4', name: 'Bananas', amount: 1, unit: 'bunch', category: 'Produce', notes: null, is_checked: false, image_url: null },
+  { id: '5', name: 'Chicken Breast', amount: 2, unit: 'lbs', category: 'Meat', notes: 'Free range', is_checked: true, image_url: null },
+  { id: '6', name: 'Eggs', amount: 1, unit: 'dozen', category: 'Dairy', notes: null, is_checked: false, image_url: null }
+]
+
+export default function ListPage() {
+  const params = useParams()
+  const router = useRouter()
+  const listId = params.listId as string
+  const toast = useToast()
+
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
+  const [list, setList] = useState<any>(null)
+  const [items, setItems] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isShoppingMode, setIsShoppingMode] = useState(false)
+  const [showAddItem, setShowAddItem] = useState(false)
+  const [showAiAdd, setShowAiAdd] = useState(false)
+  const [showSharing, setShowSharing] = useState(false)
+  const [showEditItem, setShowEditItem] = useState(false)
+  const [editingItem, setEditingItem] = useState<any>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('all')
+  const [newItem, setNewItem] = useState({
+    name: '',
+    amount: 1,
+    unit: 'piece',
+    category: 'Other',
+    notes: '',
+    image_url: null as string | null
+  })
+  const [aiInput, setAiInput] = useState('')
+  const [isAiProcessing, setIsAiProcessing] = useState(false)
+  
+  // Edit form state for items only
+  const [editItemForm, setEditItemForm] = useState({
+    name: '',
+    amount: 1,
+    unit: 'piece',
+    category: 'Other',
+    notes: '',
+    image_url: null as string | null
+  })
+  
+  // Image upload state
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        if (!isDemoMode) {
+          // In real mode, load from Supabase
+          const { user: currentUser } = await getCurrentUser()
+          setUser(currentUser)
+          
+          // Load user profile (including decrypted API key)
+          if (currentUser?.id) {
+            const { profile: userProfile } = await getProfile(currentUser.id)
+            setProfile(userProfile)
+          }
+          
+          // TODO: Load actual list and items from Supabase
+        }
+        
+        // Use demo data
+        setList(mockList)
+        setItems(mockItems)
+      } catch (error) {
+        console.error('Error loading list:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadData()
+  }, [listId])
+
+  const handleToggleItem = (itemId: string) => {
+    setItems(items.map(item => 
+      item.id === itemId ? { ...item, is_checked: !item.is_checked } : item
+    ))
+  }
+
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setSelectedImage(file)
+      const previewUrl = createImagePreview(file)
+      setImagePreview(previewUrl)
+    }
+  }
+
+  const handleRemoveImage = () => {
+    if (imagePreview) {
+      revokeImagePreview(imagePreview)
+    }
+    setSelectedImage(null)
+    setImagePreview(null)
+    setNewItem({ ...newItem, image_url: null })
+  }
+
+  const handleAddItem = async () => {
+    if (!newItem.name.trim()) return
+
+    setIsUploading(true)
+    try {
+      let imageUrl = null
+
+      // Upload image if selected
+      if (selectedImage && !isDemoMode) {
+        const itemId = Date.now().toString()
+        const uploadResult = await uploadItemImage(selectedImage, itemId)
+        if (uploadResult.success) {
+          imageUrl = uploadResult.url
+          toast.success('Image uploaded', 'Photo added to your item')
+        } else {
+          toast.error('Upload failed', uploadResult.error || 'Failed to upload image')
+          setIsUploading(false)
+          return
+        }
+      } else if (selectedImage && isDemoMode) {
+        // In demo mode, use the preview URL
+        imageUrl = imagePreview
+      }
+
+      const item = {
+        id: Date.now().toString(),
+        ...newItem,
+        is_checked: false,
+        image_url: imageUrl
+      }
+
+      setItems([...items, item])
+      
+      // Show success toast
+      toast.success('Item added', `${newItem.name} added to your list`)
+      
+      // Reset form
+      setNewItem({ name: '', amount: 1, unit: 'piece', category: 'Other', notes: '', image_url: null })
+      handleRemoveImage()
+      setShowAddItem(false)
+    } catch (error) {
+      console.error('Error adding item:', error)
+      toast.error('Failed to add item', 'Please try again')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleDeleteItem = (itemId: string) => {
+    const item = items.find(item => item.id === itemId)
+    setItems(items.filter(item => item.id !== itemId))
+    if (item) {
+      toast.success('Item removed', `${item.name} removed from your list`)
+    }
+  }
+
+  const handleAiAdd = async () => {
+    if (!aiInput.trim()) return
+
+    setIsAiProcessing(true)
+    try {
+      // In demo mode, simulate AI parsing
+      if (isDemoMode) {
+        // Simple demo parsing
+        const words = aiInput.toLowerCase().split(' ')
+        const demoItems = words.map((word, index) => ({
+          id: (Date.now() + index).toString(),
+          name: word.charAt(0).toUpperCase() + word.slice(1),
+          amount: 1,
+          unit: 'piece',
+          category: 'Other',
+          notes: '',
+          is_checked: false,
+          image_url: null
+        }))
+        setItems([...items, ...demoItems])
+        toast.success('AI items added', `Added ${demoItems.length} items from your input`)
+      } else {
+        // Real AI parsing - use the user's actual profile
+        if (profile?.gemini_api_key) {
+          const result = await parseShoppingListWithAI(aiInput, profile.gemini_api_key)
+          if (result.success && result.items) {
+            const newItems = result.items.map((item, index) => ({
+              id: (Date.now() + index).toString(),
+              ...item,
+              is_checked: false,
+              image_url: null
+            }))
+            setItems([...items, ...newItems])
+            toast.success('AI parsing complete', `Added ${newItems.length} items to your list`)
+          } else {
+            toast.error('AI parsing failed', result.error || 'Unable to parse your input. Try being more specific.')
+          }
+        } else {
+          toast.warning('API key required', 'Please add your Gemini API key in Settings to use AI features')
+          // Optionally redirect to settings
+          // router.push('/settings?tab=ai')
+        }
+      }
+      
+      setAiInput('')
+      setShowAiAdd(false)
+    } catch (error) {
+      console.error('AI parsing error:', error)
+      toast.error('AI parsing error', 'Something went wrong. Please try again.')
+    } finally {
+      setIsAiProcessing(false)
+    }
+  }
+
+  const handleEditItem = (item: any) => {
+    setEditingItem(item)
+    setEditItemForm({
+      name: item.name,
+      amount: item.amount,
+      unit: item.unit,
+      category: item.category,
+      notes: item.notes || '',
+      image_url: item.image_url || null
+    })
+    setShowEditItem(true)
+  }
+
+  const handleSaveItem = async () => {
+    if (!editItemForm.name.trim() || !editingItem) return
+
+    setIsUploading(true)
+    try {
+      let imageUrl = editItemForm.image_url
+
+      // Upload new image if selected
+      if (selectedImage && !isDemoMode) {
+        const uploadResult = await uploadItemImage(selectedImage, editingItem.id)
+        if (uploadResult.success) {
+          imageUrl = uploadResult.url || null
+          toast.success('Image updated', 'Photo updated successfully')
+        } else {
+          toast.error('Upload failed', uploadResult.error || 'Failed to upload image')
+          setIsUploading(false)
+          return
+        }
+      } else if (selectedImage && isDemoMode) {
+        // In demo mode, use the preview URL
+        imageUrl = imagePreview
+      }
+
+      const updatedItem = { ...editItemForm, image_url: imageUrl }
+
+      if (isDemoMode) {
+        // Simulate saving in demo mode
+        await new Promise(resolve => setTimeout(resolve, 500))
+        setItems(items.map(item => 
+          item.id === editingItem.id 
+            ? { ...item, ...updatedItem }
+            : item
+        ))
+      } else {
+        // TODO: Real implementation
+        // await updateItem(editingItem.id, updatedItem)
+      }
+      
+      // Show success toast
+      toast.success('Item updated', `${editItemForm.name} has been updated`)
+      
+      // Reset state
+      setShowEditItem(false)
+      setEditingItem(null)
+      if (imagePreview) {
+        revokeImagePreview(imagePreview)
+      }
+      setSelectedImage(null)
+      setImagePreview(null)
+    } catch (error) {
+      console.error('Error updating item:', error)
+      toast.error('Update failed', 'Failed to update item. Please try again.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleShareList = async () => {
+    if (!list?.share_code) return
+    
+    try {
+      const shareUrl = `${window.location.origin}/join/${list.share_code}`
+      await navigator.clipboard.writeText(shareUrl)
+      
+      toast.success('Link copied!', 'Share link copied to clipboard')
+    } catch (error) {
+      toast.error('Copy failed', 'Unable to copy link to clipboard')
+    }
+  }
+
+  const filteredItems = items.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
+    return matchesSearch && matchesCategory
+  })
+
+  // Group items by category
+  const groupedItems = filteredItems.reduce((groups: { [key: string]: any[] }, item) => {
+    const category = item.category || 'Other'
+    if (!groups[category]) {
+      groups[category] = []
+    }
+    groups[category].push(item)
+    return groups
+  }, {})
+
+  // Sort categories: unchecked items first, then alphabetical
+  const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
+    const aHasUnchecked = groupedItems[a].some((item: any) => !item.is_checked)
+    const bHasUnchecked = groupedItems[b].some((item: any) => !item.is_checked)
+    
+    if (aHasUnchecked && !bHasUnchecked) return -1
+    if (!aHasUnchecked && bHasUnchecked) return 1
+    return a.localeCompare(b)
+  })
+
+  const completedCount = items.filter(item => item.is_checked).length
+  const completionPercentage = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0
+  const categories = Array.from(new Set(items.map(item => item.category)))
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card p-8 text-center">
+          <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-glass">Loading your list...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!list) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card p-8 text-center">
+          <h2 className="text-xl font-bold text-glass-heading mb-4">List Not Found</h2>
+          <p className="text-glass-muted mb-6">The list you're looking for doesn't exist or you don't have access to it.</p>
+          <Link href="/dashboard" className="glass-button px-6 py-3">
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen p-4 md:p-8">
+      {/* Floating background elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/3 right-1/3 w-96 h-96 glass-white rounded-full blur-3xl opacity-10"></div>
+        <div className="absolute bottom-1/3 left-1/3 w-72 h-72 glass-white rounded-full blur-3xl opacity-15"></div>
+      </div>
+
+      <div className="relative z-10 max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="glass-card p-6 mb-6">
+          <div className="flex items-center gap-4 mb-4">
+            <Link href="/dashboard" className="glass-button p-2">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-glass-heading">{list.name}</h1>
+              {list.description && (
+                <p className="text-glass-muted">{list.description}</p>
+              )}
+            </div>
+            
+            {/* Action buttons */}
+            <div className="flex items-center gap-2">
+              {list.is_shared && (
+                <button 
+                  onClick={() => setShowSharing(!showSharing)}
+                  className="glass-button p-3"
+                  title="Manage sharing"
+                >
+                  <Users className="w-5 h-5" />
+                </button>
+              )}
+              
+              <button 
+                onClick={() => setIsShoppingMode(!isShoppingMode)}
+                className={`glass-button px-4 py-3 flex items-center gap-2 transition-all duration-200 ${
+                  isShoppingMode 
+                    ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg' 
+                    : 'hover:bg-primary/10'
+                }`}
+                title={isShoppingMode ? "Exit shopping mode" : "Enter shopping mode"}
+              >
+                <ShoppingCart className="w-5 h-5" />
+                <span className="text-sm font-medium">
+                  {isShoppingMode ? 'Shopping' : 'Shop'}
+                </span>
+              </button>
+              
+              <button className="glass-button p-3" title="List settings">
+                <Settings className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <div className="flex justify-between text-sm text-glass-muted mb-1">
+                <span>{completedCount} of {items.length} items</span>
+                <span>{completionPercentage}% complete</span>
+              </div>
+              <div className="w-full h-2 bg-glass-white-light rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all duration-300"
+                  style={{ width: `${completionPercentage}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Shopping Mode Indicator */}
+        {isShoppingMode && (
+          <div className="glass-card p-4 mb-6 border-2 border-primary/30 bg-primary/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
+                <ShoppingCart className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-primary">Shopping Mode Active</h3>
+                <p className="text-sm text-glass-muted">
+                  Large, touch-friendly interface for easier shopping
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsShoppingMode(false)}
+                className="text-sm glass-button px-3 py-1.5 hover:bg-primary/20"
+              >
+                Exit
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Search and Filters */}
+        {!isShoppingMode && (
+          <div className="glass-card p-4 mb-6">
+            <div className="flex flex-col gap-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted" />
+                <input
+                  type="text"
+                  placeholder="Search items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 glass border-0 rounded-lg text-glass placeholder-glass-muted"
+                />
+              </div>
+              
+              {/* Category Pills */}
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setCategoryFilter('all')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                    categoryFilter === 'all' 
+                      ? 'bg-primary/20 text-primary border border-primary/30' 
+                      : 'glass-button'
+                  }`}
+                >
+                  All Aisles
+                </button>
+                {categories.map(category => {
+                  const categoryCount = items.filter(item => item.category === category).length
+                  const CategoryIcon = categoryIcons[category] || Package2
+                  return (
+                    <button
+                      key={category}
+                      onClick={() => setCategoryFilter(category)}
+                      className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                        categoryFilter === category 
+                          ? 'bg-primary/20 text-primary border border-primary/30' 
+                          : 'glass-button'
+                      }`}
+                    >
+                      <CategoryIcon className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{category}</span>
+                      <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
+                        {categoryCount}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Item Actions */}
+        {!isShoppingMode && (
+          <div className="flex gap-3 mb-6">
+            <button 
+              onClick={() => setShowAddItem(true)}
+              className="glass-button px-4 py-3 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Item
+            </button>
+            
+            <button 
+              onClick={() => setShowAiAdd(true)}
+              className="glass-button px-4 py-3 flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Quick Add
+            </button>
+          </div>
+        )}
+
+        {/* Quick Add in Shopping Mode */}
+        {isShoppingMode && (
+          <div className="mb-6 text-center">
+            <button 
+              onClick={() => setShowAddItem(true)}
+              className="glass-button px-6 py-3 bg-primary/20 hover:bg-primary/30 flex items-center gap-2 mx-auto"
+            >
+              <Plus className="w-5 h-5" />
+              Add Item
+            </button>
+          </div>
+        )}
+
+
+
+
+
+        {/* Items List - Grouped by Category */}
+        <div className={isShoppingMode ? "space-y-6" : "space-y-4"}>
+          {filteredItems.length === 0 ? (
+            <div className="glass-card p-8 text-center">
+              <Package className="w-12 h-12 text-glass-muted mx-auto mb-4" />
+              <h3 className="text-lg font-bold text-glass-heading mb-2">
+                {isShoppingMode ? "Ready to shop!" : "No items yet"}
+              </h3>
+              <p className="text-glass-muted mb-4">
+                {isShoppingMode 
+                  ? "Exit shopping mode to add items to your list." 
+                  : "Start building your shopping list!"
+                }
+              </p>
+              {!isShoppingMode && (
+                <button 
+                  onClick={() => setShowAddItem(true)}
+                  className="glass-button px-6 py-3"
+                >
+                  Add Your First Item
+                </button>
+              )}
+            </div>
+          ) : (
+            sortedCategories.map((category) => {
+              const categoryItems = groupedItems[category]
+              const CategoryIcon = categoryIcons[category] || Package2
+              const completedInCategory = categoryItems.filter((item: any) => item.is_checked).length
+              const totalInCategory = categoryItems.length
+              
+              return (
+                <div key={category} className="glass-card overflow-hidden">
+                  {/* Category Header */}
+                  <div className={`border-b border-glass-white-border ${isShoppingMode ? 'p-6' : 'p-4'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`bg-primary/20 rounded-lg flex items-center justify-center ${isShoppingMode ? 'w-12 h-12' : 'w-8 h-8'}`}>
+                        <CategoryIcon className={`text-primary ${isShoppingMode ? 'w-6 h-6' : 'w-4 h-4'}`} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold text-glass-heading ${isShoppingMode ? 'text-xl' : ''}`}>{category}</h3>
+                        <p className={`text-glass-muted ${isShoppingMode ? 'text-sm' : 'text-xs'}`}>
+                          {completedInCategory} of {totalInCategory} items
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`font-bold text-glass px-3 py-1 bg-glass-white-light rounded-full ${isShoppingMode ? 'text-base' : 'text-sm'}`}>
+                          {totalInCategory}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Category Items */}
+                  <div className={isShoppingMode ? "space-y-2 p-2" : "divide-y divide-glass-white-border"}>
+                    {categoryItems.map((item: any) => (
+                      isShoppingMode ? (
+                        // Shopping Mode Layout - Large, touch-friendly
+                        <div 
+                          key={item.id} 
+                          className={`p-4 rounded-xl transition-all duration-200 ${
+                            item.is_checked 
+                              ? 'opacity-60 bg-green-50/50 border-2 border-green-200/50' 
+                              : 'bg-glass-white-light hover:bg-white/40 border-2 border-transparent hover:border-primary/30'
+                          }`}
+                        >
+                          <div className="flex items-center gap-6">
+                            {/* Large Circular Checkbox */}
+                            <button
+                              onClick={() => handleToggleItem(item.id)}
+                              className={`w-10 h-10 rounded-full border-4 flex items-center justify-center transition-all flex-shrink-0 shadow-lg ${
+                                item.is_checked 
+                                  ? 'bg-green-500 border-green-500 transform scale-110' 
+                                  : 'border-gray-300 bg-white hover:border-primary hover:scale-105 active:scale-95'
+                              }`}
+                            >
+                              {item.is_checked && <Check className="w-8 h-8 text-white stroke-[3]" />}
+                            </button>
+                            
+                            {/* Item Image - Larger in shopping mode */}
+                            {item.image_url && (
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  className="w-20 h-20 object-cover rounded-xl glass-card shadow-md"
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Item Details - Large and readable */}
+                            <div className="flex-1 min-w-0">
+                              <div className="mb-2">
+                                <h4 className={`text-2xl font-semibold ${item.is_checked ? 'line-through text-gray-500' : 'text-glass-heading'}`}>
+                                  {item.name}
+                                </h4>
+                                <p className="text-lg text-glass-muted mt-1">
+                                  {item.amount} {item.unit}
+                                </p>
+                              </div>
+                              {item.notes && (
+                                <p className="text-base text-glass-muted">{item.notes}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // Normal Mode Layout - Compact
+                        <div 
+                          key={item.id} 
+                          className={`p-3 transition-all duration-200 text-sm ${
+                            item.is_checked ? 'opacity-60 bg-glass-white-light' : 'hover:bg-glass-white-light'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => handleToggleItem(item.id)}
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                                item.is_checked 
+                                  ? 'bg-green-500 border-green-500' 
+                                  : 'border-glass-white-border hover:border-primary'
+                              }`}
+                            >
+                              {item.is_checked && <Check className="w-3 h-3 text-white" />}
+                            </button>
+                            
+                            {/* Item Image */}
+                            {item.image_url && (
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  className="w-12 h-12 object-cover rounded-lg glass-card"
+                                />
+                              </div>
+                            )}
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-medium truncate ${item.is_checked ? 'line-through' : ''} text-glass-heading`}>
+                                  {item.name}
+                                </span>
+                                <span className="text-glass-muted whitespace-nowrap">
+                                  {item.amount} {item.unit}
+                                </span>
+                              </div>
+                              {item.notes && (
+                                <p className="text-xs text-glass-muted mt-1 truncate">{item.notes}</p>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-1">
+                              <button 
+                                onClick={() => handleEditItem(item)}
+                                className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors flex-shrink-0"
+                                title="Edit item"
+                              >
+                                <Edit className="w-3.5 h-3.5 text-primary" />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteItem(item.id)}
+                                className="p-1.5 hover:bg-red-100/20 rounded-lg transition-colors flex-shrink-0"
+                                title="Delete item"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    ))}
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+
+        {/* Edit Item Modal */}
+        {showEditItem && editingItem && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            onClick={() => {
+              setShowEditItem(false)
+              setEditingItem(null)
+            }}
+          >
+            <div 
+              className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
+                <Edit className="w-5 h-5" />
+                Edit Item
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">Item Name</label>
+                  <input
+                    type="text"
+                    value={editItemForm.name}
+                    onChange={(e) => setEditItemForm({ ...editItemForm, name: e.target.value })}
+                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass placeholder-glass-muted"
+                    placeholder="Enter item name"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-glass-muted mb-2">Amount</label>
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      value={editItemForm.amount}
+                      onChange={(e) => setEditItemForm({ ...editItemForm, amount: parseFloat(e.target.value) || 1 })}
+                      className="w-full glass border-0 rounded-lg px-4 py-2 text-glass"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-glass-muted mb-2">Unit</label>
+                    <select
+                      value={editItemForm.unit}
+                      onChange={(e) => setEditItemForm({ ...editItemForm, unit: e.target.value })}
+                      className="w-full glass border-0 rounded-lg px-4 py-2 text-glass"
+                    >
+                      <option value="piece">Piece</option>
+                      <option value="lb">Pound</option>
+                      <option value="kg">Kilogram</option>
+                      <option value="oz">Ounce</option>
+                      <option value="cup">Cup</option>
+                      <option value="liter">Liter</option>
+                      <option value="gallon">Gallon</option>
+                      <option value="dozen">Dozen</option>
+                      <option value="bunch">Bunch</option>
+                      <option value="package">Package</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">Category</label>
+                  <select
+                    value={editItemForm.category}
+                    onChange={(e) => setEditItemForm({ ...editItemForm, category: e.target.value })}
+                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass"
+                  >
+                    <option value="Produce">Produce</option>
+                    <option value="Dairy">Dairy</option>
+                    <option value="Meat">Meat</option>
+                    <option value="Bakery">Bakery</option>
+                    <option value="Hygiene">Hygiene</option>
+                    <option value="Pantry">Pantry</option>
+                    <option value="Frozen">Frozen</option>
+                    <option value="Household">Household</option>
+                    <option value="Snacks">Snacks</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">Notes</label>
+                  <input
+                    type="text"
+                    value={editItemForm.notes}
+                    onChange={(e) => setEditItemForm({ ...editItemForm, notes: e.target.value })}
+                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass placeholder-glass-muted"
+                    placeholder="Optional notes"
+                  />
+                </div>
+                
+                {/* Image Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">Item Photo</label>
+                  
+                  {!imagePreview && !editItemForm.image_url ? (
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        id="edit-image-upload"
+                      />
+                      <label
+                        htmlFor="edit-image-upload"
+                        className="glass-button border-2 border-dashed border-glass-white-light rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                      >
+                        <Camera className="w-6 h-6 text-glass-muted mb-2" />
+                        <span className="text-glass-muted text-sm">Click to add photo</span>
+                        <span className="text-glass-muted text-xs mt-1">Max 5MB • JPG, PNG, WebP</span>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="relative inline-block">
+                      <img
+                        src={imagePreview || editItemForm.image_url || ''}
+                        alt="Item preview"
+                        className="w-24 h-24 object-cover rounded-lg glass-card"
+                      />
+                      <button
+                        onClick={() => {
+                          if (imagePreview) {
+                            revokeImagePreview(imagePreview)
+                          }
+                          setSelectedImage(null)
+                          setImagePreview(null)
+                          setEditItemForm({ ...editItemForm, image_url: null })
+                        }}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button 
+                  onClick={handleSaveItem}
+                  disabled={!editItemForm.name.trim() || isUploading}
+                  className="glass-button px-4 py-2 bg-primary/20 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowEditItem(false)
+                    setEditingItem(null)
+                    if (imagePreview) {
+                      revokeImagePreview(imagePreview)
+                    }
+                    setSelectedImage(null)
+                    setImagePreview(null)
+                  }}
+                  className="glass-button px-4 py-2"
+                  disabled={isUploading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sharing Panel */}
+        {showSharing && list.is_shared && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            onClick={() => setShowSharing(false)}
+          >
+            <div 
+              className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-glass-heading mb-4">Share List</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm text-glass-muted">Share Code</label>
+                  <div className="flex gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={list.share_code}
+                      readOnly
+                      className="flex-1 glass border-0 rounded-lg px-3 py-2 text-glass"
+                    />
+                    <button 
+                      onClick={handleShareList}
+                      className="glass-button p-2"
+                      title="Copy share link"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm text-glass-muted">Members ({list.list_members?.length || 0})</label>
+                  <div className="space-y-2 mt-2">
+                    {list.list_members?.map((member: any) => (
+                      <div key={member.id} className="flex items-center gap-3 p-2 glass rounded-lg">
+                        <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-primary">
+                            {member.profiles.full_name?.charAt(0) || '?'}
+                          </span>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-glass">{member.profiles.full_name}</p>
+                          <p className="text-xs text-glass-muted">{member.role}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button 
+                  onClick={handleShareList}
+                  className="glass-button px-4 py-2 bg-primary/20 flex items-center gap-2"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Copy Link
+                </button>
+                <button 
+                  onClick={() => setShowSharing(false)}
+                  className="glass-button px-4 py-2"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AI Quick Add Modal */}
+        {showAiAdd && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            onClick={() => setShowAiAdd(false)}
+          >
+            <div 
+              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-glass-heading">AI Quick Add</h3>
+                  <p className="text-sm text-glass-muted">Parse your shopping list with AI</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">
+                    Natural Language Input
+                  </label>
+                  <p className="text-sm text-glass-muted mb-3">
+                    Enter items naturally like: <span className="font-medium">"2 lbs chicken breast, 1 gallon milk, 3 apples"</span>
+                  </p>
+                  <textarea
+                    placeholder="Type your shopping list items..."
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted resize-none focus:ring-2 focus:ring-purple-500/50"
+                    rows={4}
+                    autoFocus
+                  />
+                </div>
+                
+                {isDemoMode && (
+                  <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>Demo Mode:</strong> AI will simulate parsing by splitting your input into individual items.
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button 
+                  onClick={handleAiAdd}
+                  disabled={isAiProcessing || !aiInput.trim()}
+                  className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium"
+                >
+                  {isAiProcessing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Add Items
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowAiAdd(false)
+                    setAiInput('')
+                  }}
+                  className="glass-button px-4 py-2"
+                  disabled={isAiProcessing}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Item Modal */}
+        {showAddItem && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            onClick={() => {
+              setShowAddItem(false)
+              handleRemoveImage()
+            }}
+          >
+            <div 
+              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500/20 to-blue-500/20 flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-glass-heading">Add New Item</h3>
+                  <p className="text-sm text-glass-muted">Add an item to your shopping list</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">Item Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter item name"
+                    value={newItem.name}
+                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass placeholder-glass-muted focus:ring-2 focus:ring-green-500/50"
+                    autoFocus
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-glass-muted mb-2">Amount</label>
+                    <input
+                      type="number"
+                      min="0.1"
+                      step="0.1"
+                      placeholder="1"
+                      value={newItem.amount}
+                      onChange={(e) => setNewItem({ ...newItem, amount: parseFloat(e.target.value) || 1 })}
+                      className="w-full glass border-0 rounded-lg px-4 py-2 text-glass focus:ring-2 focus:ring-green-500/50"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-glass-muted mb-2">Unit</label>
+                    <select
+                      value={newItem.unit}
+                      onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
+                      className="w-full glass border-0 rounded-lg px-4 py-2 text-glass focus:ring-2 focus:ring-green-500/50"
+                    >
+                      <option value="piece">Piece</option>
+                      <option value="lb">Pound</option>
+                      <option value="kg">Kilogram</option>
+                      <option value="oz">Ounce</option>
+                      <option value="cup">Cup</option>
+                      <option value="liter">Liter</option>
+                      <option value="gallon">Gallon</option>
+                      <option value="dozen">Dozen</option>
+                      <option value="bunch">Bunch</option>
+                      <option value="package">Package</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">Category</label>
+                  <select
+                    value={newItem.category}
+                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass focus:ring-2 focus:ring-green-500/50"
+                  >
+                    <option value="Produce">Produce</option>
+                    <option value="Dairy">Dairy</option>
+                    <option value="Meat">Meat</option>
+                    <option value="Bakery">Bakery</option>
+                    <option value="Hygiene">Hygiene</option>
+                    <option value="Pantry">Pantry</option>
+                    <option value="Frozen">Frozen</option>
+                    <option value="Household">Household</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">Notes (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="Add any notes..."
+                    value={newItem.notes}
+                    onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })}
+                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass placeholder-glass-muted focus:ring-2 focus:ring-green-500/50"
+                  />
+                </div>
+                
+                {/* Image Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">Item Photo (Optional)</label>
+                  
+                  {!imagePreview ? (
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        id="add-item-image-upload"
+                      />
+                      <label
+                        htmlFor="add-item-image-upload"
+                        className="glass-button border-2 border-dashed border-glass-white-light rounded-lg p-4 flex flex-col items-center justify-center cursor-pointer hover:border-green-500/50 transition-colors w-full"
+                      >
+                        <Camera className="w-6 h-6 text-glass-muted mb-2" />
+                        <span className="text-glass-muted text-sm">Click to add photo</span>
+                        <span className="text-glass-muted text-xs mt-1">Max 5MB • JPG, PNG, WebP</span>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="relative inline-block">
+                      <img
+                        src={imagePreview}
+                        alt="Item preview"
+                        className="w-24 h-24 object-cover rounded-lg glass-card"
+                      />
+                      <button
+                        onClick={handleRemoveImage}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button 
+                  onClick={handleAddItem}
+                  disabled={!newItem.name.trim() || isUploading}
+                  className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 hover:from-green-500/30 hover:to-blue-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-green-700 font-medium"
+                >
+                  {isUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Add Item
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowAddItem(false)
+                    handleRemoveImage()
+                    setNewItem({ name: '', amount: 1, unit: 'piece', category: 'Other', notes: '', image_url: null })
+                  }}
+                  className="glass-button px-4 py-2"
+                  disabled={isUploading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+} 
