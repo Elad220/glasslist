@@ -16,8 +16,8 @@ import {
   Eye,
   Check
 } from 'lucide-react'
-
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+import { getCurrentUser } from '@/lib/supabase/auth'
+import { supabase, createManyItems, isDemoMode } from '@/lib/supabase/client'
 
 export default function NewListPage() {
   const router = useRouter()
@@ -84,28 +84,48 @@ export default function NewListPage() {
         toast.success('List created!', `${formData.name} is ready to use`)
         router.push(`/list/${demoListId}`)
       } else {
-        // Real implementation - for now, simulate creating a new list with mock data
-        // This creates a realistic list ID and redirects to it
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Real implementation: create a new list in Supabase
+        const { user, error: userError } = await getCurrentUser()
+        if (userError || !user) throw new Error('User not found')
+        if (!supabase) throw new Error('Supabase not initialized')
         
-        // Generate a realistic list ID
-        const newListId = `list-${Date.now()}`
+        const insertData = {
+          user_id: user.id,
+          name: formData.name,
+          description: formData.description,
+          is_shared: formData.is_shared,
+          share_code: formData.is_shared ? Math.random().toString(36).substring(2, 10).toUpperCase() : null
+        }
         
-        // In a real app, this would save to the database:
-        // const { data, error } = await supabase
-        //   .from('shopping_lists')
-        //   .insert({
-        //     name: formData.name,
-        //     description: formData.description,
-        //     is_shared: formData.is_shared,
-        //     share_code: formData.is_shared ? await generateShareCode() : null
-        //   })
-        //   .select()
-        //   .single()
+        const { data, error } = await supabase
+          .from('shopping_lists')
+          .insert(insertData)
+          .select()
+          .single()
         
-        // For now, redirect to the new list page (it will use mock data)
+        if (error || !data) throw error || new Error('Failed to create list')
+        
+        // Create template items if a template was selected
+        const selectedTemplate = templates.find(t => t.id === formData.template)
+        if (selectedTemplate && selectedTemplate.items.length > 0) {
+          const templateItems = selectedTemplate.items.map(item => ({
+            list_id: data.id,
+            name: item.name,
+            category: item.category,
+            amount: 1,
+            unit: 'pcs' as any,
+            is_checked: false
+          }))
+          
+          const { error: itemsError } = await createManyItems(templateItems)
+          if (itemsError) {
+            console.error('Failed to create template items:', itemsError)
+            // Continue anyway, just log the error
+          }
+        }
+        
         toast.success('List created!', `${formData.name} is ready to use`)
-        router.push(`/list/${newListId}`)
+        router.push(`/list/${data.id}`)
       }
     } catch (error) {
       console.error('Error creating list:', error)

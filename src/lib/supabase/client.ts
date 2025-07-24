@@ -1,19 +1,411 @@
-import { createBrowserClient } from '@supabase/ssr'
-import { Database } from './types'
+import { createClient } from '@supabase/supabase-js'
+import type { Database, ShoppingList, Item, NewItem, UpdateItem, ShoppingListWithMembers } from './types'
+import { getCurrentUser } from './auth'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+export const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
-export const createClient = () => {
+export const createSupabaseClient = () => {
   if (isDemoMode || !supabaseUrl || !supabaseKey) {
     // Return a mock client for demo mode
     console.warn('Running in demo mode - Supabase not configured')
     return null
   }
 
-  return createBrowserClient<Database>(supabaseUrl, supabaseKey)
+  return createClient<Database>(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  })
 }
 
-export const supabase = createClient()
-export { isDemoMode } 
+export const supabase = createSupabaseClient()
+
+// =============================================
+// SHOPPING LIST OPERATIONS
+// =============================================
+
+export async function getShoppingLists(userId: string) {
+  console.log('getShoppingLists called with userId:', userId)
+  
+  if (!supabase) {
+    console.error('Supabase client not available')
+    return { data: null, error: 'Supabase not available' }
+  }
+
+  try {
+    console.log('Attempting to fetch shopping lists...')
+    
+    // Simple query with explicit column selection
+    const { data, error } = await supabase
+      .from('shopping_lists')
+      .select('id, user_id, name, description, is_shared, is_archived, created_at, updated_at')
+      .eq('user_id', userId)
+      .eq('is_archived', false)
+      .order('created_at', { ascending: false })
+
+    console.log('Query result:', { data, error })
+
+    if (error) {
+      console.error('getShoppingLists Supabase error:', error)
+      return { data: null, error: error.message || 'Database query failed' }
+    }
+
+    // Return lists with empty items array for now
+    const listsWithEmptyItems = (data || []).map(list => ({
+      ...list,
+      items: []
+    }))
+
+    console.log('Returning lists:', listsWithEmptyItems)
+    return { data: listsWithEmptyItems, error: null }
+
+  } catch (error) {
+    console.error('getShoppingLists unexpected error:', error)
+    return { data: null, error: 'Unexpected error occurred' }
+  }
+}
+
+export async function getShoppingList(listId: string) {
+  console.log('getShoppingList called with listId:', listId)
+  
+  if (!supabase) {
+    console.error('Supabase client not available')
+    return { data: null, error: 'Supabase not available' }
+  }
+
+  try {
+    console.log('Attempting to fetch shopping list...')
+    
+    // Simplified query without the complex join that might be causing 400 error
+    const { data, error } = await supabase
+      .from('shopping_lists')
+      .select('*')
+      .eq('id', listId)
+      .single()
+
+    console.log('getShoppingList query result:', { data, error })
+
+    if (error) {
+      console.error('getShoppingList Supabase error:', error)
+      return { data: null, error: error.message || 'Failed to fetch list' }
+    }
+
+    // For now, return the list without members - we can add this back later
+    const listWithEmptyMembers = {
+      ...data,
+      list_members: []
+    }
+
+    console.log('Returning list:', listWithEmptyMembers)
+    return { data: listWithEmptyMembers, error: null }
+
+  } catch (error) {
+    console.error('getShoppingList unexpected error:', error)
+    return { data: null, error: 'Unexpected error occurred' }
+  }
+}
+
+export async function updateShoppingList(listId: string, updates: Partial<ShoppingList>) {
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  const { data, error } = await supabase
+    .from('shopping_lists')
+    .update(updates)
+    .eq('id', listId)
+    .select()
+    .single()
+
+  return { data, error }
+}
+
+export async function deleteShoppingList(listId: string) {
+  if (!supabase) return { error: 'Supabase not available' }
+
+  const { error } = await supabase
+    .from('shopping_lists')
+    .delete()
+    .eq('id', listId)
+
+  return { error }
+}
+
+export async function getShoppingListByShareCode(shareCode: string) {
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  const { data, error } = await supabase
+    .from('shopping_lists')
+    .select(`
+      id,
+      name,
+      description,
+      user_id,
+      created_at,
+      list_members(count),
+      items(count)
+    `)
+    .eq('share_code', shareCode)
+    .eq('is_shared', true)
+    .single()
+
+  return { data, error }
+}
+
+// =============================================
+// ITEM OPERATIONS
+// =============================================
+
+export async function getListItems(listId: string) {
+  console.log('getListItems called with listId:', listId)
+  
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  try {
+    // First verify the user owns the list (application-level security)
+    const { user } = await getCurrentUser()
+    if (!user) {
+      return { data: null, error: 'User not authenticated' }
+    }
+
+    // Check if user owns the list
+    const { data: listCheck, error: listError } = await supabase
+      .from('shopping_lists')
+      .select('user_id')
+      .eq('id', listId)
+      .single()
+
+    if (listError || !listCheck || listCheck.user_id !== user.id) {
+      return { data: null, error: 'Access denied to this list' }
+    }
+
+    // Now fetch items (RLS is disabled on items, so we rely on the list ownership check above)
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('list_id', listId)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true })
+
+    console.log('getListItems result:', { count: data?.length, error })
+    return { data, error }
+
+  } catch (error) {
+    console.error('getListItems unexpected error:', error)
+    return { data: null, error: 'Unexpected error occurred' }
+  }
+}
+
+export async function createItem(item: NewItem) {
+  console.log('createItem called with:', item)
+  
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  try {
+    // Application-level security: verify user owns the list
+    const { user } = await getCurrentUser()
+    if (!user) {
+      return { data: null, error: 'User not authenticated' }
+    }
+
+    console.log('User authenticated:', user.id)
+
+    // Check if user owns the list
+    const { data: listCheck, error: listError } = await supabase
+      .from('shopping_lists')
+      .select('user_id')
+      .eq('id', item.list_id)
+      .single()
+
+    console.log('List ownership check:', { listCheck, listError })
+
+    if (listError || !listCheck || listCheck.user_id !== user.id) {
+      return { data: null, error: 'Access denied to this list' }
+    }
+
+    // Prepare item data with proper types
+    const itemToInsert = {
+      list_id: item.list_id,
+      name: item.name.trim(),
+      amount: Number(item.amount) || 1,
+      unit: item.unit || 'pcs',  // Default to 'pcs' if undefined
+      category: item.category || 'Other',
+      notes: item.notes?.trim() || null,
+      image_url: item.image_url || null,
+      is_checked: Boolean(item.is_checked),
+      position: item.position || 0
+    }
+
+    console.log('Prepared item data:', itemToInsert)
+
+    // Create the item
+    const { data, error } = await supabase
+      .from('items')
+      .insert(itemToInsert)
+      .select()
+      .single()
+
+    console.log('Insert result:', { data: data?.id, error })
+
+    if (error) {
+      console.error('Supabase insert error:', error)
+      // Return a readable error message
+      const errorMessage = error.message || 'Failed to create item'
+      return { data: null, error: errorMessage }
+    }
+
+    return { data, error: null }
+
+  } catch (error) {
+    console.error('createItem unexpected error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unexpected error occurred'
+    return { data: null, error: errorMessage }
+  }
+}
+
+export async function createManyItems(items: NewItem[]) {
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  const { data, error } = await supabase
+    .from('items')
+    .insert(items)
+    .select()
+
+  return { data, error }
+}
+
+export async function updateItem(itemId: string, updates: UpdateItem) {
+  console.log('updateItem called with itemId:', itemId)
+  
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  try {
+    // Application-level security: verify user owns the list that contains this item
+    const { user } = await getCurrentUser()
+    if (!user) {
+      return { data: null, error: 'User not authenticated' }
+    }
+
+    // Get the item's list_id and verify ownership
+    const { data: itemCheck, error: itemError } = await supabase
+      .from('items')
+      .select(`
+        list_id,
+        shopping_lists!inner(user_id)
+      `)
+      .eq('id', itemId)
+      .single()
+
+    if (itemError || !itemCheck) {
+      return { data: null, error: 'Item not found' }
+    }
+
+    // TypeScript might complain about the nested structure, so let's be safe
+    const listUserId = (itemCheck as any).shopping_lists?.user_id
+    if (listUserId !== user.id) {
+      return { data: null, error: 'Access denied to this item' }
+    }
+
+    // Update the item
+    const { data, error } = await supabase
+      .from('items')
+      .update(updates)
+      .eq('id', itemId)
+      .select()
+      .single()
+
+    console.log('updateItem result:', { data: data?.id, error })
+    return { data, error }
+
+  } catch (error) {
+    console.error('updateItem unexpected error:', error)
+    return { data: null, error: 'Unexpected error occurred' }
+  }
+}
+
+export async function toggleItemChecked(itemId: string, isChecked: boolean) {
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  const { data, error } = await supabase
+    .from('items')
+    .update({ is_checked: isChecked })
+    .eq('id', itemId)
+    .select()
+    .single()
+
+  return { data, error }
+}
+
+export async function deleteItem(itemId: string) {
+  if (!supabase) return { error: 'Supabase not available' }
+
+  const { error } = await supabase
+    .from('items')
+    .delete()
+    .eq('id', itemId)
+
+  return { error }
+}
+
+// =============================================
+// ANALYTICS OPERATIONS
+// =============================================
+
+export async function getUserAnalytics(userId: string) {
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  try {
+    const { data, error } = await supabase
+      .rpc('get_user_analytics', { user_uuid: userId })
+
+    return { data, error }
+  } catch (error) {
+    console.error('Analytics error:', error)
+    return { data: null, error: 'Failed to load analytics' }
+  }
+}
+
+// =============================================
+// LIST SHARING OPERATIONS
+// =============================================
+
+export async function joinListByShareCode(shareCode: string, userId: string) {
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  // First, find the list by share code
+  const { data: list, error: listError } = await getShoppingListByShareCode(shareCode)
+  if (listError || !list) {
+    return { data: null, error: 'Invalid or expired share code' }
+  }
+
+  // Check if user is already a member
+  const { data: existingMember, error: memberError } = await supabase
+    .from('list_members')
+    .select('id')
+    .eq('list_id', list.id)
+    .eq('user_id', userId)
+    .single()
+
+  if (existingMember) {
+    return { data: { list_id: list.id, already_member: true }, error: null }
+  }
+
+  // Add user as a member
+  const { data: newMember, error: insertError } = await supabase
+    .from('list_members')
+    .insert({
+      list_id: list.id,
+      user_id: userId,
+      role: 'editor'
+    })
+    .select()
+    .single()
+
+  if (insertError) {
+    return { data: null, error: 'Failed to join list' }
+  }
+
+  return { data: { list_id: list.id, already_member: false }, error: null }
+} 

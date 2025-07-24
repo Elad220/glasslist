@@ -40,8 +40,16 @@ import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI } from '@/lib/ai/gemini'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
 import { useToast } from '@/lib/toast/context'
-
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+import { 
+  getShoppingList, 
+  getListItems, 
+  createItem, 
+  updateItem, 
+  deleteItem, 
+  toggleItemChecked,
+  isDemoMode,
+  createManyItems
+} from '@/lib/supabase/client'
 
 // Category icons mapping
 const categoryIcons: { [key: string]: any } = {
@@ -85,11 +93,11 @@ const mockList = {
 }
 
 const mockItems = [
-  { id: '1', name: 'Milk', amount: 1, unit: 'gallon', category: 'Dairy', notes: 'Organic preferred', is_checked: false, image_url: null },
-  { id: '2', name: 'Bread', amount: 2, unit: 'loaf', category: 'Bakery', notes: null, is_checked: true, image_url: null },
-  { id: '3', name: 'Apples', amount: 6, unit: 'piece', category: 'Produce', notes: 'Honeycrisp', is_checked: false, image_url: null },
+  { id: '1', name: 'Milk', amount: 1, unit: 'bottle', category: 'Dairy', notes: 'Organic preferred', is_checked: false, image_url: null },
+  { id: '2', name: 'Bread', amount: 2, unit: 'pcs', category: 'Bakery', notes: null, is_checked: true, image_url: null },
+  { id: '3', name: 'Apples', amount: 6, unit: 'pcs', category: 'Produce', notes: 'Honeycrisp', is_checked: false, image_url: null },
   { id: '4', name: 'Bananas', amount: 1, unit: 'bunch', category: 'Produce', notes: null, is_checked: false, image_url: null },
-  { id: '5', name: 'Chicken Breast', amount: 2, unit: 'lbs', category: 'Meat', notes: 'Free range', is_checked: true, image_url: null },
+  { id: '5', name: 'Chicken Breast', amount: 2, unit: 'lb', category: 'Meat', notes: 'Free range', is_checked: true, image_url: null },
   { id: '6', name: 'Eggs', amount: 1, unit: 'dozen', category: 'Dairy', notes: null, is_checked: false, image_url: null }
 ]
 
@@ -115,7 +123,7 @@ export default function ListPage() {
   const [newItem, setNewItem] = useState({
     name: '',
     amount: 1,
-    unit: 'piece',
+    unit: 'pcs',
     category: 'Other',
     notes: '',
     image_url: null as string | null
@@ -127,7 +135,7 @@ export default function ListPage() {
   const [editItemForm, setEditItemForm] = useState({
     name: '',
     amount: 1,
-    unit: 'piece',
+    unit: 'pcs',
     category: 'Other',
     notes: '',
     image_url: null as string | null
@@ -140,38 +148,92 @@ export default function ListPage() {
 
   useEffect(() => {
     const loadData = async () => {
+      console.log('ListPage: loadData called with listId:', listId)
       try {
         if (!isDemoMode) {
-          // In real mode, load from Supabase
+          console.log('ListPage: Not in demo mode, loading real data')
+          
+          // Load real data from Supabase
+          console.log('ListPage: Getting current user...')
           const { user: currentUser } = await getCurrentUser()
+          if (!currentUser) {
+            console.log('ListPage: No user found, redirecting to auth')
+            router.push('/auth')
+            return
+          }
+          console.log('ListPage: User found:', currentUser.id)
           setUser(currentUser)
           
           // Load user profile (including decrypted API key)
-          if (currentUser?.id) {
-            const { profile: userProfile } = await getProfile(currentUser.id)
-            setProfile(userProfile)
-          }
+          console.log('ListPage: Getting user profile...')
+          const { profile: userProfile } = await getProfile(currentUser.id)
+          console.log('ListPage: Profile loaded:', userProfile?.id)
+          setProfile(userProfile)
           
-          // TODO: Load actual list and items from Supabase
+          // Load list data
+          console.log('ListPage: About to fetch list data for listId:', listId)
+          const { data: listData, error: listError } = await getShoppingList(listId)
+          console.log('ListPage: List data result:', { data: listData?.id, error: listError })
+          
+          if (listError || !listData) {
+            console.error('ListPage: List error or no data:', listError)
+            toast.error('List not found', 'The requested list could not be found')
+            router.push('/dashboard')
+            return
+          }
+          console.log('ListPage: Setting list data')
+          setList(listData)
+          
+          // Load items
+          console.log('ListPage: About to fetch items for listId:', listId)
+          const { data: itemsData, error: itemsError } = await getListItems(listId)
+          console.log('ListPage: Items data result:', { count: itemsData?.length, error: itemsError })
+          
+          if (!itemsError && itemsData) {
+            console.log('ListPage: Setting items data')
+            setItems(itemsData)
+          } else if (itemsError) {
+            console.error('ListPage: Items error:', itemsError)
+          }
+        } else {
+          console.log('ListPage: In demo mode, using mock data')
+          // Use demo data
+          setList(mockList)
+          setItems(mockItems)
         }
-        
-        // Use demo data
-        setList(mockList)
-        setItems(mockItems)
       } catch (error) {
-        console.error('Error loading list:', error)
+        console.error('ListPage: Error loading list:', error)
+        toast.error('Loading failed', 'Failed to load list data')
       } finally {
+        console.log('ListPage: Setting loading to false')
         setIsLoading(false)
       }
     }
 
     loadData()
-  }, [listId])
+  }, [listId, router, toast])
 
-  const handleToggleItem = (itemId: string) => {
+  const handleToggleItem = async (itemId: string) => {
+    const item = items.find(item => item.id === itemId)
+    if (!item) return
+
+    const newCheckedState = !item.is_checked
+
+    // Optimistic update
     setItems(items.map(item => 
-      item.id === itemId ? { ...item, is_checked: !item.is_checked } : item
+      item.id === itemId ? { ...item, is_checked: newCheckedState } : item
     ))
+
+    if (!isDemoMode) {
+      const { error } = await toggleItemChecked(itemId, newCheckedState)
+      if (error) {
+        // Revert on error
+        setItems(items.map(item => 
+          item.id === itemId ? { ...item, is_checked: !newCheckedState } : item
+        ))
+        toast.error('Update failed', 'Failed to update item status')
+      }
+    }
   }
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,36 +278,84 @@ export default function ListPage() {
         imageUrl = imagePreview
       }
 
-      const item = {
-        id: Date.now().toString(),
-        ...newItem,
-        is_checked: false,
-        image_url: imageUrl
+      const itemData = {
+        list_id: listId,
+        name: newItem.name,
+        amount: newItem.amount,
+        unit: newItem.unit as any,
+        category: newItem.category,
+        notes: newItem.notes || null,
+        image_url: imageUrl,
+        is_checked: false
       }
 
-      setItems([...items, item])
+      console.log('About to create item:', itemData)
+
+      if (!isDemoMode) {
+        const { data: createdItem, error } = await createItem(itemData)
+        console.log('Create item response:', { data: createdItem?.id, error })
+        
+        if (error) {
+          console.error('Failed to create item:', error)
+          const errorMessage = typeof error === 'string' ? error : (error as any)?.message || 'Failed to add item'
+          toast.error('Failed to add item', errorMessage)
+          setIsUploading(false)
+          return
+        }
+        
+        if (!createdItem) {
+          toast.error('Failed to add item', 'No data returned from server')
+          setIsUploading(false)
+          return
+        }
+        
+        setItems([...items, createdItem])
+      } else {
+        // Demo mode
+        const item = {
+          id: Date.now().toString(),
+          ...itemData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          position: 0
+        }
+        setItems([...items, item])
+      }
       
       // Show success toast
       toast.success('Item added', `${newItem.name} added to your list`)
       
       // Reset form
-      setNewItem({ name: '', amount: 1, unit: 'piece', category: 'Other', notes: '', image_url: null })
+      setNewItem({ name: '', amount: 1, unit: 'pcs', category: 'Other', notes: '', image_url: null })
       handleRemoveImage()
       setShowAddItem(false)
     } catch (error) {
       console.error('Error adding item:', error)
-      toast.error('Failed to add item', 'Please try again')
+      const errorMessage = error instanceof Error ? error.message : 'Please try again'
+      toast.error('Failed to add item', errorMessage)
     } finally {
       setIsUploading(false)
     }
   }
 
-  const handleDeleteItem = (itemId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
     const item = items.find(item => item.id === itemId)
+    if (!item) return
+
+    // Optimistic update
     setItems(items.filter(item => item.id !== itemId))
-    if (item) {
-      toast.success('Item removed', `${item.name} removed from your list`)
+
+    if (!isDemoMode) {
+      const { error } = await deleteItem(itemId)
+      if (error) {
+        // Revert on error
+        setItems([...items, item])
+        toast.error('Delete failed', 'Failed to delete item')
+        return
+      }
     }
+
+    toast.success('Item removed', `${item.name} removed from your list`)
   }
 
   const handleAiAdd = async () => {
@@ -259,13 +369,17 @@ export default function ListPage() {
         const words = aiInput.toLowerCase().split(' ')
         const demoItems = words.map((word, index) => ({
           id: (Date.now() + index).toString(),
+          list_id: listId,
           name: word.charAt(0).toUpperCase() + word.slice(1),
           amount: 1,
-          unit: 'piece',
+          unit: 'pcs',
           category: 'Other',
           notes: '',
           is_checked: false,
-          image_url: null
+          image_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          position: 0
         }))
         setItems([...items, ...demoItems])
         toast.success('AI items added', `Added ${demoItems.length} items from your input`)
@@ -274,21 +388,29 @@ export default function ListPage() {
         if (profile?.gemini_api_key) {
           const result = await parseShoppingListWithAI(aiInput, profile.gemini_api_key)
           if (result.success && result.items) {
-            const newItems = result.items.map((item, index) => ({
-              id: (Date.now() + index).toString(),
-              ...item,
-              is_checked: false,
-              image_url: null
+            const itemsToCreate = result.items.map(item => ({
+              list_id: listId,
+              name: item.name,
+              amount: item.amount,
+              unit: item.unit as any,
+              category: item.category,
+              notes: item.notes || null,
+              is_checked: false
             }))
-            setItems([...items, ...newItems])
-            toast.success('AI parsing complete', `Added ${newItems.length} items to your list`)
+
+            const { data: createdItems, error } = await createManyItems(itemsToCreate)
+            if (error || !createdItems) {
+              toast.error('AI parsing failed', 'Failed to add items to your list')
+              return
+            }
+
+            setItems([...items, ...createdItems])
+            toast.success('AI parsing complete', `Added ${createdItems.length} items to your list`)
           } else {
             toast.error('AI parsing failed', result.error || 'Unable to parse your input. Try being more specific.')
           }
         } else {
           toast.warning('API key required', 'Please add your Gemini API key in Settings to use AI features')
-          // Optionally redirect to settings
-          // router.push('/settings?tab=ai')
         }
       }
       
@@ -338,19 +460,32 @@ export default function ListPage() {
         imageUrl = imagePreview
       }
 
-      const updatedItem = { ...editItemForm, image_url: imageUrl }
+      const updatedItemData = {
+        name: editItemForm.name,
+        amount: editItemForm.amount,
+        unit: editItemForm.unit as any,
+        category: editItemForm.category,
+        notes: editItemForm.notes || null,
+        image_url: imageUrl
+      }
 
-      if (isDemoMode) {
-        // Simulate saving in demo mode
-        await new Promise(resolve => setTimeout(resolve, 500))
+      if (!isDemoMode) {
+        const { data: updatedItem, error } = await updateItem(editingItem.id, updatedItemData)
+        if (error || !updatedItem) {
+          toast.error('Update failed', 'Failed to update item')
+          setIsUploading(false)
+          return
+        }
         setItems(items.map(item => 
-          item.id === editingItem.id 
-            ? { ...item, ...updatedItem }
-            : item
+          item.id === editingItem.id ? updatedItem : item
         ))
       } else {
-        // TODO: Real implementation
-        // await updateItem(editingItem.id, updatedItem)
+        // Demo mode
+        setItems(items.map(item => 
+          item.id === editingItem.id 
+            ? { ...item, ...updatedItemData }
+            : item
+        ))
       }
       
       // Show success toast
@@ -366,7 +501,7 @@ export default function ListPage() {
       setImagePreview(null)
     } catch (error) {
       console.error('Error updating item:', error)
-      toast.error('Update failed', 'Failed to update item. Please try again.')
+      toast.error('Update failed', 'Failed to update item')
     } finally {
       setIsUploading(false)
     }
@@ -853,16 +988,21 @@ export default function ListPage() {
                       onChange={(e) => setEditItemForm({ ...editItemForm, unit: e.target.value })}
                       className="w-full glass border-0 rounded-lg px-4 py-2 text-glass"
                     >
-                      <option value="piece">Piece</option>
+                      <option value="pcs">Piece</option>
                       <option value="lb">Pound</option>
                       <option value="kg">Kilogram</option>
                       <option value="oz">Ounce</option>
+                      <option value="g">Gram</option>
                       <option value="cup">Cup</option>
-                      <option value="liter">Liter</option>
-                      <option value="gallon">Gallon</option>
+                      <option value="L">Liter</option>
+                      <option value="ml">Milliliter</option>
                       <option value="dozen">Dozen</option>
                       <option value="bunch">Bunch</option>
-                      <option value="package">Package</option>
+                      <option value="pack">Package</option>
+                      <option value="box">Box</option>
+                      <option value="bottle">Bottle</option>
+                      <option value="can">Can</option>
+                      <option value="bag">Bag</option>
                     </select>
                   </div>
                 </div>
@@ -1192,16 +1332,21 @@ export default function ListPage() {
                       onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
                       className="w-full glass border-0 rounded-lg px-4 py-2 text-glass focus:ring-2 focus:ring-green-500/50"
                     >
-                      <option value="piece">Piece</option>
+                      <option value="pcs">Piece</option>
                       <option value="lb">Pound</option>
                       <option value="kg">Kilogram</option>
                       <option value="oz">Ounce</option>
+                      <option value="g">Gram</option>
                       <option value="cup">Cup</option>
-                      <option value="liter">Liter</option>
-                      <option value="gallon">Gallon</option>
+                      <option value="L">Liter</option>
+                      <option value="ml">Milliliter</option>
                       <option value="dozen">Dozen</option>
                       <option value="bunch">Bunch</option>
-                      <option value="package">Package</option>
+                      <option value="pack">Package</option>
+                      <option value="box">Box</option>
+                      <option value="bottle">Bottle</option>
+                      <option value="can">Can</option>
+                      <option value="bag">Bag</option>
                     </select>
                   </div>
                 </div>
@@ -1298,7 +1443,7 @@ export default function ListPage() {
                   onClick={() => {
                     setShowAddItem(false)
                     handleRemoveImage()
-                    setNewItem({ name: '', amount: 1, unit: 'piece', category: 'Other', notes: '', image_url: null })
+                    setNewItem({ name: '', amount: 1, unit: 'pcs', category: 'Other', notes: '', image_url: null })
                   }}
                   className="glass-button px-4 py-2"
                   disabled={isUploading}

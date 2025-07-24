@@ -23,10 +23,15 @@ import {
 } from 'lucide-react'
 import { getCurrentUser, signOut } from '@/lib/supabase/auth'
 import { useToast } from '@/lib/toast/context'
+import { 
+  getShoppingLists, 
+  updateShoppingList, 
+  deleteShoppingList, 
+  getUserAnalytics,
+  isDemoMode 
+} from '@/lib/supabase/client'
+import type { ShoppingList } from '@/lib/supabase/types'
 
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
-
-// Mock data for demo mode
 const mockAnalytics = {
   total_lists: 3,
   total_items: 24,
@@ -72,10 +77,17 @@ const mockShoppingLists = [
   }
 ]
 
+// Helper to check if a list is a mock list (demo mode)
+function isMockList(list: any): list is { itemCount: number; completedCount: number } {
+  return (
+    typeof list.itemCount === 'number' && typeof list.completedCount === 'number'
+  )
+}
+
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [analytics, setAnalytics] = useState(mockAnalytics)
-  const [shoppingLists, setShoppingLists] = useState(mockShoppingLists)
+  const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showEditList, setShowEditList] = useState(false)
   const [editingList, setEditingList] = useState<any>(null)
@@ -95,27 +107,101 @@ export default function DashboardPage() {
     checkAuth()
   }, [])
 
-  const checkAuth = async () => {
+  const fetchShoppingLists = async (userId: string) => {
+    console.log('Dashboard: fetchShoppingLists called with userId:', userId)
     try {
+      console.log('Dashboard: About to call getShoppingLists...')
+      const { data, error } = await getShoppingLists(userId)
+      console.log('Dashboard: getShoppingLists returned:', { data, error })
+      
+      if (error) {
+        console.error('Dashboard: Shopping lists fetch error:', error)
+        toast.error('Data loading failed', 'Unable to load your shopping lists. Please try refreshing the page.')
+        // Fallback to empty array so the UI doesn't break
+        setShoppingLists([])
+        return
+      }
+      
+      if (data) {
+        console.log('Dashboard: Processing data, count:', data.length)
+        // Transform data to include item counts
+        const listsWithCounts = data.map((list: any) => {
+          console.log('Dashboard: Processing list:', list.id, list.name)
+          return {
+            ...list,
+            itemCount: list.items?.length || 0,
+            completedCount: list.items?.filter((item: any) => item.is_checked)?.length || 0
+          }
+        })
+        console.log('Dashboard: Setting shopping lists:', listsWithCounts)
+        setShoppingLists(listsWithCounts)
+      }
+    } catch (error) {
+      console.error('Dashboard: Unexpected error fetching shopping lists:', error)
+      toast.error('Unexpected error', 'Something went wrong loading your data.')
+      setShoppingLists([])
+    }
+  }
+
+  const fetchAnalytics = async (userId: string) => {
+    console.log('Dashboard: fetchAnalytics called with userId:', userId)
+    try {
+      console.log('Dashboard: About to call getUserAnalytics...')
+      const { data, error } = await getUserAnalytics(userId)
+      console.log('Dashboard: getUserAnalytics returned:', { data, error })
+      
+      if (error) {
+        console.error('Dashboard: Analytics fetch error:', error)
+        // Fallback to mock analytics if function doesn't exist or fails
+        console.log('Dashboard: Using mock analytics due to error')
+        setAnalytics(mockAnalytics)
+      } else if (data) {
+        console.log('Dashboard: Setting real analytics data')
+        setAnalytics(data)
+      } else {
+        console.log('Dashboard: No analytics data, using mock')
+        setAnalytics(mockAnalytics)
+      }
+    } catch (error) {
+      console.error('Dashboard: Unexpected error fetching analytics:', error)
+      console.log('Dashboard: Using mock analytics due to exception')
+      setAnalytics(mockAnalytics)
+    }
+  }
+
+  const checkAuth = async () => {
+    console.log('Dashboard: checkAuth called')
+    try {
+      console.log('Dashboard: Getting current user...')
       const { user, error } = await getCurrentUser()
+      console.log('Dashboard: getCurrentUser returned:', { user: user?.id, error })
       
       if (error || !user) {
+        console.log('Dashboard: No user found, redirecting to auth')
         router.push('/auth')
         return
       }
 
+      console.log('Dashboard: Setting user:', user.id)
       setUser(user)
       
-      // In demo mode, we already have mock data
       if (!isDemoMode) {
-        // Here you would fetch real analytics and shopping lists
-        // setAnalytics(await fetchUserAnalytics())
-        // setShoppingLists(await fetchShoppingLists())
+        console.log('Dashboard: Not in demo mode, fetching real data...')
+        await Promise.all([
+          fetchShoppingLists(user.id),
+          fetchAnalytics(user.id)
+        ])
+        console.log('Dashboard: Data fetching completed')
+      } else {
+        console.log('Dashboard: In demo mode, using mock data')
+        setShoppingLists(mockShoppingLists as unknown as ShoppingList[])
+        setAnalytics(mockAnalytics)
       }
     } catch (error) {
-      console.error('Auth check failed:', error)
+      console.error('Dashboard: Auth check failed:', error)
       router.push('/auth')
     } finally {
+      console.log('Dashboard: Setting loading to false')
       setIsLoading(false)
     }
   }
@@ -163,8 +249,19 @@ export default function DashboardPage() {
           )
         )
       } else {
-        // TODO: Real implementation
-        // await updateShoppingList(editingList.id, editListForm)
+        const { data: updatedList, error } = await updateShoppingList(editingList.id, editListForm)
+        if (error || !updatedList) {
+          toast.error('Update failed', 'Failed to update list. Please try again.')
+          return
+        }
+        
+        setShoppingLists(lists => 
+          lists.map(list => 
+            list.id === editingList.id 
+              ? { ...list, ...updatedList }
+              : list
+          )
+        )
       }
       
       setShowEditList(false)
@@ -188,14 +285,22 @@ export default function DashboardPage() {
 
     try {
       if (isDemoMode) {
-        setShoppingLists(lists => lists.filter(l => l.id !== listToDelete.id))
+        // Simulate deletion in demo mode
+        await new Promise(resolve => setTimeout(resolve, 500))
+        setShoppingLists(lists => lists.filter(list => list.id !== listToDelete.id))
       } else {
-        // TODO: Real implementation
-        // await deleteShoppingList(listToDelete.id)
+        const { error } = await deleteShoppingList(listToDelete.id)
+        if (error) {
+          toast.error('Delete failed', 'Failed to delete list. Please try again.')
+          return
+        }
+        
+        setShoppingLists(lists => lists.filter(list => list.id !== listToDelete.id))
       }
+      
+      toast.success('List deleted', `${listToDelete.name} has been deleted`)
       setShowDeleteConfirm(false)
       setListToDelete(null)
-      toast.success('List deleted', `${listToDelete.name} has been removed`)
     } catch (error) {
       console.error('Error deleting list:', error)
       toast.error('Delete failed', 'Failed to delete list. Please try again.')
@@ -320,8 +425,8 @@ export default function DashboardPage() {
                         </div>
                         <p className="text-glass-muted text-sm mb-3">{list.description}</p>
                         <div className="flex items-center gap-4 text-xs text-glass-muted mb-3">
-                          <span>{list.itemCount} items</span>
-                          <span>{list.completedCount} completed</span>
+                          <span>{isDemoMode && isMockList(list) ? list.itemCount : 0} items</span>
+                          <span>{isDemoMode && isMockList(list) ? list.completedCount : 0} completed</span>
                           <span>{formatDate(list.created_at)}</span>
                         </div>
                         
@@ -332,13 +437,19 @@ export default function DashboardPage() {
                               <div 
                                 className="h-full bg-primary transition-all duration-300"
                                 style={{ 
-                                  width: `${getCompletionPercentage(list.completedCount, list.itemCount)}%` 
+                                  width: `${getCompletionPercentage(
+                                    isDemoMode && isMockList(list) ? list.completedCount : 0,
+                                    isDemoMode && isMockList(list) ? list.itemCount : 0
+                                  )}%` 
                                 }}
                               ></div>
                             </div>
                           </div>
                           <div className="text-sm font-bold text-primary">
-                            {getCompletionPercentage(list.completedCount, list.itemCount)}%
+                            {getCompletionPercentage(
+                              isDemoMode && isMockList(list) ? list.completedCount : 0,
+                              isDemoMode && isMockList(list) ? list.itemCount : 0
+                            )}%
                           </div>
                         </div>
                       </div>

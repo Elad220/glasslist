@@ -12,8 +12,8 @@ import {
   Home
 } from 'lucide-react'
 import { getCurrentUser } from '@/lib/supabase/auth'
-
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
+import { getShoppingListByShareCode, joinListByShareCode, isDemoMode } from '@/lib/supabase/client'
+import { useToast } from '@/lib/toast/context'
 
 // Mock data for demo mode
 const mockListData = {
@@ -30,6 +30,7 @@ export default function JoinListPage() {
   const params = useParams()
   const router = useRouter()
   const shareCode = params.shareCode as string
+  const toast = useToast()
 
   const [user, setUser] = useState<any>(null)
   const [listData, setListData] = useState<any>(null)
@@ -43,7 +44,7 @@ export default function JoinListPage() {
       try {
         if (!isDemoMode) {
           // In real mode, check authentication and load list data
-          const currentUser = await getCurrentUser()
+          const { user: currentUser } = await getCurrentUser()
           if (!currentUser) {
             // Redirect to auth with return URL
             router.push(`/auth?returnTo=${encodeURIComponent(`/join/${shareCode}`)}`)
@@ -51,17 +52,29 @@ export default function JoinListPage() {
           }
           setUser(currentUser)
           
-          // TODO: Load actual list data from Supabase using share code
-          // const { data, error } = await supabase
-          //   .from('shopping_lists')
-          //   .select('id, name, description, created_by, list_members(count)')
-          //   .eq('share_code', shareCode)
-          //   .eq('is_shared', true)
-          //   .single()
+          // Load actual list data from Supabase using share code
+          const { data: listData, error } = await getShoppingListByShareCode(shareCode)
+          if (error || !listData) {
+            setErrorMessage('Invalid or expired share link')
+            setJoinStatus('error')
+            setIsLoading(false)
+            return
+          }
+          
+          // Transform the data to match expected format
+          setListData({
+            id: listData.id,
+            name: listData.name,
+            description: listData.description,
+            created_by: 'List Owner', // We could enhance this with actual user lookup
+            member_count: Array.isArray(listData.list_members) ? listData.list_members.length : 0,
+            item_count: Array.isArray(listData.items) ? listData.items.length : 0,
+            created_at: listData.created_at
+          })
+        } else {
+          // Use demo data
+          setListData(mockListData)
         }
-        
-        // Use demo data
-        setListData(mockListData)
       } catch (error) {
         console.error('Error loading list data:', error)
         setErrorMessage('Invalid or expired share link')
@@ -94,21 +107,27 @@ export default function JoinListPage() {
           router.push(`/list/${listData.id}`)
         }, 2000)
       } else {
-        // TODO: Real implementation
-        // const { data, error } = await supabase.rpc('join_list_by_share_code', {
-        //   share_code_input: shareCode
-        // })
+        const { data: joinResult, error } = await joinListByShareCode(shareCode, user.id)
         
-        // if (error) throw error
-        // if (data.success) {
-        //   setJoinStatus('success')
-        //   setTimeout(() => {
-        //     router.push(`/list/${data.list_id}`)
-        //   }, 2000)
-        // } else {
-        //   setErrorMessage(data.error)
-        //   setJoinStatus('error')
-        // }
+        if (error) {
+          setErrorMessage(error)
+          setJoinStatus('error')
+        } else if (joinResult) {
+          setJoinStatus('success')
+          
+          if (joinResult.already_member) {
+            toast.success('Already a member', 'You are already a member of this list')
+          } else {
+            toast.success('Joined successfully', 'You have been added to the list')
+          }
+          
+          setTimeout(() => {
+            router.push(`/list/${joinResult.list_id}`)
+          }, 2000)
+        } else {
+          setErrorMessage('Failed to join list')
+          setJoinStatus('error')
+        }
       }
     } catch (error) {
       console.error('Error joining list:', error)
