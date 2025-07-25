@@ -173,17 +173,8 @@ export default function DashboardPage() {
       
       if (data) {
         console.log('Dashboard: Processing data, count:', data.length)
-        // Transform data to include item counts
-        const listsWithCounts = data.map((list: any) => {
-          console.log('Dashboard: Processing list:', list.id, list.name)
-          return {
-            ...list,
-            itemCount: list.items?.length || 0,
-            completedCount: list.items?.filter((item: any) => item.is_checked)?.length || 0
-          }
-        })
-        console.log('Dashboard: Setting shopping lists:', listsWithCounts)
-        setShoppingLists(listsWithCounts)
+        console.log('Dashboard: Setting shopping lists:', data)
+        setShoppingLists(data)
       }
     } catch (error) {
       console.error('Dashboard: Unexpected error fetching shopping lists:', error)
@@ -613,6 +604,8 @@ export default function DashboardPage() {
 
             // Import items if they exist
             if (listData.items && Array.isArray(listData.items) && listData.items.length > 0) {
+              console.log('Processing items for list:', listData.name, 'Items:', listData.items)
+              
               const itemsToCreate = listData.items.map((item: any, index: number) => ({
                 list_id: newList.id,
                 name: item.name,
@@ -624,11 +617,17 @@ export default function DashboardPage() {
                 position: index
               }))
 
-              const { error: itemsError } = await createManyItems(itemsToCreate)
+              console.log('Items to create:', itemsToCreate)
+
+              const { data: createdItems, error: itemsError } = await createManyItems(itemsToCreate)
               if (itemsError) {
                 console.error('Error creating items for list:', itemsError)
                 // Continue even if items fail - the list was created successfully
+              } else {
+                console.log('Successfully created items:', createdItems?.length || 0)
               }
+            } else {
+              console.log('No items to import for list:', listData.name)
             }
 
             importedCount++

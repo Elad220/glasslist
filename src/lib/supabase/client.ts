@@ -39,10 +39,30 @@ export async function getShoppingLists(userId: string) {
   try {
     console.log('Attempting to fetch shopping lists...')
     
-    // Simple query with explicit column selection
+    // Fetch lists with their items
     const { data, error } = await supabase
       .from('shopping_lists')
-      .select('id, user_id, name, description, is_shared, is_archived, created_at, updated_at')
+      .select(`
+        id, 
+        user_id, 
+        name, 
+        description, 
+        is_shared, 
+        is_archived, 
+        created_at, 
+        updated_at,
+        items (
+          id,
+          name,
+          amount,
+          unit,
+          category,
+          notes,
+          is_checked,
+          position,
+          created_at
+        )
+      `)
       .eq('user_id', userId)
       .eq('is_archived', false)
       .order('created_at', { ascending: false })
@@ -54,14 +74,16 @@ export async function getShoppingLists(userId: string) {
       return { data: null, error: error.message || 'Database query failed' }
     }
 
-    // Return lists with empty items array for now
-    const listsWithEmptyItems = (data || []).map(list => ({
+    // Process the data to ensure items are properly structured
+    const listsWithItems = (data || []).map(list => ({
       ...list,
-      items: []
+      items: list.items || [],
+      itemCount: list.items?.length || 0,
+      completedCount: list.items?.filter((item: any) => item.is_checked)?.length || 0
     }))
 
-    console.log('Returning lists:', listsWithEmptyItems)
-    return { data: listsWithEmptyItems, error: null }
+    console.log('Returning lists with items:', listsWithItems)
+    return { data: listsWithItems, error: null }
 
   } catch (error) {
     console.error('getShoppingLists unexpected error:', error)
@@ -284,14 +306,29 @@ export async function createItem(item: NewItem) {
 }
 
 export async function createManyItems(items: NewItem[]) {
+  console.log('createManyItems called with items:', items)
+  
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
-  const { data, error } = await supabase
-    .from('items')
-    .insert(items)
-    .select()
+  try {
+    const { data, error } = await supabase
+      .from('items')
+      .insert(items)
+      .select()
 
-  return { data, error }
+    console.log('createManyItems result:', { data: data?.length, error })
+    
+    if (error) {
+      console.error('createManyItems Supabase error:', error)
+      return { data: null, error: error.message || 'Failed to create items' }
+    }
+
+    return { data, error: null }
+  } catch (error) {
+    console.error('createManyItems unexpected error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unexpected error occurred'
+    return { data: null, error: errorMessage }
+  }
 }
 
 export async function updateItem(itemId: string, updates: UpdateItem) {
