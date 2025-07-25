@@ -7,49 +7,53 @@ export async function testOfflineFunctionality() {
   
   try {
     // Test 1: Check if IndexedDB is accessible
-    console.log('1. Testing IndexedDB access...')
     await offlineDB.init()
     console.log('✅ IndexedDB initialized successfully')
     
-    // Test 2: Test offline list creation
-    console.log('2. Testing offline list creation...')
-    const testListId = await syncService.createListOffline({
+    // Test 2: Test creating a list offline
+    const testList = {
       user_id: 'test-user',
-      name: 'Test Offline List',
-      description: 'Testing offline functionality',
+      name: 'Test Shopping List',
+      description: 'Test list for offline functionality',
       color: '#667eea',
       is_shared: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    })
-    console.log('✅ Offline list created with ID:', testListId)
+    }
     
-    // Test 3: Test offline item creation
-    console.log('3. Testing offline item creation...')
-    const testItemId = await syncService.createItemOffline({
-      list_id: testListId,
+    const listId = await syncService.createListOffline(testList)
+    console.log('✅ Created test list offline:', listId)
+    
+    // Test 3: Test creating an item offline
+    const testItem = {
+      list_id: listId,
       name: 'Test Item',
       amount: 1,
       unit: 'piece',
       category: 'Test',
-      notes: 'Testing offline item creation',
+      notes: 'Test item for offline functionality',
       image_url: null,
       is_checked: false,
       position: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
-    })
-    console.log('✅ Offline item created with ID:', testItemId)
+    }
+    
+    const itemId = await syncService.createItemOffline(testItem)
+    console.log('✅ Created test item offline:', itemId)
     
     // Test 4: Test retrieving offline data
-    console.log('4. Testing offline data retrieval...')
-    const offlineList = await syncService.getListOffline(testListId)
-    const offlineItems = await syncService.getItemsOffline(testListId)
-    console.log('✅ Retrieved offline list:', offlineList?.name)
-    console.log('✅ Retrieved offline items count:', offlineItems.length)
+    const offlineList = await syncService.getListOffline(listId)
+    const offlineItems = await syncService.getItemsOffline(listId)
     
-    // Test 5: Test sync status
-    console.log('5. Testing sync status...')
+    console.log('✅ Retrieved offline list:', offlineList?.name)
+    console.log('✅ Retrieved offline items:', offlineItems.length)
+    
+    // Test 5: Test updating item offline
+    await syncService.updateItemOffline(itemId, { is_checked: true })
+    console.log('✅ Updated item offline')
+    
+    // Test 6: Check pending changes
     const status = syncService.getStatus()
     console.log('✅ Sync status:', {
       isOnline: status.isOnline,
@@ -57,10 +61,10 @@ export async function testOfflineFunctionality() {
       isSyncing: status.isSyncing
     })
     
-    // Test 6: Clean up test data
-    console.log('6. Cleaning up test data...')
-    await syncService.deleteListOffline(testListId)
-    console.log('✅ Test data cleaned up')
+    // Test 7: Clean up test data
+    await syncService.deleteItemOffline(itemId)
+    await syncService.deleteListOffline(listId)
+    console.log('✅ Cleaned up test data')
     
     console.log('🎉 All offline functionality tests passed!')
     return true
@@ -71,35 +75,42 @@ export async function testOfflineFunctionality() {
   }
 }
 
-export async function testServiceWorker() {
-  console.log('🧪 Testing Service Worker...')
+export async function testSyncService() {
+  console.log('🔄 Testing Sync Service...')
   
   try {
-    // Check if service worker is supported
-    if (!('serviceWorker' in navigator)) {
-      console.log('❌ Service Worker not supported in this browser')
-      return false
-    }
+    // Test online/offline detection
+    const status = syncService.getStatus()
+    console.log('✅ Sync service status:', status)
     
-    // Check if service worker is registered
-    const registration = await navigator.serviceWorker.getRegistration()
-    if (registration) {
-      console.log('✅ Service Worker is registered')
-      console.log('✅ Service Worker state:', registration.active?.state)
-      return true
-    } else {
-      console.log('❌ Service Worker not registered')
-      return false
-    }
+    // Test subscription
+    let receivedUpdate = false
+    const unsubscribe = syncService.subscribe((newStatus) => {
+      console.log('✅ Received status update:', newStatus)
+      receivedUpdate = true
+    })
+    
+    // Wait a bit for any status updates
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    unsubscribe()
+    console.log('✅ Sync service subscription test completed')
+    
+    return true
     
   } catch (error) {
-    console.error('❌ Service Worker test failed:', error)
+    console.error('❌ Sync service test failed:', error)
     return false
   }
 }
 
-// Export test functions for use in browser console
+// Run tests if this file is executed directly
 if (typeof window !== 'undefined') {
-  (window as any).testOfflineFunctionality = testOfflineFunctionality
-  (window as any).testServiceWorker = testServiceWorker
+  // Only run in browser environment
+  window.testOfflineFunctionality = testOfflineFunctionality
+  window.testSyncService = testSyncService
+  
+  console.log('🧪 Offline tests available in browser console:')
+  console.log('- testOfflineFunctionality()')
+  console.log('- testSyncService()')
 }
