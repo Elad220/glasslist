@@ -37,6 +37,7 @@ import {
   updateShoppingList, 
   deleteShoppingList, 
   getUserAnalytics,
+  getListItems,
   isDemoMode 
 } from '@/lib/supabase/client'
 import type { ShoppingList } from '@/lib/supabase/types'
@@ -396,15 +397,46 @@ export default function DashboardPage() {
     }
   }
 
-  const handleExportData = () => {
+  const handleExportData = async () => {
     try {
+      // For demo mode, use existing data
+      if (isDemoMode) {
+        const exportData = {
+          lists: shoppingLists,
+          analytics: analytics,
+          exportDate: new Date().toISOString()
+        }
+        const dataStr = JSON.stringify(exportData, null, 2)
+        const dataBlob = new Blob([dataStr], { type: 'application/json; charset=utf-8' })
+        const url = URL.createObjectURL(dataBlob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `glasslist-data-${new Date().toISOString().split('T')[0]}.json`
+        link.click()
+        URL.revokeObjectURL(url)
+        toast.success('Data exported', 'Your shopping lists have been exported successfully')
+        return
+      }
+
+      // For real mode, fetch items for all lists
+      const listsWithItems = await Promise.all(
+        shoppingLists.map(async (list) => {
+          const { data: itemsData, error: itemsError } = await getListItems(list.id)
+          if (itemsError) {
+            console.error(`Error fetching items for list ${list.id}:`, itemsError)
+            return { ...list, items: [] }
+          }
+          return { ...list, items: itemsData || [] }
+        })
+      )
+
       const exportData = {
-        lists: shoppingLists,
+        lists: listsWithItems,
         analytics: analytics,
         exportDate: new Date().toISOString()
       }
       const dataStr = JSON.stringify(exportData, null, 2)
-      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const dataBlob = new Blob([dataStr], { type: 'application/json; charset=utf-8' })
       const url = URL.createObjectURL(dataBlob)
       const link = document.createElement('a')
       link.href = url
@@ -431,7 +463,30 @@ export default function DashboardPage() {
     event.stopPropagation()
 
     try {
-      // For demo mode, create mock export data
+      let items = []
+      
+      if (isDemoMode && isMockList(list)) {
+        // For demo mode, create mock export data
+        items = Array.from({ length: list.itemCount }, (_, i) => ({
+          name: `Item ${i + 1}`,
+          amount: 1,
+          unit: 'pcs',
+          category: 'Other',
+          notes: '',
+          is_checked: i < list.completedCount,
+          image_url: null
+        }))
+      } else {
+        // For real mode, fetch actual items
+        const { data: itemsData, error: itemsError } = await getListItems(list.id)
+        if (itemsError) {
+          console.error('Error fetching items for export:', itemsError)
+          toast.error('Export failed', 'Unable to fetch list items')
+          return
+        }
+        items = itemsData || []
+      }
+
       const exportData = {
         list: {
           name: list.name,
@@ -439,26 +494,22 @@ export default function DashboardPage() {
           is_shared: list.is_shared,
           created_at: list.created_at
         },
-        items: isDemoMode && isMockList(list) ? 
-          Array.from({ length: list.itemCount }, (_, i) => ({
-            name: `Item ${i + 1}`,
-            amount: 1,
-            unit: 'pcs',
-            category: 'Other',
-            notes: '',
-            is_checked: i < list.completedCount,
-            image_url: null
-          })) : (list.items || []),
+        items: items,
         exportDate: new Date().toISOString(),
         exportType: 'single-list'
       }
       
       const dataStr = JSON.stringify(exportData, null, 2)
-      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const dataBlob = new Blob([dataStr], { type: 'application/json; charset=utf-8' })
       const url = URL.createObjectURL(dataBlob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `${list.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`
+      // Create a safe filename that preserves Hebrew characters but removes problematic ones
+      const safeName = list.name
+        .replace(/[<>:"/\\|?*]/g, '_') // Remove Windows filename invalid characters
+        .replace(/\s+/g, '_') // Replace spaces with underscores
+        .substring(0, 50) // Limit length
+      link.download = `${safeName}-${new Date().toISOString().split('T')[0]}.json`
       link.click()
       URL.revokeObjectURL(url)
       
