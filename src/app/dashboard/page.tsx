@@ -532,14 +532,32 @@ export default function DashboardPage() {
       const fileContent = await importFile.text()
       const importData = JSON.parse(fileContent)
 
-      // Validate the imported data structure
-      if (!importData.lists || !Array.isArray(importData.lists)) {
-        throw new Error('Invalid file format: Missing or invalid lists array')
-      }
+      let validLists: any[] = []
 
-      const validLists = importData.lists.filter((list: any) => 
-        list.name && typeof list.name === 'string'
-      )
+      // Check if it's a single list import (direct list object)
+      if (importData.name && typeof importData.name === 'string') {
+        // Single list format
+        validLists = [importData]
+      } 
+      // Check if it's a multiple lists import (lists array)
+      else if (importData.lists && Array.isArray(importData.lists)) {
+        validLists = importData.lists.filter((list: any) => 
+          list.name && typeof list.name === 'string'
+        )
+      }
+      // Check if it's a single list wrapped in a list object
+      else if (importData.list && importData.list.name && typeof importData.list.name === 'string') {
+        validLists = [importData.list]
+      }
+      // Check if it's an array of lists directly
+      else if (Array.isArray(importData) && importData.length > 0 && importData[0].name) {
+        validLists = importData.filter((list: any) => 
+          list.name && typeof list.name === 'string'
+        )
+      }
+      else {
+        throw new Error('Invalid file format: File must contain a shopping list or lists array')
+      }
 
       if (validLists.length === 0) {
         throw new Error('No valid lists found in the imported file')
@@ -568,7 +586,7 @@ export default function DashboardPage() {
         // Real implementation would handle actual data import
         toast.info(
           'Import ready', 
-          `Found ${validLists.length} valid lists. This feature will import your data when you sign up!`
+          `Found ${validLists.length} valid list${validLists.length > 1 ? 's' : ''}. This feature will import your data when you sign up!`
         )
       }
 
@@ -893,7 +911,7 @@ export default function DashboardPage() {
                   className="glass-button w-full p-3 flex items-center gap-2 justify-center"
                 >
                   <Upload className="w-4 h-4" />
-                  Import Data
+                  Import Lists
                 </button>
 
                 <div className="pt-2 border-t border-glass-white-light/30">
@@ -1246,7 +1264,7 @@ export default function DashboardPage() {
             
             <div className="mb-6">
               <p className="text-glass-muted text-sm mb-4">
-                Import your shopping lists from a previously exported JSON file or compatible format.
+                Import your shopping lists from a previously exported JSON file. Supports both single list and multiple lists formats.
               </p>
               
               <div className="border-2 border-dashed border-glass-white-light/30 rounded-lg p-6 text-center">
@@ -1315,9 +1333,11 @@ export default function DashboardPage() {
             <div className="mt-4 p-3 glass rounded-lg">
               <h4 className="font-medium text-glass-heading text-sm mb-2">Supported formats:</h4>
               <ul className="text-xs text-glass-muted space-y-1">
+                <li>• Single shopping list objects</li>
+                <li>• Multiple lists in "lists" array</li>
+                <li>• Single list wrapped in "list" object</li>
+                <li>• Direct array of shopping lists</li>
                 <li>• GlassList export files (.json)</li>
-                <li>• Lists with items and metadata</li>
-                <li>• Files must contain a "lists" array</li>
               </ul>
             </div>
           </div>

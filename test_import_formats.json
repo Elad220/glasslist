@@ -1,0 +1,111 @@
+{
+  "description": "Test file demonstrating different import formats supported by the dashboard",
+  "formats": {
+    "single_list": {
+      "name": "Single List Format",
+      "description": "A single shopping list object",
+      "items": [
+        {
+          "id": "item1",
+          "name": "Milk",
+          "quantity": 1,
+          "is_checked": false
+        },
+        {
+          "id": "item2", 
+          "name": "Bread",
+          "quantity": 2,
+          "is_checked": true
+        }
+      ],
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    },
+    "multiple_lists": {
+      "lists": [
+        {
+          "name": "Weekly Groceries",
+          "description": "Regular weekly shopping items",
+          "items": [
+            {
+              "id": "item1",
+              "name": "Milk",
+              "quantity": 1,
+              "is_checked": false
+            },
+            {
+              "id": "item2",
+              "name": "Bread", 
+              "quantity": 2,
+              "is_checked": true
+            }
+          ]
+        },
+        {
+          "name": "Party Supplies",
+          "description": "Items for weekend party",
+          "items": [
+            {
+              "id": "item3",
+              "name": "Chips",
+              "quantity": 3,
+              "is_checked": false
+            },
+            {
+              "id": "item4",
+              "name": "Soda",
+              "quantity": 6,
+              "is_checked": false
+            }
+          ]
+        }
+      ]
+    },
+    "wrapped_single_list": {
+      "list": {
+        "name": "Wrapped Single List",
+        "description": "A single list wrapped in a list object",
+        "items": [
+          {
+            "id": "item1",
+            "name": "Apples",
+            "quantity": 5,
+            "is_checked": false
+          },
+          {
+            "id": "item2",
+            "name": "Bananas",
+            "quantity": 6,
+            "is_checked": true
+          }
+        ]
+      }
+    },
+    "direct_array": [
+      {
+        "name": "Direct Array List 1",
+        "description": "First list in direct array format",
+        "items": [
+          {
+            "id": "item1",
+            "name": "Chicken",
+            "quantity": 2,
+            "is_checked": false
+          }
+        ]
+      },
+      {
+        "name": "Direct Array List 2", 
+        "description": "Second list in direct array format",
+        "items": [
+          {
+            "id": "item2",
+            "name": "Rice",
+            "quantity": 1,
+            "is_checked": true
+          }
+        ]
+      }
+    ]
+  }
+}
