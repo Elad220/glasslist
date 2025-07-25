@@ -13,7 +13,6 @@ import {
   Users, 
   Share2,
   Eye,
-  Settings,
   Sparkles,
   Search,
   Filter,
@@ -624,9 +623,6 @@ export default function ListPage() {
                 </span>
               </button>
               
-              <button className="glass-button p-3" title="List settings">
-                <Settings className="w-5 h-5" />
-              </button>
             </div>
           </div>
 

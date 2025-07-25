@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/lib/toast/context";
+import LayoutWrapper from "@/components/LayoutWrapper";
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
@@ -28,7 +29,7 @@ export default function RootLayout({
             </div>
           )}
           <div className={isDemoMode ? 'pt-10' : ''}>
-            {children}
+            <LayoutWrapper>{children}</LayoutWrapper>
           </div>
         </ToastProvider>
       </body>

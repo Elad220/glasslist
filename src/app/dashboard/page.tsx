@@ -7,8 +7,6 @@ import {
   ShoppingCart, 
   Plus, 
   BarChart3, 
-  Settings, 
-  LogOut, 
   User,
   Clock,
   CheckCircle,
@@ -21,7 +19,7 @@ import {
   Globe,
   Lock
 } from 'lucide-react'
-import { getCurrentUser, signOut } from '@/lib/supabase/auth'
+import { getCurrentUser } from '@/lib/supabase/auth'
 import { useToast } from '@/lib/toast/context'
 import { 
   getShoppingLists, 
@@ -206,10 +204,7 @@ export default function DashboardPage() {
     }
   }
 
-  const handleSignOut = async () => {
-    await signOut()
-    router.push('/')
-  }
+  
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -344,15 +339,6 @@ export default function DashboardPage() {
             </div>
             
             <div className="flex items-center gap-3">
-              <Link href="/settings" className="glass-button p-3">
-                <Settings className="w-5 h-5" />
-              </Link>
-              <button 
-                onClick={handleSignOut}
-                className="glass-button p-3 hover:bg-red-100/20"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
             </div>
           </div>
         </div>
@@ -519,13 +505,6 @@ export default function DashboardPage() {
                   Create New List
                 </Link>
                 
-                <Link 
-                  href="/settings"
-                  className="glass-button w-full p-3 flex items-center gap-2 justify-center"
-                >
-                  <Settings className="w-4 h-4" />
-                  Settings
-                </Link>
               </div>
             </div>
           </div>

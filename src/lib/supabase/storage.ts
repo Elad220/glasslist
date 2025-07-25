@@ -1,6 +1,6 @@
 import { supabase } from './client'
 
-const BUCKET_NAME = 'shopping-list-images'
+const BUCKET_NAME = 'item-images'
 
 export interface UploadResult {
   success: boolean
