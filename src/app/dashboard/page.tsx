@@ -40,7 +40,7 @@ import {
   getListItems,
   isDemoMode 
 } from '@/lib/supabase/client'
-import type { ShoppingList } from '@/lib/supabase/types'
+import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
 
 const mockAnalytics = {
   total_lists: 3,
@@ -126,7 +126,7 @@ function isMockList(list: any): list is { itemCount: number; completedCount: num
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [analytics, setAnalytics] = useState(mockAnalytics)
-  const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([])
+  const [shoppingLists, setShoppingLists] = useState<ShoppingListWithCounts[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showEditList, setShowEditList] = useState(false)
   const [editingList, setEditingList] = useState<any>(null)
@@ -172,7 +172,7 @@ export default function DashboardPage() {
       if (data) {
         console.log('Dashboard: Processing data, count:', data.length)
         // Transform data to include item counts
-        const listsWithCounts = data.map((list: any) => {
+        const listsWithCounts: ShoppingListWithCounts[] = data.map((list: any) => {
           console.log('Dashboard: Processing list:', list.id, list.name)
           return {
             ...list,
@@ -241,7 +241,7 @@ export default function DashboardPage() {
         console.log('Dashboard: Data fetching completed')
       } else {
         console.log('Dashboard: In demo mode, using mock data')
-        setShoppingLists(mockShoppingLists as unknown as ShoppingList[])
+        setShoppingLists(mockShoppingLists as unknown as ShoppingListWithCounts[])
         setAnalytics(mockAnalytics)
       }
     } catch (error) {
@@ -713,8 +713,8 @@ export default function DashboardPage() {
                         </div>
                         <p className="text-glass-muted text-sm mb-3">{list.description}</p>
                         <div className="flex items-center gap-4 text-xs text-glass-muted mb-3">
-                          <span>{isDemoMode && isMockList(list) ? list.itemCount : 0} items</span>
-                          <span>{isDemoMode && isMockList(list) ? list.completedCount : 0} completed</span>
+                          <span>{list.itemCount || 0} items</span>
+                          <span>{list.completedCount || 0} completed</span>
                           <span>{formatDate(list.created_at)}</span>
                         </div>
                         
@@ -726,8 +726,8 @@ export default function DashboardPage() {
                                 className="h-full bg-primary transition-all duration-300"
                                 style={{ 
                                   width: `${getCompletionPercentage(
-                                    isDemoMode && isMockList(list) ? list.completedCount : 0,
-                                    isDemoMode && isMockList(list) ? list.itemCount : 0
+                                    list.completedCount || 0,
+                                    list.itemCount || 0
                                   )}%` 
                                 }}
                               ></div>
@@ -735,8 +735,8 @@ export default function DashboardPage() {
                           </div>
                           <div className="text-sm font-bold text-primary">
                             {getCompletionPercentage(
-                              isDemoMode && isMockList(list) ? list.completedCount : 0,
-                              isDemoMode && isMockList(list) ? list.itemCount : 0
+                              list.completedCount || 0,
+                              list.itemCount || 0
                             )}%
                           </div>
                         </div>

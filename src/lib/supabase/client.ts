@@ -39,10 +39,32 @@ export async function getShoppingLists(userId: string) {
   try {
     console.log('Attempting to fetch shopping lists...')
     
-    // Simple query with explicit column selection
+    // Fetch lists with their items using a join
     const { data, error } = await supabase
       .from('shopping_lists')
-      .select('id, user_id, name, description, is_shared, is_archived, created_at, updated_at')
+      .select(`
+        id, 
+        user_id, 
+        name, 
+        description, 
+        is_shared, 
+        is_archived, 
+        created_at, 
+        updated_at,
+        items (
+          id,
+          name,
+          amount,
+          unit,
+          category,
+          notes,
+          image_url,
+          is_checked,
+          position,
+          created_at,
+          updated_at
+        )
+      `)
       .eq('user_id', userId)
       .eq('is_archived', false)
       .order('created_at', { ascending: false })
@@ -54,14 +76,14 @@ export async function getShoppingLists(userId: string) {
       return { data: null, error: error.message || 'Database query failed' }
     }
 
-    // Return lists with empty items array for now
-    const listsWithEmptyItems = (data || []).map(list => ({
+    // Transform the data to match expected format
+    const listsWithItems = (data || []).map(list => ({
       ...list,
-      items: []
+      items: list.items || []
     }))
 
-    console.log('Returning lists:', listsWithEmptyItems)
-    return { data: listsWithEmptyItems, error: null }
+    console.log('Returning lists with items:', listsWithItems)
+    return { data: listsWithItems, error: null }
 
   } catch (error) {
     console.error('getShoppingLists unexpected error:', error)

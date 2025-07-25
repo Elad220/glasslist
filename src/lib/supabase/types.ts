@@ -243,6 +243,11 @@ export type ShoppingListWithItems = ShoppingList & {
   items: Item[]
 }
 
+export type ShoppingListWithCounts = ShoppingList & {
+  itemCount: number
+  completedCount: number
+}
+
 export type ItemWithList = Item & {
   shopping_list: ShoppingList
 }
