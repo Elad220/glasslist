@@ -731,7 +731,7 @@ export default function ListPage() {
         }
       } else {
         // Desktop approach: Direct download
-        const dataBlob = new Blob([dataStr], { type: 'application/json' })
+        const dataBlob = new Blob([dataStr], { type: 'application/json; charset=utf-8' })
         const url = URL.createObjectURL(dataBlob)
         const link = document.createElement('a')
         link.href = url
