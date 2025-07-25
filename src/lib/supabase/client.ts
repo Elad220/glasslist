@@ -49,18 +49,23 @@ export async function getShoppingLists(userId: string) {
         description, 
         is_shared, 
         is_archived, 
+        share_code,
+        created_by,
         created_at, 
         updated_at,
         items (
           id,
+          list_id,
           name,
           amount,
           unit,
           category,
           notes,
+          image_url,
           is_checked,
           position,
-          created_at
+          created_at,
+          updated_at
         )
       `)
       .eq('user_id', userId)

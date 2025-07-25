@@ -42,7 +42,13 @@ import {
   createManyItems,
   isDemoMode 
 } from '@/lib/supabase/client'
-import type { ShoppingList } from '@/lib/supabase/types'
+import type { ShoppingList, ShoppingListWithItems } from '@/lib/supabase/types'
+
+// Extended type for dashboard lists with item counts
+type DashboardShoppingList = ShoppingListWithItems & {
+  itemCount: number
+  completedCount: number
+}
 
 const mockAnalytics = {
   total_lists: 3,
@@ -128,7 +134,7 @@ function isMockList(list: any): list is { itemCount: number; completedCount: num
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
   const [analytics, setAnalytics] = useState(mockAnalytics)
-  const [shoppingLists, setShoppingLists] = useState<ShoppingList[]>([])
+  const [shoppingLists, setShoppingLists] = useState<DashboardShoppingList[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showEditList, setShowEditList] = useState(false)
   const [editingList, setEditingList] = useState<any>(null)
@@ -234,7 +240,7 @@ export default function DashboardPage() {
         console.log('Dashboard: Data fetching completed')
       } else {
         console.log('Dashboard: In demo mode, using mock data')
-        setShoppingLists(mockShoppingLists as unknown as ShoppingList[])
+        setShoppingLists(mockShoppingLists as unknown as DashboardShoppingList[])
         setAnalytics(mockAnalytics)
       }
     } catch (error) {
