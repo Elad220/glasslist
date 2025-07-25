@@ -30,6 +30,8 @@ import {
   Copy,
   HelpCircle
 } from 'lucide-react'
+import UndoRedoButtons from '@/components/UndoRedoButtons'
+import UndoRedoHistory from '@/components/UndoRedoHistory'
 import { getCurrentUser } from '@/lib/supabase/auth'
 import { useToast } from '@/lib/toast/context'
 import { 
@@ -40,6 +42,7 @@ import {
   getListItems,
   isDemoMode 
 } from '@/lib/supabase/client'
+import { useListActions } from '@/lib/undo-redo/hooks'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
 
 const mockAnalytics = {
@@ -142,6 +145,7 @@ export default function DashboardPage() {
   const [importProgress, setImportProgress] = useState(false)
   const router = useRouter()
   const toast = useToast()
+  const { deleteListAction, updateListAction } = useListActions()
   
   // Edit form state
   const [editListForm, setEditListForm] = useState({
@@ -282,6 +286,19 @@ export default function DashboardPage() {
     if (!editListForm.name.trim() || !editingList) return
 
     try {
+      // Add to undo history before update
+      const previousState = {
+        name: editingList.name,
+        description: editingList.description,
+        is_shared: editingList.is_shared
+      }
+      const newState = {
+        name: editListForm.name,
+        description: editListForm.description,
+        is_shared: editListForm.is_shared
+      }
+      updateListAction(editingList.id, previousState, newState, editingList.name)
+
       if (isDemoMode) {
         // Simulate saving in demo mode
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -328,6 +345,9 @@ export default function DashboardPage() {
     if (!listToDelete) return
 
     try {
+      // Add to undo history before deletion
+      deleteListAction(listToDelete.id, listToDelete)
+
       if (isDemoMode) {
         // Simulate deletion in demo mode
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -641,6 +661,8 @@ export default function DashboardPage() {
             </div>
             
             <div className="flex items-center gap-3">
+              <UndoRedoButtons size="sm" />
+              <UndoRedoHistory />
             </div>
           </div>
         </div>

@@ -39,6 +39,8 @@ import {
   Upload,
   CheckCircle
 } from 'lucide-react'
+import UndoRedoButtons from '@/components/UndoRedoButtons'
+import UndoRedoHistory from '@/components/UndoRedoHistory'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI } from '@/lib/ai/gemini'
@@ -54,6 +56,7 @@ import {
   isDemoMode,
   createManyItems
 } from '@/lib/supabase/client'
+import { useItemActions } from '@/lib/undo-redo/hooks'
 
 // Category icons mapping
 const categoryIcons: { [key: string]: any } = {
@@ -110,6 +113,7 @@ export default function ListPage() {
   const router = useRouter()
   const listId = params.listId as string
   const toast = useToast()
+  const { addItemAction, deleteItemAction, updateItemAction, toggleItemAction } = useItemActions()
 
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
@@ -234,6 +238,9 @@ export default function ListPage() {
 
     const newCheckedState = !item.is_checked
 
+    // Add to undo history before toggle
+    toggleItemAction(listId, itemId, item.is_checked, newCheckedState, item.name)
+
     // Optimistic update
     setItems(items.map(item => 
       item.id === itemId ? { ...item, is_checked: newCheckedState } : item
@@ -325,6 +332,8 @@ export default function ListPage() {
         }
         
         setItems([...items, createdItem])
+        // Add to undo history
+        addItemAction(listId, itemData, createdItem.id)
       } else {
         // Demo mode
         const item = {
@@ -335,6 +344,8 @@ export default function ListPage() {
           position: 0
         }
         setItems([...items, item])
+        // Add to undo history
+        addItemAction(listId, itemData, item.id)
       }
       
       // Show success toast
@@ -356,6 +367,9 @@ export default function ListPage() {
   const handleDeleteItem = async (itemId: string) => {
     const item = items.find(item => item.id === itemId)
     if (!item) return
+
+    // Add to undo history before deletion
+    deleteItemAction(listId, item, itemId)
 
     // Optimistic update
     setItems(items.filter(item => item.id !== itemId))
@@ -483,6 +497,17 @@ export default function ListPage() {
         notes: editItemForm.notes || null,
         image_url: imageUrl
       }
+
+      // Add to undo history before update
+      const previousState = {
+        name: editingItem.name,
+        amount: editingItem.amount,
+        unit: editingItem.unit,
+        category: editingItem.category,
+        notes: editingItem.notes,
+        image_url: editingItem.image_url
+      }
+      updateItemAction(listId, editingItem.id, previousState, updatedItemData, editingItem.name)
 
       if (!isDemoMode) {
         const { data: updatedItem, error } = await updateItem(editingItem.id, updatedItemData)
@@ -975,6 +1000,9 @@ export default function ListPage() {
             
             {/* Action buttons */}
             <div className="flex items-center gap-2">
+              <UndoRedoButtons size="sm" />
+              <UndoRedoHistory />
+              
               {!isShoppingMode && (
                 <div className="flex items-center gap-2">
                   <button 

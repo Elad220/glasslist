@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/lib/toast/context";
+import { UndoRedoProvider } from "@/lib/undo-redo/context";
 import LayoutWrapper from "@/components/LayoutWrapper";
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -23,14 +24,16 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
         <ToastProvider>
-          {isDemoMode && (
-            <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white text-center py-2 text-sm font-medium z-[9999]">
-              🎨 Demo Mode - Explore the beautiful glassmorphism interface!
+          <UndoRedoProvider>
+            {isDemoMode && (
+              <div className="fixed top-0 left-0 right-0 bg-blue-600 text-white text-center py-2 text-sm font-medium z-[9999]">
+                🎨 Demo Mode - Explore the beautiful glassmorphism interface!
+              </div>
+            )}
+            <div className={isDemoMode ? 'pt-10' : ''}>
+              <LayoutWrapper>{children}</LayoutWrapper>
             </div>
-          )}
-          <div className={isDemoMode ? 'pt-10' : ''}>
-            <LayoutWrapper>{children}</LayoutWrapper>
-          </div>
+          </UndoRedoProvider>
         </ToastProvider>
       </body>
     </html>
