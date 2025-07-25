@@ -28,7 +28,10 @@ import {
   Filter,
   Zap,
   Copy,
-  HelpCircle
+  HelpCircle,
+  Wifi,
+  WifiOff,
+  Cloud
 } from 'lucide-react'
 import { getCurrentUser } from '@/lib/supabase/auth'
 import { useToast } from '@/lib/toast/context'
@@ -41,6 +44,8 @@ import {
   isDemoMode 
 } from '@/lib/supabase/client'
 import type { ShoppingList } from '@/lib/supabase/types'
+import { useOfflineSync } from '@/lib/offline/hooks'
+import { syncService } from '@/lib/offline/sync'
 
 const mockAnalytics = {
   total_lists: 3,
@@ -143,6 +148,9 @@ export default function DashboardPage() {
   const router = useRouter()
   const toast = useToast()
   
+  // Offline sync state
+  const { isOnline, isSyncing, pendingChanges, syncAll } = useOfflineSync()
+  
   // Edit form state
   const [editListForm, setEditListForm] = useState({
     name: '',
@@ -163,6 +171,24 @@ export default function DashboardPage() {
       
       if (error) {
         console.error('Dashboard: Shopping lists fetch error:', error)
+        
+        // If offline, try to load from local storage
+        if (!isOnline) {
+          try {
+            const offlineLists = await syncService.getListsOffline(userId)
+            const listsWithCounts = offlineLists.map((list: any) => ({
+              ...list,
+              itemCount: 0, // We'll need to fetch items separately
+              completedCount: 0
+            }))
+            setShoppingLists(listsWithCounts)
+            toast.info('Offline Mode', 'Showing locally saved lists')
+            return
+          } catch (offlineError) {
+            console.error('Failed to load offline lists:', offlineError)
+          }
+        }
+        
         toast.error('Data loading failed', 'Unable to load your shopping lists. Please try refreshing the page.')
         // Fallback to empty array so the UI doesn't break
         setShoppingLists([])
@@ -641,6 +667,34 @@ export default function DashboardPage() {
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Offline Status Indicator */}
+              {!isOnline && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-100/50 border border-orange-200/50 rounded-lg">
+                  <WifiOff className="w-4 h-4 text-orange-600" />
+                  <span className="text-sm font-medium text-orange-700">Offline</span>
+                  {pendingChanges > 0 && (
+                    <div className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
+                      {pendingChanges}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {isOnline && pendingChanges > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100/50 border border-yellow-200/50 rounded-lg">
+                  <Cloud className="w-4 h-4 text-yellow-600" />
+                  <span className="text-sm font-medium text-yellow-700">
+                    {pendingChanges} pending
+                  </span>
+                  <button
+                    onClick={syncAll}
+                    disabled={isSyncing}
+                    className="text-xs bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 transition-colors disabled:opacity-50"
+                  >
+                    {isSyncing ? 'Syncing...' : 'Sync'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -42,6 +42,13 @@ A beautiful, modern shopping list application with glassmorphism design and AI-p
 - **Row Level Security**: Your data is completely private
 - **Personal API Keys**: Store your own Gemini API key securely
 
+### 📱 **Offline Mode & PWA**
+- **Full Offline Support**: View and edit lists without internet connection
+- **Automatic Sync**: Changes sync when you're back online
+- **Progressive Web App**: Install as a native app on your device
+- **Local Storage**: All data cached locally using IndexedDB
+- **Background Sync**: Seamless synchronization in the background
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -49,6 +56,7 @@ A beautiful, modern shopping list application with glassmorphism design and AI-p
 - npm or yarn
 - Supabase account
 - Google AI Studio account (for Gemini API)
+- Modern browser with IndexedDB support (for offline functionality)
 
 ### 1. Clone the Repository
 ```bash
@@ -170,6 +178,12 @@ Visit [http://localhost:3000](http://localhost:3000) to see your beautiful Glass
 - **PostgreSQL**: Relational database with RLS
 - **Row Level Security**: User data isolation
 
+### Offline & PWA
+- **IndexedDB**: Local data storage for offline functionality
+- **Service Worker**: Background sync and caching
+- **PWA Manifest**: Native app installation support
+- **Background Sync**: Automatic data synchronization
+
 ### AI Integration
 - **Google Gemini**: Natural language processing
 - **Fallback Parser**: Basic parsing when AI unavailable
@@ -203,11 +217,17 @@ src/
 │   ├── dashboard/        # Dashboard components
 │   ├── list/             # List management components
 │   ├── ai/               # AI integration components
-│   └── upload/           # File upload components
+│   ├── upload/           # File upload components
+│   └── offline/          # Offline mode components
 ├── lib/                   # Utilities and configurations
 │   ├── supabase/         # Supabase client and types
 │   ├── ai/               # AI integration (Gemini)
+│   ├── offline/          # Offline storage and sync
 │   └── utils/            # General utilities
+├── public/               # Static assets
+│   ├── sw.js            # Service worker
+│   ├── manifest.json    # PWA manifest
+│   └── offline.html     # Offline page
 └── sql/                   # Database setup scripts
 ```
 
@@ -232,6 +252,43 @@ npm run type-check
 # Linting
 npm run lint
 ```
+
+## 📱 Offline Mode & PWA Features
+
+### **How Offline Mode Works**
+1. **Automatic Detection**: The app detects when you're offline and switches to offline mode
+2. **Local Storage**: All your lists and items are stored locally using IndexedDB
+3. **Offline Editing**: You can add, edit, and delete items while offline
+4. **Sync Queue**: Changes are queued and sync automatically when you're back online
+5. **Conflict Resolution**: Smart conflict resolution for simultaneous edits
+
+### **PWA Installation**
+- **Desktop**: Click the install prompt or use browser menu
+- **Mobile**: Add to home screen from browser menu
+- **Benefits**: Faster loading, offline access, native app experience
+
+### **Offline Indicators**
+- **Online Status**: Green indicator when connected
+- **Offline Mode**: Orange indicator with pending changes count
+- **Sync Status**: Yellow indicator when changes are pending sync
+- **Error Handling**: Red indicator for sync errors with retry option
+
+### **Offline Capabilities**
+- ✅ View all shopping lists
+- ✅ Add new items to lists
+- ✅ Edit existing items
+- ✅ Check/uncheck items
+- ✅ Delete items
+- ✅ Create new lists
+- ✅ Search and filter items
+- ✅ Shopping mode
+- ✅ Export lists (when online)
+
+### **Sync Behavior**
+- **Automatic**: Syncs every 30 seconds when online
+- **Manual**: Click "Sync Now" button to sync immediately
+- **Retry Logic**: Failed syncs retry up to 3 times
+- **Background**: Syncs happen in the background without interrupting your work
 
 ## 🚦 Deployment
 

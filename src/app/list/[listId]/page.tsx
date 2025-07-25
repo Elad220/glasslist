@@ -37,7 +37,10 @@ import {
   GripVertical,
   Download,
   Upload,
-  CheckCircle
+  CheckCircle,
+  Wifi,
+  WifiOff,
+  Cloud
 } from 'lucide-react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
@@ -54,6 +57,8 @@ import {
   isDemoMode,
   createManyItems
 } from '@/lib/supabase/client'
+import { useOfflineSync } from '@/lib/offline/hooks'
+import { syncService } from '@/lib/offline/sync'
 
 // Category icons mapping
 const categoryIcons: { [key: string]: any } = {
@@ -136,6 +141,9 @@ export default function ListPage() {
   const [aiInput, setAiInput] = useState('')
   const [isAiProcessing, setIsAiProcessing] = useState(false)
   
+  // Offline sync state
+  const { isOnline, isSyncing, pendingChanges, syncAll } = useOfflineSync()
+  
   // Edit form state for items only
   const [editItemForm, setEditItemForm] = useState({
     name: '',
@@ -188,6 +196,27 @@ export default function ListPage() {
           
           if (listError || !listData) {
             console.error('ListPage: List error or no data:', listError)
+            
+            // If offline, try to load from local storage
+            if (!isOnline) {
+              try {
+                const offlineList = await syncService.getListOffline(listId)
+                if (offlineList) {
+                  setList(offlineList)
+                  toast.info('Offline Mode', 'Showing locally saved list')
+                  
+                  // Load offline items
+                  const offlineItems = await syncService.getItemsOffline(listId)
+                  setItems(offlineItems)
+                  const initialCategories = Array.from(new Set(offlineItems.map(item => item.category || 'Other')))
+                  setOrderedCategories(initialCategories)
+                  return
+                }
+              } catch (offlineError) {
+                console.error('Failed to load offline list:', offlineError)
+              }
+            }
+            
             toast.error('List not found', 'The requested list could not be found')
             router.push('/dashboard')
             return
@@ -207,6 +236,19 @@ export default function ListPage() {
             setOrderedCategories(initialCategories)
           } else if (itemsError) {
             console.error('ListPage: Items error:', itemsError)
+            
+            // If offline, try to load items from local storage
+            if (!isOnline) {
+              try {
+                const offlineItems = await syncService.getItemsOffline(listId)
+                setItems(offlineItems)
+                const initialCategories = Array.from(new Set(offlineItems.map(item => item.category || 'Other')))
+                setOrderedCategories(initialCategories)
+                toast.info('Offline Mode', 'Showing locally saved items')
+              } catch (offlineError) {
+                console.error('Failed to load offline items:', offlineError)
+              }
+            }
           }
         } else {
           console.log('ListPage: In demo mode, using mock data')
@@ -240,13 +282,27 @@ export default function ListPage() {
     ))
 
     if (!isDemoMode) {
-      const { error } = await toggleItemChecked(itemId, newCheckedState)
-      if (error) {
-        // Revert on error
-        setItems(items.map(item => 
-          item.id === itemId ? { ...item, is_checked: !newCheckedState } : item
-        ))
-        toast.error('Update failed', 'Failed to update item status')
+      if (isOnline) {
+        const { error } = await toggleItemChecked(itemId, newCheckedState)
+        if (error) {
+          // Revert on error
+          setItems(items.map(item => 
+            item.id === itemId ? { ...item, is_checked: !newCheckedState } : item
+          ))
+          toast.error('Update failed', 'Failed to update item status')
+        }
+      } else {
+        // Offline mode - save to local storage
+        try {
+          await syncService.updateItemOffline(itemId, { is_checked: newCheckedState })
+          toast.success('Item updated', 'Changes saved locally')
+        } catch (error) {
+          // Revert on error
+          setItems(items.map(item => 
+            item.id === itemId ? { ...item, is_checked: !newCheckedState } : item
+          ))
+          toast.error('Update failed', 'Failed to save item locally')
+        }
       }
     }
   }
@@ -276,8 +332,8 @@ export default function ListPage() {
     try {
       let imageUrl = null
 
-      // Upload image if selected
-      if (selectedImage && !isDemoMode) {
+      // Upload image if selected (only when online)
+      if (selectedImage && !isDemoMode && isOnline) {
         const itemId = Date.now().toString()
         const uploadResult = await uploadItemImage(selectedImage, itemId)
         if (uploadResult.success) {
@@ -288,8 +344,8 @@ export default function ListPage() {
           setIsUploading(false)
           return
         }
-      } else if (selectedImage && isDemoMode) {
-        // In demo mode, use the preview URL
+      } else if (selectedImage && (isDemoMode || !isOnline)) {
+        // In demo mode or offline, use the preview URL
         imageUrl = imagePreview
       }
 
@@ -307,24 +363,45 @@ export default function ListPage() {
       console.log('About to create item:', itemData)
 
       if (!isDemoMode) {
-        const { data: createdItem, error } = await createItem(itemData)
-        console.log('Create item response:', { data: createdItem?.id, error })
-        
-        if (error) {
-          console.error('Failed to create item:', error)
-          const errorMessage = typeof error === 'string' ? error : (error as any)?.message || 'Failed to add item'
-          toast.error('Failed to add item', errorMessage)
-          setIsUploading(false)
-          return
+        if (isOnline) {
+          const { data: createdItem, error } = await createItem(itemData)
+          console.log('Create item response:', { data: createdItem?.id, error })
+          
+          if (error) {
+            console.error('Failed to create item:', error)
+            const errorMessage = typeof error === 'string' ? error : (error as any)?.message || 'Failed to add item'
+            toast.error('Failed to add item', errorMessage)
+            setIsUploading(false)
+            return
+          }
+          
+          if (!createdItem) {
+            toast.error('Failed to add item', 'No data returned from server')
+            setIsUploading(false)
+            return
+          }
+          
+          setItems([...items, createdItem])
+        } else {
+          // Offline mode - save to local storage
+          const offlineId = await syncService.createItemOffline({
+            ...itemData,
+            position: items.length,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          
+          const offlineItem = {
+            id: offlineId,
+            ...itemData,
+            position: items.length,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+          
+          setItems([...items, offlineItem])
+          toast.success('Item added', `${newItem.name} added to your list (offline)`)
         }
-        
-        if (!createdItem) {
-          toast.error('Failed to add item', 'No data returned from server')
-          setIsUploading(false)
-          return
-        }
-        
-        setItems([...items, createdItem])
       } else {
         // Demo mode
         const item = {
@@ -338,7 +415,9 @@ export default function ListPage() {
       }
       
       // Show success toast
-      toast.success('Item added', `${newItem.name} added to your list`)
+      if (isOnline || isDemoMode) {
+        toast.success('Item added', `${newItem.name} added to your list`)
+      }
       
       // Reset form
       setNewItem({ name: '', amount: 1, unit: 'pcs', category: 'Other', notes: '', image_url: null })
@@ -361,12 +440,26 @@ export default function ListPage() {
     setItems(items.filter(item => item.id !== itemId))
 
     if (!isDemoMode) {
-      const { error } = await deleteItem(itemId)
-      if (error) {
-        // Revert on error
-        setItems([...items, item])
-        toast.error('Delete failed', 'Failed to delete item')
-        return
+      if (isOnline) {
+        const { error } = await deleteItem(itemId)
+        if (error) {
+          // Revert on error
+          setItems([...items, item])
+          toast.error('Delete failed', 'Failed to delete item')
+          return
+        }
+      } else {
+        // Offline mode - save to local storage
+        try {
+          await syncService.deleteItemOffline(itemId)
+          toast.success('Item removed', `${item.name} removed from your list (offline)`)
+          return
+        } catch (error) {
+          // Revert on error
+          setItems([...items, item])
+          toast.error('Delete failed', 'Failed to delete item locally')
+          return
+        }
       }
     }
 
@@ -975,6 +1068,35 @@ export default function ListPage() {
             
             {/* Action buttons */}
             <div className="flex items-center gap-2">
+              {/* Offline Status Indicator */}
+              {!isOnline && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-100/50 border border-orange-200/50 rounded-lg">
+                  <WifiOff className="w-4 h-4 text-orange-600" />
+                  <span className="text-sm font-medium text-orange-700">Offline</span>
+                  {pendingChanges > 0 && (
+                    <div className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
+                      {pendingChanges}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {isOnline && pendingChanges > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100/50 border border-yellow-200/50 rounded-lg">
+                  <Cloud className="w-4 h-4 text-yellow-600" />
+                  <span className="text-sm font-medium text-yellow-700">
+                    {pendingChanges} pending
+                  </span>
+                  <button
+                    onClick={syncAll}
+                    disabled={isSyncing}
+                    className="text-xs bg-yellow-500 text-white px-2 py-1 rounded hover:bg-yellow-600 transition-colors disabled:opacity-50"
+                  >
+                    {isSyncing ? 'Syncing...' : 'Sync'}
+                  </button>
+                </div>
+              )}
+              
               {!isShoppingMode && (
                 <div className="flex items-center gap-2">
                   <button 
