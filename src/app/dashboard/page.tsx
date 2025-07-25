@@ -38,6 +38,8 @@ import {
   deleteShoppingList, 
   getUserAnalytics,
   getListItems,
+  createShoppingList,
+  createManyItems,
   isDemoMode 
 } from '@/lib/supabase/client'
 import type { ShoppingList } from '@/lib/supabase/types'
@@ -583,11 +585,73 @@ export default function DashboardPage() {
           `Successfully imported ${validLists.length} shopping list${validLists.length > 1 ? 's' : ''}`
         )
       } else {
-        // Real implementation would handle actual data import
-        toast.info(
-          'Import ready', 
-          `Found ${validLists.length} valid list${validLists.length > 1 ? 's' : ''}. This feature will import your data when you sign up!`
-        )
+        // Real implementation - actually import the data
+        const { user } = await getCurrentUser()
+        if (!user) {
+          toast.error('Authentication required', 'Please sign in to import lists')
+          return
+        }
+
+        let importedCount = 0
+        let errorCount = 0
+
+        for (const listData of validLists) {
+          try {
+            // Create the shopping list
+            const { data: newList, error: listError } = await createShoppingList({
+              name: listData.name,
+              description: listData.description || null,
+              is_shared: listData.is_shared || false,
+              user_id: user.id
+            })
+
+            if (listError) {
+              console.error('Error creating list:', listError)
+              errorCount++
+              continue
+            }
+
+            // Import items if they exist
+            if (listData.items && Array.isArray(listData.items) && listData.items.length > 0) {
+              const itemsToCreate = listData.items.map((item: any, index: number) => ({
+                list_id: newList.id,
+                name: item.name,
+                amount: item.quantity || item.amount || 1,
+                unit: item.unit || 'pcs',
+                category: item.category || 'Other',
+                notes: item.notes || null,
+                is_checked: item.is_checked || false,
+                position: index
+              }))
+
+              const { error: itemsError } = await createManyItems(itemsToCreate)
+              if (itemsError) {
+                console.error('Error creating items for list:', itemsError)
+                // Continue even if items fail - the list was created successfully
+              }
+            }
+
+            importedCount++
+          } catch (error) {
+            console.error('Error importing list:', error)
+            errorCount++
+          }
+        }
+
+        // Refresh the shopping lists
+        await fetchShoppingLists(user.id)
+
+        if (errorCount > 0) {
+          toast.warning(
+            'Import completed with errors', 
+            `Successfully imported ${importedCount} list${importedCount > 1 ? 's' : ''}, ${errorCount} failed`
+          )
+        } else {
+          toast.success(
+            'Import successful!', 
+            `Successfully imported ${importedCount} shopping list${importedCount > 1 ? 's' : ''}`
+          )
+        }
       }
 
       setShowImportModal(false)
