@@ -744,22 +744,6 @@ export default function ListPage() {
           </div>
         )}
 
-        {/* Quick Add in Shopping Mode */}
-        {isShoppingMode && (
-          <div className="mb-6 text-center">
-            <button 
-              onClick={() => setShowAddItem(true)}
-              className="glass-button px-6 py-3 bg-primary/20 hover:bg-primary/30 flex items-center gap-2 mx-auto"
-            >
-              <Plus className="w-5 h-5" />
-              Add Item
-            </button>
-          </div>
-        )}
-
-
-
-
 
         {/* Items List - Grouped by Category */}
         <div className={isShoppingMode ? "space-y-6" : "space-y-4"}>
