@@ -870,63 +870,52 @@ export default function ListPage() {
                         // Normal Mode Layout - Compact
                         <div 
                           key={item.id} 
-                          className={`p-3 transition-all duration-200 text-sm ${
-                            item.is_checked ? 'opacity-60 bg-glass-white-light' : 'hover:bg-glass-white-light'
-                          }`}
+                          className={`category-list-item flex items-center gap-3 p-2 transition-all duration-200 text-sm border-b border-glass-white-border last:border-b-0 bg-white/30 hover:bg-glass-white-light ${item.is_checked ? 'opacity-60' : ''}`}
                         >
-                          <div className="flex items-center gap-3">
-                            <button
-                              onClick={() => handleToggleItem(item.id)}
-                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-                                item.is_checked 
-                                  ? 'bg-green-500 border-green-500' 
-                                  : 'border-glass-white-border hover:border-primary'
-                              }`}
-                            >
-                              {item.is_checked && <Check className="w-3 h-3 text-white" />}
-                            </button>
-                            
-                            {/* Item Image */}
-                            {item.image_url && (
-                              <div className="flex-shrink-0">
-                                <img
-                                  src={item.image_url}
-                                  alt={item.name}
-                                  className="w-12 h-12 object-cover rounded-lg glass-card"
-                                />
-                              </div>
+                          <button
+                            onClick={() => handleToggleItem(item.id)}
+                            className={`category-checkbox w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 mr-2 ${item.is_checked ? 'bg-green-500 border-green-500' : 'border-glass-white-border hover:border-primary'}`}
+                            aria-label={item.is_checked ? 'Uncheck item' : 'Check item'}
+                          >
+                            {item.is_checked && <Check className="w-4 h-4 text-white" />}
+                          </button>
+                          {item.image_url && (
+                            <div className="flex-shrink-0">
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                                className="w-10 h-10 object-cover rounded-lg glass-card"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-medium truncate ${item.is_checked ? 'line-through' : ''} text-glass-heading`}>
+                                {item.name}
+                              </span>
+                              <span className="text-glass-muted whitespace-nowrap">
+                                {item.amount} {item.unit}
+                              </span>
+                            </div>
+                            {item.notes && (
+                              <p className="text-xs text-glass-muted mt-1 truncate">{item.notes}</p>
                             )}
-                            
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className={`font-medium truncate ${item.is_checked ? 'line-through' : ''} text-glass-heading`}>
-                                  {item.name}
-                                </span>
-                                <span className="text-glass-muted whitespace-nowrap">
-                                  {item.amount} {item.unit}
-                                </span>
-                              </div>
-                              {item.notes && (
-                                <p className="text-xs text-glass-muted mt-1 truncate">{item.notes}</p>
-                              )}
-                            </div>
-                            
-                            <div className="flex items-center gap-1">
-                              <button 
-                                onClick={() => handleEditItem(item)}
-                                className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors flex-shrink-0"
-                                title="Edit item"
-                              >
-                                <Edit className="w-3.5 h-3.5 text-primary" />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteItem(item.id)}
-                                className="p-1.5 hover:bg-red-100/20 rounded-lg transition-colors flex-shrink-0"
-                                title="Delete item"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                              </button>
-                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 ml-2">
+                            <button 
+                              onClick={() => handleEditItem(item)}
+                              className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors flex-shrink-0"
+                              title="Edit item"
+                            >
+                              <Edit className="w-3.5 h-3.5 text-primary" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="p-1.5 hover:bg-red-100/20 rounded-lg transition-colors flex-shrink-0"
+                              title="Delete item"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            </button>
                           </div>
                         </div>
                       )
