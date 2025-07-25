@@ -40,6 +40,7 @@ import {
   getListItems,
   createShoppingList,
   createManyItems,
+  debugListItems,
   isDemoMode 
 } from '@/lib/supabase/client'
 import type { ShoppingList, ShoppingListWithItems } from '@/lib/supabase/types'
@@ -619,18 +620,30 @@ export default function DashboardPage() {
                 unit: item.unit || 'pcs',
                 category: item.category || 'Other',
                 notes: item.notes || null,
-                is_checked: item.is_checked || false,
+                is_checked: !!item.is_checked, // Force boolean conversion
                 position: index
               }))
 
               console.log('Items to create:', itemsToCreate)
 
               const { data: createdItems, error: itemsError } = await createManyItems(itemsToCreate)
+              console.log('createManyItems result:', { createdItems, itemsError })
+              
               if (itemsError) {
                 console.error('Error creating items for list:', itemsError)
+                toast.error('Item import failed', `Failed to import items for ${listData.name}: ${itemsError}`)
                 // Continue even if items fail - the list was created successfully
               } else {
                 console.log('Successfully created items:', createdItems?.length || 0)
+                if (createdItems && createdItems.length > 0) {
+                  toast.success('Items imported', `Successfully imported ${createdItems.length} items to ${listData.name}`)
+                  
+                  // Debug: Check if items are actually in the database
+                  setTimeout(async () => {
+                    const { data: debugItems } = await debugListItems(newList.id)
+                    console.log(`Debug: Found ${debugItems?.length || 0} items in database for list ${newList.id}`)
+                  }, 1000)
+                }
               }
             } else {
               console.log('No items to import for list:', listData.name)
@@ -643,8 +656,18 @@ export default function DashboardPage() {
           }
         }
 
+        // Add a small delay to ensure items are committed to database
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
         // Refresh the shopping lists
         await fetchShoppingLists(user.id)
+        
+        // If we imported items but they're not showing up, try refreshing again after a longer delay
+        if (importedCount > 0 && validLists.some(list => list.items && list.items.length > 0)) {
+          console.log('Items were imported, checking if they appear in the refreshed lists...')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          await fetchShoppingLists(user.id)
+        }
 
         if (errorCount > 0) {
           toast.warning(

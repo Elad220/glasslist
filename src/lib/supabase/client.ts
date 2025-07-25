@@ -80,12 +80,20 @@ export async function getShoppingLists(userId: string) {
     }
 
     // Process the data to ensure items are properly structured
-    const listsWithItems = (data || []).map(list => ({
-      ...list,
-      items: list.items || [],
-      itemCount: list.items?.length || 0,
-      completedCount: list.items?.filter((item: any) => item.is_checked)?.length || 0
-    }))
+    const listsWithItems = (data || []).map(list => {
+      const items = list.items || []
+      const itemCount = items.length
+      const completedCount = items.filter((item: any) => item.is_checked).length
+      
+      console.log(`List "${list.name}" has ${itemCount} items, ${completedCount} completed`)
+      
+      return {
+        ...list,
+        items,
+        itemCount,
+        completedCount
+      }
+    })
 
     console.log('Returning lists with items:', listsWithItems)
     return { data: listsWithItems, error: null }
@@ -243,6 +251,28 @@ export async function getListItems(listId: string) {
   }
 }
 
+// Debug function to check items for a specific list
+export async function debugListItems(listId: string) {
+  console.log('debugListItems called with listId:', listId)
+  
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  try {
+    // Direct query without authentication checks for debugging
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('list_id', listId)
+
+    console.log('debugListItems result:', { count: data?.length, error, items: data })
+    return { data, error }
+
+  } catch (error) {
+    console.error('debugListItems unexpected error:', error)
+    return { data: null, error: 'Unexpected error occurred' }
+  }
+}
+
 export async function createItem(item: NewItem) {
   console.log('createItem called with:', item)
   
@@ -316,12 +346,31 @@ export async function createManyItems(items: NewItem[]) {
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
   try {
+    // Validate items before insertion
+    const validItems = items.filter(item => {
+      if (!item.name || !item.list_id) {
+        console.error('Invalid item:', item)
+        return false
+      }
+      return true
+    })
+
+    if (validItems.length !== items.length) {
+      console.warn(`Filtered out ${items.length - validItems.length} invalid items`)
+    }
+
+    if (validItems.length === 0) {
+      return { data: null, error: 'No valid items to create' }
+    }
+
+    console.log('Inserting valid items:', validItems)
+
     const { data, error } = await supabase
       .from('items')
-      .insert(items)
+      .insert(validItems)
       .select()
 
-    console.log('createManyItems result:', { data: data?.length, error })
+    console.log('createManyItems Supabase result:', { data: data?.length, error })
     
     if (error) {
       console.error('createManyItems Supabase error:', error)
