@@ -303,19 +303,6 @@ export default function AuthPage() {
             </button>
           </div>
         </div>
-
-        {/* Additional Info */}
-        <div className="glass-card p-6 mt-6 text-center">
-          <p className="text-text-secondary text-sm">
-            {isDemoMode 
-              ? "Running in demo mode - perfect for testing the beautiful UI!" 
-              : (isLogin 
-                ? "Secure sign-in powered by Supabase" 
-                : "Your data is secure and encrypted"
-              )
-            }
-          </p>
-        </div>
       </div>
     </div>
   )

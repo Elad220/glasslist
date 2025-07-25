@@ -17,7 +17,18 @@ import {
   Trash2,
   Share2,
   Globe,
-  Lock
+  Lock,
+  Search,
+  Settings,
+  Users,
+  Download,
+  Upload,
+  Sparkles,
+  BookOpen,
+  Filter,
+  Zap,
+  Copy,
+  HelpCircle
 } from 'lucide-react'
 import { getCurrentUser } from '@/lib/supabase/auth'
 import { useToast } from '@/lib/toast/context'
@@ -75,6 +86,35 @@ const mockShoppingLists = [
   }
 ]
 
+// Quick list templates
+const listTemplates = [
+  {
+    name: 'Weekly Groceries',
+    description: 'Essential weekly shopping items',
+    items: ['Milk', 'Bread', 'Eggs', 'Chicken', 'Rice', 'Vegetables', 'Fruits', 'Yogurt']
+  },
+  {
+    name: 'Party Essentials',
+    description: 'Everything you need for a great party',
+    items: ['Chips', 'Soda', 'Pizza', 'Napkins', 'Cups', 'Ice', 'Decorations', 'Music playlist']
+  },
+  {
+    name: 'Healthy Meal Prep',
+    description: 'Ingredients for a week of healthy meals',
+    items: ['Quinoa', 'Salmon', 'Broccoli', 'Sweet potatoes', 'Spinach', 'Greek yogurt', 'Almonds', 'Olive oil']
+  },
+  {
+    name: 'Breakfast Basics',
+    description: 'Start your day right',
+    items: ['Oatmeal', 'Bananas', 'Coffee', 'Orange juice', 'Cereal', 'Bagels', 'Cream cheese', 'Honey']
+  },
+  {
+    name: 'BBQ & Grill',
+    description: 'Perfect for outdoor cooking',
+    items: ['Burgers', 'Hot dogs', 'BBQ sauce', 'Charcoal', 'Corn', 'Watermelon', 'Beer', 'Aluminum foil']
+  }
+]
+
 // Helper to check if a list is a mock list (demo mode)
 function isMockList(list: any): list is { itemCount: number; completedCount: number } {
   return (
@@ -91,6 +131,14 @@ export default function DashboardPage() {
   const [editingList, setEditingList] = useState<any>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [listToDelete, setListToDelete] = useState<any>(null)
+  const [showSearchModal, setShowSearchModal] = useState(false)
+  const [showJoinModal, setShowJoinModal] = useState(false)
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [shareCode, setShareCode] = useState('')
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importProgress, setImportProgress] = useState(false)
   const router = useRouter()
   const toast = useToast()
   
@@ -302,6 +350,209 @@ export default function DashboardPage() {
     }
   }
 
+  const handleSearchLists = () => {
+    setShowSearchModal(true)
+  }
+
+  const handleJoinList = async () => {
+    if (!shareCode.trim()) {
+      toast.error('Missing share code', 'Please enter a share code')
+      return
+    }
+
+    try {
+      if (isDemoMode) {
+        // Simulate joining in demo mode
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        toast.success('List joined!', 'You\'ve successfully joined the shared list')
+        setShowJoinModal(false)
+        setShareCode('')
+        // In real app, would refresh the lists
+      } else {
+        // Real implementation would call the join function
+        toast.info('Feature available', 'List joining will be available when you sign up!')
+      }
+    } catch (error) {
+      console.error('Error joining list:', error)
+      toast.error('Join failed', 'Unable to join the list. Please check the share code.')
+    }
+  }
+
+  const handleCreateFromTemplate = async (template: typeof listTemplates[0]) => {
+    try {
+      if (isDemoMode) {
+        // Simulate creating from template
+        await new Promise(resolve => setTimeout(resolve, 500))
+        toast.success('Template created!', `${template.name} list has been created`)
+        setShowTemplatesModal(false)
+        // In real app, would create the list and redirect
+      } else {
+        // Real implementation would create the list
+        router.push(`/list/new?template=${encodeURIComponent(template.name)}`)
+      }
+    } catch (error) {
+      console.error('Error creating from template:', error)
+      toast.error('Creation failed', 'Unable to create list from template')
+    }
+  }
+
+  const handleExportData = () => {
+    try {
+      const exportData = {
+        lists: shoppingLists,
+        analytics: analytics,
+        exportDate: new Date().toISOString()
+      }
+      const dataStr = JSON.stringify(exportData, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `glasslist-data-${new Date().toISOString().split('T')[0]}.json`
+      link.click()
+      URL.revokeObjectURL(url)
+      toast.success('Data exported', 'Your shopping lists have been exported successfully')
+    } catch (error) {
+      console.error('Error exporting data:', error)
+      toast.error('Export failed', 'Unable to export your data')
+    }
+  }
+
+  const getFilteredLists = () => {
+    if (!searchQuery.trim()) return shoppingLists
+    return shoppingLists.filter(list => 
+      list.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      list.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }
+
+  const handleExportSingleList = async (list: any, event: React.MouseEvent) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    try {
+      // For demo mode, create mock export data
+      const exportData = {
+        list: {
+          name: list.name,
+          description: list.description,
+          is_shared: list.is_shared,
+          created_at: list.created_at
+        },
+        items: isDemoMode && isMockList(list) ? 
+          Array.from({ length: list.itemCount }, (_, i) => ({
+            name: `Item ${i + 1}`,
+            amount: 1,
+            unit: 'pcs',
+            category: 'Other',
+            notes: '',
+            is_checked: i < list.completedCount,
+            image_url: null
+          })) : [],
+        exportDate: new Date().toISOString(),
+        exportType: 'single-list'
+      }
+      
+      const dataStr = JSON.stringify(exportData, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${list.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`
+      link.click()
+      URL.revokeObjectURL(url)
+      
+      toast.success('List exported', `${list.name} has been exported successfully`)
+    } catch (error) {
+      console.error('Error exporting list:', error)
+      toast.error('Export failed', 'Unable to export the list')
+    }
+  }
+
+  const handleImportData = async () => {
+    if (!importFile) {
+      toast.error('No file selected', 'Please select a file to import')
+      return
+    }
+
+    setImportProgress(true)
+
+    try {
+      const fileContent = await importFile.text()
+      const importData = JSON.parse(fileContent)
+
+      // Validate the imported data structure
+      if (!importData.lists || !Array.isArray(importData.lists)) {
+        throw new Error('Invalid file format: Missing or invalid lists array')
+      }
+
+      const validLists = importData.lists.filter((list: any) => 
+        list.name && typeof list.name === 'string'
+      )
+
+      if (validLists.length === 0) {
+        throw new Error('No valid lists found in the imported file')
+      }
+
+      if (isDemoMode) {
+        // Simulate import in demo mode
+        await new Promise(resolve => setTimeout(resolve, 1500))
+        
+        // Add imported lists to the existing ones
+        const newLists = validLists.map((list: any, index: number) => ({
+          ...list,
+          id: `imported-${Date.now()}-${index}`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          itemCount: list.items?.length || list.itemCount || 0,
+          completedCount: list.items?.filter((item: any) => item.is_checked)?.length || list.completedCount || 0
+        }))
+
+        setShoppingLists(prevLists => [...prevLists, ...newLists])
+        toast.success(
+          'Import successful!', 
+          `Successfully imported ${validLists.length} shopping list${validLists.length > 1 ? 's' : ''}`
+        )
+      } else {
+        // Real implementation would handle actual data import
+        toast.info(
+          'Import ready', 
+          `Found ${validLists.length} valid lists. This feature will import your data when you sign up!`
+        )
+      }
+
+      setShowImportModal(false)
+      setImportFile(null)
+    } catch (error) {
+      console.error('Error importing data:', error)
+      let errorMessage = 'Unable to import the file'
+      
+      if (error instanceof Error) {
+        if (error.message.includes('JSON')) {
+          errorMessage = 'Invalid file format. Please select a valid JSON file.'
+        } else if (error.message.includes('Invalid file format')) {
+          errorMessage = error.message
+        }
+      }
+      
+      toast.error('Import failed', errorMessage)
+    } finally {
+      setImportProgress(false)
+    }
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (file.type === 'application/json' || file.name.endsWith('.json')) {
+        setImportFile(file)
+      } else {
+        toast.error('Invalid file type', 'Please select a JSON file')
+        event.target.value = ''
+      }
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -444,6 +695,13 @@ export default function DashboardPage() {
                     {/* Action buttons */}
                     <div className="absolute top-3 right-3 flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all duration-300">
                       <button
+                        onClick={(e) => handleExportSingleList(list, e)}
+                        className="p-2 glass-button hover:bg-green-500/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm"
+                        title="Export list"
+                      >
+                        <Download className="w-4 h-4 text-green-600" />
+                      </button>
+                      <button
                         onClick={(e) => handleEditList(list, e)}
                         className="p-2 glass-button hover:bg-primary/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm"
                         title="Edit list"
@@ -493,6 +751,38 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            {/* Recent Lists */}
+            {shoppingLists.length > 0 && (
+              <div className="glass-card p-6 mb-6">
+                <h3 className="font-bold mb-4 text-glass-heading flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Recent Lists
+                </h3>
+                <div className="space-y-2">
+                  {shoppingLists.slice(0, 3).map((list) => (
+                    <Link
+                      key={list.id}
+                      href={`/list/${list.id}`}
+                      className="flex items-center gap-3 p-3 glass-button hover:scale-[1.02] transition-all duration-200"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <ShoppingCart className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-glass-heading truncate">{list.name}</p>
+                        <p className="text-xs text-glass-muted">
+                          {isDemoMode && isMockList(list) ? list.itemCount : 0} items • {formatDate(list.created_at)}
+                        </p>
+                      </div>
+                      {list.is_shared && (
+                        <Share2 className="w-4 h-4 text-primary" />
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Quick Actions */}
             <div className="glass-card p-6">
               <h3 className="font-bold mb-4 text-glass-heading">Quick Actions</h3>
@@ -505,6 +795,65 @@ export default function DashboardPage() {
                   Create New List
                 </Link>
                 
+                <button 
+                  onClick={() => setShowTemplatesModal(true)}
+                  className="glass-button w-full p-3 flex items-center gap-2 justify-center"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Use Template
+                </button>
+                
+                <button 
+                  onClick={handleSearchLists}
+                  className="glass-button w-full p-3 flex items-center gap-2 justify-center"
+                >
+                  <Search className="w-4 h-4" />
+                  Search Lists
+                </button>
+                
+                <button 
+                  onClick={() => setShowJoinModal(true)}
+                  className="glass-button w-full p-3 flex items-center gap-2 justify-center"
+                >
+                  <Users className="w-4 h-4" />
+                  Join Shared List
+                </button>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <Link 
+                    href="/settings"
+                    className="glass-button p-3 flex items-center gap-2 justify-center"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Settings
+                  </Link>
+                  
+                  <button 
+                    onClick={handleExportData}
+                    className="glass-button p-3 flex items-center gap-2 justify-center"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export
+                  </button>
+                </div>
+
+                <button 
+                  onClick={() => setShowImportModal(true)}
+                  className="glass-button w-full p-3 flex items-center gap-2 justify-center"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import Data
+                </button>
+
+                <div className="pt-2 border-t border-glass-white-light/30">
+                  <button 
+                    onClick={() => toast.info('AI Assistant', 'Ask AI to help create smart shopping lists based on your preferences!')}
+                    className="glass-button w-full p-3 flex items-center gap-2 justify-center bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-200/30"
+                  >
+                    <Sparkles className="w-4 h-4 text-purple-500" />
+                    <span className="text-purple-600">AI Suggestions</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -642,6 +991,283 @@ export default function DashboardPage() {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search Modal */}
+      {showSearchModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+          onClick={() => {
+            setShowSearchModal(false)
+            setSearchQuery('')
+          }}
+        >
+          <div 
+            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
+              <Search className="w-5 h-5" />
+              Search Your Lists
+            </h3>
+            
+            <div className="mb-4">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted"
+                placeholder="Type to search lists..."
+                autoFocus
+              />
+            </div>
+            
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {getFilteredLists().map((list) => (
+                <Link
+                  key={list.id}
+                  href={`/list/${list.id}`}
+                  className="block p-3 glass-card hover:scale-[1.02] transition-all duration-200"
+                  onClick={() => {
+                    setShowSearchModal(false)
+                    setSearchQuery('')
+                  }}
+                >
+                  <h4 className="font-medium text-glass-heading">{list.name}</h4>
+                  <p className="text-sm text-glass-muted">{list.description}</p>
+                  <p className="text-xs text-glass-muted mt-1">
+                    {isDemoMode && isMockList(list) ? list.itemCount : 0} items
+                  </p>
+                </Link>
+              ))}
+              {getFilteredLists().length === 0 && searchQuery && (
+                <p className="text-center text-glass-muted py-4">No lists found matching "{searchQuery}"</p>
+              )}
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button 
+                onClick={() => {
+                  setShowSearchModal(false)
+                  setSearchQuery('')
+                }}
+                className="flex-1 glass-button px-4 py-2"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Join List Modal */}
+      {showJoinModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+          onClick={() => {
+            setShowJoinModal(false)
+            setShareCode('')
+          }}
+        >
+          <div 
+            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Join Shared List
+            </h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-glass-muted mb-2">Share Code</label>
+              <input
+                type="text"
+                value={shareCode}
+                onChange={(e) => setShareCode(e.target.value.toUpperCase())}
+                className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted font-mono"
+                placeholder="Enter 6-character code"
+                maxLength={10}
+                autoFocus
+              />
+              <p className="text-xs text-glass-muted mt-2">
+                Enter the share code provided by the list owner
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button 
+                onClick={handleJoinList}
+                disabled={!shareCode.trim()}
+                className="flex-1 glass-button px-4 py-2 bg-primary/20 disabled:opacity-50 flex items-center gap-2 justify-center"
+              >
+                <Users className="w-4 h-4" />
+                Join List
+              </button>
+              <button 
+                onClick={() => {
+                  setShowJoinModal(false)
+                  setShareCode('')
+                }}
+                className="flex-1 glass-button px-4 py-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Templates Modal */}
+      {showTemplatesModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+          onClick={() => setShowTemplatesModal(false)}
+        >
+          <div 
+            className="glass-card p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              Choose a Template
+            </h3>
+            
+            <div className="grid gap-4">
+              {listTemplates.map((template, index) => (
+                <div
+                  key={index}
+                  className="glass-card p-4 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                  onClick={() => handleCreateFromTemplate(template)}
+                >
+                  <h4 className="font-semibold text-glass-heading mb-1">{template.name}</h4>
+                  <p className="text-sm text-glass-muted mb-3">{template.description}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {template.items.slice(0, 4).map((item, itemIndex) => (
+                      <span
+                        key={itemIndex}
+                        className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full"
+                      >
+                        {item}
+                      </span>
+                    ))}
+                    {template.items.length > 4 && (
+                      <span className="text-xs text-glass-muted px-2 py-1">
+                        +{template.items.length - 4} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex gap-3 mt-6">
+              <button 
+                onClick={() => setShowTemplatesModal(false)}
+                className="flex-1 glass-button px-4 py-2"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+          onClick={() => {
+            setShowImportModal(false)
+            setImportFile(null)
+          }}
+        >
+          <div 
+            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Import Shopping Lists
+            </h3>
+            
+            <div className="mb-6">
+              <p className="text-glass-muted text-sm mb-4">
+                Import your shopping lists from a previously exported JSON file or compatible format.
+              </p>
+              
+              <div className="border-2 border-dashed border-glass-white-light/30 rounded-lg p-6 text-center">
+                <Upload className="w-8 h-8 text-glass-muted mx-auto mb-3" />
+                <label className="cursor-pointer">
+                  <span className="text-glass-heading font-medium">Choose a file</span>
+                  <span className="text-glass-muted block text-sm mt-1">
+                    or drag and drop your JSON file here
+                  </span>
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {importFile && (
+                <div className="mt-4 p-3 glass-card">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-glass-heading truncate">{importFile.name}</p>
+                      <p className="text-xs text-glass-muted">
+                        {(importFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex gap-3">
+              <button 
+                onClick={handleImportData}
+                disabled={!importFile || importProgress}
+                className="flex-1 glass-button px-4 py-2 bg-primary/20 disabled:opacity-50 flex items-center gap-2 justify-center"
+              >
+                {importProgress ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    Import Lists
+                  </>
+                )}
+              </button>
+              <button 
+                onClick={() => {
+                  setShowImportModal(false)
+                  setImportFile(null)
+                }}
+                disabled={importProgress}
+                className="flex-1 glass-button px-4 py-2"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div className="mt-4 p-3 glass rounded-lg">
+              <h4 className="font-medium text-glass-heading text-sm mb-2">Supported formats:</h4>
+              <ul className="text-xs text-glass-muted space-y-1">
+                <li>• GlassList export files (.json)</li>
+                <li>• Lists with items and metadata</li>
+                <li>• Files must contain a "lists" array</li>
+              </ul>
             </div>
           </div>
         </div>

@@ -33,8 +33,13 @@ import {
   Utensils,
   Save,
   SoapDispenserDroplet,
-  X
+  X,
+  GripVertical,
+  Download,
+  Upload,
+  CheckCircle
 } from 'lucide-react'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI } from '@/lib/ai/gemini'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
@@ -119,6 +124,7 @@ export default function ListPage() {
   const [editingItem, setEditingItem] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [orderedCategories, setOrderedCategories] = useState<string[]>([])
   const [newItem, setNewItem] = useState({
     name: '',
     amount: 1,
@@ -144,6 +150,12 @@ export default function ListPage() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+
+  // Import/Export state
+  const [showListImport, setShowListImport] = useState(false)
+  const [showListExport, setShowListExport] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importProgress, setImportProgress] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
@@ -191,6 +203,8 @@ export default function ListPage() {
           if (!itemsError && itemsData) {
             console.log('ListPage: Setting items data')
             setItems(itemsData)
+            const initialCategories = Array.from(new Set(itemsData.map(item => item.category || 'Other')))
+            setOrderedCategories(initialCategories)
           } else if (itemsError) {
             console.error('ListPage: Items error:', itemsError)
           }
@@ -199,6 +213,8 @@ export default function ListPage() {
           // Use demo data
           setList(mockList)
           setItems(mockItems)
+          const initialCategories = Array.from(new Set(mockItems.map(item => item.category || 'Other')))
+          setOrderedCategories(initialCategories)
         }
       } catch (error) {
         console.error('ListPage: Error loading list:', error)
@@ -519,6 +535,364 @@ export default function ListPage() {
     }
   }
 
+  const handleExportList = async () => {
+    try {
+      // Validate required data before proceeding
+      if (!list || !list.name) {
+        toast.error('Export failed', 'List information is missing')
+        return
+      }
+
+      if (!Array.isArray(items)) {
+        toast.error('Export failed', 'Items data is invalid')
+        return
+      }
+
+      const exportData = {
+        list: {
+          name: list.name || 'Untitled List',
+          description: list.description || '',
+          is_shared: Boolean(list.is_shared),
+          created_at: list.created_at || new Date().toISOString()
+        },
+        items: items.map(item => ({
+          name: item?.name || 'Unnamed Item',
+          amount: Number(item?.amount) || 1,
+          unit: item?.unit || 'pcs',
+          category: item?.category || 'Other',
+          notes: item?.notes || '',
+          is_checked: Boolean(item?.is_checked),
+          image_url: item?.image_url || null
+        })),
+        exportDate: new Date().toISOString(),
+        exportType: 'single-list'
+      }
+      
+      console.log('Export data prepared:', exportData)
+      
+      const dataStr = JSON.stringify(exportData, null, 2)
+      
+      // Create a safe filename
+      const safeName = (list.name || 'list')
+        .replace(/[^a-zA-Z0-9\s]/g, '') // Remove special characters
+        .replace(/\s+/g, '_') // Replace spaces with underscores
+        .toLowerCase()
+        .substring(0, 50) // Limit length
+      
+      const fileName = `${safeName}-${new Date().toISOString().split('T')[0]}.json`
+      
+      // Mobile-specific detection
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                       'ontouchstart' in window ||
+                       navigator.maxTouchPoints > 0
+      
+      if (isMobile) {
+        // Mobile-friendly approach: Show the data in a new tab for manual download
+        try {
+          const dataUrl = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`
+          const newWindow = window.open('', '_blank')
+          
+          if (newWindow) {
+            newWindow.document.write(`
+              <html>
+                <head>
+                  <title>Export: ${list.name}</title>
+                  <meta name="viewport" content="width=device-width, initial-scale=1">
+                  <style>
+                    body { 
+                      font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+                      padding: 20px; 
+                      background: #f5f5f5;
+                    }
+                    .container {
+                      background: white;
+                      padding: 20px;
+                      border-radius: 8px;
+                      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    }
+                    .download-btn {
+                      background: #007AFF;
+                      color: white;
+                      border: none;
+                      padding: 12px 24px;
+                      border-radius: 8px;
+                      font-size: 16px;
+                      margin: 10px 0;
+                      cursor: pointer;
+                      width: 100%;
+                    }
+                    .share-btn {
+                      background: #34C759;
+                      color: white;
+                      border: none;
+                      padding: 12px 24px;
+                      border-radius: 8px;
+                      font-size: 16px;
+                      margin: 10px 0;
+                      cursor: pointer;
+                      width: 100%;
+                    }
+                    pre {
+                      background: #f8f8f8;
+                      padding: 15px;
+                      border-radius: 4px;
+                      overflow-x: auto;
+                      font-size: 12px;
+                      max-height: 300px;
+                      overflow-y: auto;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="container">
+                    <h2>Export: ${list.name}</h2>
+                    <p>Your shopping list has been prepared for export.</p>
+                    
+                    <button class="download-btn" onclick="downloadFile()">
+                      📱 Download File (${fileName})
+                    </button>
+                    
+                                         ${typeof navigator.share === 'function' ? `
+                       <button class="share-btn" onclick="shareFile()">
+                         📤 Share via Apps
+                       </button>
+                     ` : ''}
+                    
+                    <details>
+                      <summary>View Export Data</summary>
+                      <pre>${dataStr}</pre>
+                    </details>
+                    
+                    <p style="color: #666; font-size: 14px;">
+                      💡 Tip: Use the download button above or copy the data to save your list.
+                    </p>
+                  </div>
+                  
+                  <script>
+                    function downloadFile() {
+                      try {
+                        const blob = new Blob([${JSON.stringify(dataStr)}], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = '${fileName}';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        alert('Download started! Check your downloads folder.');
+                      } catch (error) {
+                        console.error('Download error:', error);
+                        alert('Download failed. Please try copying the data instead.');
+                      }
+                    }
+                    
+                    ${typeof navigator.share === 'function' ? `
+                      async function shareFile() {
+                        try {
+                          const blob = new Blob([${JSON.stringify(dataStr)}], { type: 'application/json' });
+                          const file = new File([blob], '${fileName}', { type: 'application/json' });
+                          
+                          if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                              title: 'Shopping List Export: ${list.name}',
+                              text: 'Exported shopping list from GlassList',
+                              files: [file]
+                            });
+                          } else {
+                            await navigator.share({
+                              title: 'Shopping List Export: ${list.name}',
+                              text: 'Exported shopping list data: ' + ${JSON.stringify(dataStr)}
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Share error:', error);
+                          alert('Sharing failed. Please try the download button instead.');
+                        }
+                      }
+                    ` : ''}
+                  </script>
+                </body>
+              </html>
+            `)
+            newWindow.document.close()
+          } else {
+            throw new Error('Popup blocked')
+          }
+        } catch (error) {
+          console.error('Mobile export error:', error)
+          // Fallback: copy to clipboard
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(dataStr)
+            toast.success('Copied to clipboard', 'Export data copied. You can paste it into a text file.')
+          } else {
+            toast.error('Export failed', 'Unable to export on this mobile browser. Please try on desktop.')
+          }
+        }
+      } else {
+        // Desktop approach: Direct download
+        const dataBlob = new Blob([dataStr], { type: 'application/json' })
+        const url = URL.createObjectURL(dataBlob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName
+        link.style.display = 'none'
+        
+        // Append to body, click, then remove
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        // Clean up the URL after a delay
+        setTimeout(() => {
+          URL.revokeObjectURL(url)
+        }, 1000)
+      }
+      
+      if (!isMobile) {
+        toast.success('List exported', `${list.name} has been exported successfully`)
+      } else {
+        toast.success('Export ready', 'Export opened in new tab for mobile download')
+      }
+      setShowListExport(false)
+      
+    } catch (error) {
+      console.error('Error exporting list:', error)
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
+      toast.error('Export failed', `Unable to export the list: ${errorMessage}`)
+      
+      // Don't close the modal on error so user can try again
+    }
+  }
+
+  const handleImportToList = async () => {
+    if (!importFile) {
+      toast.error('No file selected', 'Please select a file to import')
+      return
+    }
+
+    setImportProgress(true)
+
+    try {
+      const fileContent = await importFile.text()
+      const importData = JSON.parse(fileContent)
+
+      // Validate the imported data structure
+      let itemsToImport = []
+      
+      if (importData.items && Array.isArray(importData.items)) {
+        // Single list format
+        itemsToImport = importData.items
+      } else if (importData.lists && Array.isArray(importData.lists) && importData.lists.length > 0) {
+        // Multiple lists format - take the first list's items
+        itemsToImport = importData.lists[0].items || []
+      } else {
+        throw new Error('Invalid file format: No items found')
+      }
+
+      const validItems = itemsToImport.filter((item: any) => 
+        item.name && typeof item.name === 'string'
+      )
+
+      if (validItems.length === 0) {
+        throw new Error('No valid items found in the imported file')
+      }
+
+      if (isDemoMode) {
+        // Simulate import in demo mode
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        // Add imported items to the current list
+        const newItems = validItems.map((item: any, index: number) => ({
+          id: `imported-${Date.now()}-${index}`,
+          list_id: listId,
+          name: item.name,
+          amount: item.amount || 1,
+          unit: item.unit || 'pcs',
+          category: item.category || 'Other',
+          notes: item.notes || '',
+          is_checked: item.is_checked || false,
+          image_url: item.image_url || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          position: 0
+        }))
+
+        setItems(prevItems => [...prevItems, ...newItems])
+        toast.success(
+          'Import successful!', 
+          `Successfully imported ${validItems.length} item${validItems.length > 1 ? 's' : ''} to ${list.name}`
+        )
+      } else {
+        // Real implementation would handle actual data import
+        const itemsToCreate = validItems.map((item: any) => ({
+          list_id: listId,
+          name: item.name,
+          amount: item.amount || 1,
+          unit: item.unit || 'pcs',
+          category: item.category || 'Other',
+          notes: item.notes || null,
+          is_checked: item.is_checked || false,
+          image_url: item.image_url || null
+        }))
+
+        const { data: createdItems, error } = await createManyItems(itemsToCreate)
+        if (error || !createdItems) {
+          toast.error('Import failed', 'Failed to import items to your list')
+          return
+        }
+
+        setItems(prevItems => [...prevItems, ...createdItems])
+        toast.success(
+          'Import successful!', 
+          `Successfully imported ${createdItems.length} item${createdItems.length > 1 ? 's' : ''} to ${list.name}`
+        )
+      }
+
+      setShowListImport(false)
+      setImportFile(null)
+    } catch (error) {
+      console.error('Error importing items:', error)
+      let errorMessage = 'Unable to import the file'
+      
+      if (error instanceof Error) {
+        if (error.message.includes('JSON')) {
+          errorMessage = 'Invalid file format. Please select a valid JSON file.'
+        } else if (error.message.includes('Invalid file format')) {
+          errorMessage = error.message
+        }
+      }
+      
+      toast.error('Import failed', errorMessage)
+    } finally {
+      setImportProgress(false)
+    }
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (file.type === 'application/json' || file.name.endsWith('.json')) {
+        setImportFile(file)
+      } else {
+        toast.error('Invalid file type', 'Please select a JSON file')
+        event.target.value = ''
+      }
+    }
+  }
+
+  const onDragEnd = (result: any) => {
+    if (!result.destination) {
+      return;
+    }
+
+    const newOrderedCategories = Array.from(orderedCategories);
+    const [reorderedItem] = newOrderedCategories.splice(result.source.index, 1);
+    newOrderedCategories.splice(result.destination.index, 0, reorderedItem);
+
+    setOrderedCategories(newOrderedCategories);
+  };
+
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
@@ -535,19 +909,22 @@ export default function ListPage() {
     return groups
   }, {})
 
-  // Sort categories: unchecked items first, then alphabetical
-  const sortedCategories = Object.keys(groupedItems).sort((a, b) => {
-    const aHasUnchecked = groupedItems[a].some((item: any) => !item.is_checked)
-    const bHasUnchecked = groupedItems[b].some((item: any) => !item.is_checked)
-    
-    if (aHasUnchecked && !bHasUnchecked) return -1
-    if (!aHasUnchecked && bHasUnchecked) return 1
-    return a.localeCompare(b)
-  })
-
   const completedCount = items.filter(item => item.is_checked).length
   const completionPercentage = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0
-  const categories = Array.from(new Set(items.map(item => item.category)))
+  
+  useEffect(() => {
+    const newCategories = Array.from(new Set(items.map(item => item.category || 'Other')));
+    setOrderedCategories(currentOrderedCategories => {
+      const addedCategories = newCategories.filter(c => !currentOrderedCategories.includes(c));
+      const removedCategories = currentOrderedCategories.filter(c => !newCategories.includes(c));
+      if (addedCategories.length > 0 || removedCategories.length > 0) {
+        const finalCategories = [...currentOrderedCategories.filter(c => !removedCategories.includes(c)), ...addedCategories];
+        return finalCategories;
+      }
+      return currentOrderedCategories;
+    });
+  }, [items]);
+
 
   if (isLoading) {
     return (
@@ -598,6 +975,26 @@ export default function ListPage() {
             
             {/* Action buttons */}
             <div className="flex items-center gap-2">
+              {!isShoppingMode && (
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setShowListImport(true)}
+                    className="glass-button p-3"
+                    title="Import items to this list"
+                  >
+                    <Upload className="w-5 h-5" />
+                  </button>
+                  
+                  <button 
+                    onClick={() => setShowListExport(true)}
+                    className="glass-button p-3"
+                    title="Export this list"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+              
               {list.is_shared && (
                 <button 
                   onClick={() => setShowSharing(!showSharing)}
@@ -682,39 +1079,58 @@ export default function ListPage() {
               </div>
               
               {/* Category Pills */}
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  onClick={() => setCategoryFilter('all')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                    categoryFilter === 'all' 
-                      ? 'bg-primary/20 text-primary border border-primary/30' 
-                      : 'glass-button'
-                  }`}
-                >
-                  All Aisles
-                </button>
-                {categories.map(category => {
-                  const categoryCount = items.filter(item => item.category === category).length
-                  const CategoryIcon = categoryIcons[category] || Package2
-                  return (
-                    <button
-                      key={category}
-                      onClick={() => setCategoryFilter(category)}
-                      className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                        categoryFilter === category 
-                          ? 'bg-primary/20 text-primary border border-primary/30' 
-                          : 'glass-button'
-                      }`}
+              <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="category-pills" direction="horizontal">
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2"
                     >
-                      <CategoryIcon className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{category}</span>
-                      <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
-                        {categoryCount}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
+                      <button
+                        onClick={() => setCategoryFilter('all')}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                          categoryFilter === 'all' 
+                            ? 'bg-primary/20 text-primary border border-primary/30' 
+                            : 'glass-button'
+                        }`}
+                      >
+                        All Aisles
+                      </button>
+                      {orderedCategories.map((category, index) => {
+                        const categoryCount = items.filter(item => item.category === category).length
+                        const CategoryIcon = categoryIcons[category] || Package2
+                        return (
+                          <Draggable key={category} draggableId={category} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                onClick={() => setCategoryFilter(category)}
+                                className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                                  (categoryFilter === category || snapshot.isDragging)
+                                    ? 'bg-primary/20 text-primary border border-primary/30' 
+                                    : 'glass-button'
+                                }`}
+                              >
+                                <span {...provided.dragHandleProps}>
+                                  <GripVertical className="w-4 h-4 text-gray-400" />
+                                </span>
+                                <CategoryIcon className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{category}</span>
+                                <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
+                                  {categoryCount}
+                                </span>
+                              </div>
+                            )}
+                          </Draggable>
+                        )
+                      })}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             </div>
           </div>
         )}
@@ -765,8 +1181,9 @@ export default function ListPage() {
               )}
             </div>
           ) : (
-            sortedCategories.map((category) => {
+            orderedCategories.map((category) => {
               const categoryItems = groupedItems[category]
+              if (!categoryItems) return null
               const CategoryIcon = categoryIcons[category] || Package2
               const completedInCategory = categoryItems.filter((item: any) => item.is_checked).length
               const totalInCategory = categoryItems.length
@@ -1423,7 +1840,167 @@ export default function ListPage() {
             </div>
           </div>
         )}
+
+        {/* List Export Modal */}
+        {showListExport && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            onClick={() => setShowListExport(false)}
+          >
+            <div 
+              className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
+                <Download className="w-5 h-5" />
+                Export "{list.name}"
+              </h3>
+              
+              <div className="mb-6">
+                <p className="text-glass-muted text-sm mb-4">
+                  Export this shopping list to a JSON file that can be imported later or shared with others.
+                </p>
+                
+                <div className="space-y-3">
+                  <div className="p-3 glass rounded-lg">
+                    <h4 className="font-medium text-glass-heading text-sm mb-1">What's included:</h4>
+                    <ul className="text-xs text-glass-muted space-y-1">
+                      <li>• List name and description</li>
+                      <li>• All {items.length} items with details</li>
+                      <li>• Categories and completion status</li>
+                      <li>• Notes and quantities</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="p-3 glass rounded-lg border border-primary/20">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Package className="w-4 h-4 text-primary" />
+                      <span className="font-medium text-glass-heading text-sm">Export Summary</span>
+                    </div>
+                    <p className="text-xs text-glass-muted">
+                      {items.length} items • {items.filter(i => i.is_checked).length} completed • {Array.from(new Set(items.map(i => i.category))).length} categories
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleExportList}
+                  className="flex-1 glass-button px-4 py-2 bg-primary/20 flex items-center gap-2 justify-center"
+                >
+                  <Download className="w-4 h-4" />
+                  Export List
+                </button>
+                <button 
+                  onClick={() => setShowListExport(false)}
+                  className="flex-1 glass-button px-4 py-2"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* List Import Modal */}
+        {showListImport && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            onClick={() => {
+              setShowListImport(false)
+              setImportFile(null)
+            }}
+          >
+            <div 
+              className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
+                <Upload className="w-5 h-5" />
+                Import Items to "{list.name}"
+              </h3>
+              
+              <div className="mb-6">
+                <p className="text-glass-muted text-sm mb-4">
+                  Import items from a previously exported shopping list file. Items will be added to this list.
+                </p>
+                
+                <div className="border-2 border-dashed border-glass-white-light/30 rounded-lg p-6 text-center">
+                  <Upload className="w-8 h-8 text-glass-muted mx-auto mb-3" />
+                  <label className="cursor-pointer">
+                    <span className="text-glass-heading font-medium">Choose a file</span>
+                    <span className="text-glass-muted block text-sm mt-1">
+                      or drag and drop your JSON file here
+                    </span>
+                    <input
+                      type="file"
+                      accept=".json,application/json"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {importFile && (
+                  <div className="mt-4 p-3 glass-card">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center">
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-glass-heading truncate">{importFile.name}</p>
+                        <p className="text-xs text-glass-muted">
+                          {(importFile.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleImportToList}
+                  disabled={!importFile || importProgress}
+                  className="flex-1 glass-button px-4 py-2 bg-primary/20 disabled:opacity-50 flex items-center gap-2 justify-center"
+                >
+                  {importProgress ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Import Items
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowListImport(false)
+                    setImportFile(null)
+                  }}
+                  disabled={importProgress}
+                  className="flex-1 glass-button px-4 py-2"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <div className="mt-4 p-3 glass rounded-lg">
+                <h4 className="font-medium text-glass-heading text-sm mb-2">Supported formats:</h4>
+                <ul className="text-xs text-glass-muted space-y-1">
+                  <li>• Single list exports (.json)</li>
+                  <li>• Bulk list exports (first list)</li>
+                  <li>• Files with items array</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
-} 
+}
