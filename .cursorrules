@@ -1,0 +1,171 @@
+# GlassList - Cursor Rules
+
+## Project Overview
+This is a modern shopping list application built with Next.js 15, TypeScript, Supabase, and Google Gemini AI. The app features a beautiful glassmorphism design with AI-powered features for smart shopping list management.
+
+## Tech Stack
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript (strict mode enabled)
+- **Styling**: Tailwind CSS v4
+- **Database**: Supabase (PostgreSQL with RLS)
+- **AI**: Google Gemini AI for natural language processing
+- **Authentication**: Supabase Auth
+- **UI Components**: Headless UI, Lucide React icons
+- **Drag & Drop**: Hello Pangea DND
+
+## Code Style & Conventions
+
+### TypeScript
+- Use strict TypeScript with proper type annotations
+- Prefer interfaces over types for object shapes
+- Use generic types where appropriate
+- Always handle null/undefined cases explicitly
+- Use the `@/*` path alias for imports from src directory
+
+### React/Next.js
+- Use functional components with hooks
+- Follow Next.js 15 App Router conventions
+- Use Server Components by default, Client Components when needed
+- Implement proper error boundaries
+- Use Next.js Image component for optimized images
+- Follow React best practices for state management
+
+### File Structure
+```
+src/
+├── app/                 # Next.js App Router pages
+│   ├── (auth)/         # Authentication routes
+│   ├── dashboard/      # Main dashboard
+│   ├── list/          # Shopping list pages
+│   └── settings/      # User settings
+├── components/         # Reusable UI components
+├── lib/               # Utility libraries
+│   ├── ai/           # AI-related utilities
+│   ├── supabase/     # Database utilities
+│   ├── toast/        # Notification system
+│   └── utils/        # General utilities
+```
+
+### Component Guidelines
+- Use glassmorphism design patterns with backdrop blur
+- Implement responsive design for mobile-first approach
+- Use Tailwind CSS utility classes
+- Follow accessibility best practices (ARIA labels, keyboard navigation)
+- Use Lucide React icons consistently
+
+### Database/Supabase
+- All database operations must respect Row Level Security (RLS)
+- Use prepared statements and parameterized queries
+- Implement proper error handling for database operations
+- Use Supabase client for all database interactions
+- Follow the established schema patterns
+
+### AI Integration
+- Encrypt API keys before storing in database
+- Implement proper error handling for AI operations
+- Use fallback parsing when AI is unavailable
+- Cache AI responses when appropriate
+- Handle rate limiting gracefully
+
+### Security
+- Never expose sensitive data in client-side code
+- Use environment variables for all secrets
+- Implement proper authentication checks
+- Validate all user inputs
+- Use HTTPS in production
+
+### Performance
+- Implement proper loading states
+- Use Next.js Image optimization
+- Minimize bundle size
+- Implement proper caching strategies
+- Use React.memo for expensive components
+
+### Testing
+- Write unit tests for utility functions
+- Test component behavior with user interactions
+- Mock external dependencies (AI, database)
+- Test error scenarios and edge cases
+
+## Common Patterns
+
+### Glassmorphism Components
+```tsx
+// Use backdrop-blur and bg-white/10 for glass effect
+<div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg">
+  {/* Content */}
+</div>
+```
+
+### Database Operations
+```tsx
+// Always handle errors and loading states
+const { data, error, loading } = await supabase
+  .from('table')
+  .select('*')
+  .eq('user_id', userId);
+
+if (error) {
+  console.error('Database error:', error);
+  // Handle error appropriately
+}
+```
+
+### AI Operations
+```tsx
+// Always implement fallback for AI operations
+try {
+  const aiResponse = await processWithAI(input);
+  return aiResponse;
+} catch (error) {
+  console.error('AI error:', error);
+  return fallbackParser(input);
+}
+```
+
+### Form Handling
+```tsx
+// Use controlled components with proper validation
+const [formData, setFormData] = useState({});
+const [errors, setErrors] = useState({});
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  // Validate and submit
+};
+```
+
+## Environment Variables
+Required environment variables:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_APP_URL`
+- `ENCRYPTION_KEY` (32 characters)
+
+## Development Workflow
+1. Use `npm run dev` for development with Turbopack
+2. Use `npm run lint` to check code quality
+3. Use `npm run build` to test production build
+4. Test on multiple screen sizes
+5. Verify database operations work with RLS enabled
+
+## Common Issues & Solutions
+- **RLS Errors**: Ensure user is authenticated and policies are correct
+- **AI Rate Limits**: Implement proper error handling and retry logic
+- **Image Upload**: Use Supabase Storage with proper bucket permissions
+- **TypeScript Errors**: Use proper type annotations and handle null cases
+
+## Performance Considerations
+- Lazy load components when possible
+- Use React.memo for expensive re-renders
+- Implement proper loading states
+- Optimize images and assets
+- Use Next.js caching features
+
+## Accessibility
+- Use semantic HTML elements
+- Implement proper ARIA labels
+- Ensure keyboard navigation works
+- Test with screen readers
+- Maintain proper color contrast ratios
