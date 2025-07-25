@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Direct Array List 1",
+    "description": "First list in direct array format",
+    "items": [
+      {
+        "id": "item1",
+        "name": "Chicken",
+        "quantity": 2,
+        "is_checked": false
+      }
+    ]
+  },
+  {
+    "name": "Direct Array List 2", 
+    "description": "Second list in direct array format",
+    "items": [
+      {
+        "id": "item2",
+        "name": "Rice",
+        "quantity": 1,
+        "is_checked": true
+      }
+    ]
+  }
+]

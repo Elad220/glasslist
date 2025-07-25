@@ -109,6 +109,24 @@ export async function getShoppingList(listId: string) {
   }
 }
 
+export async function createShoppingList(list: { name: string; description?: string; is_shared?: boolean; user_id: string }) {
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  const { data, error } = await supabase
+    .from('shopping_lists')
+    .insert({
+      name: list.name,
+      description: list.description || null,
+      is_shared: list.is_shared || false,
+      user_id: list.user_id,
+      is_archived: false
+    })
+    .select()
+    .single()
+
+  return { data, error }
+}
+
 export async function updateShoppingList(listId: string, updates: Partial<ShoppingList>) {
   if (!supabase) return { data: null, error: 'Supabase not available' }
 

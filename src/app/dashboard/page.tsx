@@ -38,6 +38,8 @@ import {
   deleteShoppingList, 
   getUserAnalytics,
   getListItems,
+  createShoppingList,
+  createManyItems,
   isDemoMode 
 } from '@/lib/supabase/client'
 import type { ShoppingList } from '@/lib/supabase/types'
@@ -532,14 +534,32 @@ export default function DashboardPage() {
       const fileContent = await importFile.text()
       const importData = JSON.parse(fileContent)
 
-      // Validate the imported data structure
-      if (!importData.lists || !Array.isArray(importData.lists)) {
-        throw new Error('Invalid file format: Missing or invalid lists array')
-      }
+      let validLists: any[] = []
 
-      const validLists = importData.lists.filter((list: any) => 
-        list.name && typeof list.name === 'string'
-      )
+      // Check if it's a single list import (direct list object)
+      if (importData.name && typeof importData.name === 'string') {
+        // Single list format
+        validLists = [importData]
+      } 
+      // Check if it's a multiple lists import (lists array)
+      else if (importData.lists && Array.isArray(importData.lists)) {
+        validLists = importData.lists.filter((list: any) => 
+          list.name && typeof list.name === 'string'
+        )
+      }
+      // Check if it's a single list wrapped in a list object
+      else if (importData.list && importData.list.name && typeof importData.list.name === 'string') {
+        validLists = [importData.list]
+      }
+      // Check if it's an array of lists directly
+      else if (Array.isArray(importData) && importData.length > 0 && importData[0].name) {
+        validLists = importData.filter((list: any) => 
+          list.name && typeof list.name === 'string'
+        )
+      }
+      else {
+        throw new Error('Invalid file format: File must contain a shopping list or lists array')
+      }
 
       if (validLists.length === 0) {
         throw new Error('No valid lists found in the imported file')
@@ -565,11 +585,73 @@ export default function DashboardPage() {
           `Successfully imported ${validLists.length} shopping list${validLists.length > 1 ? 's' : ''}`
         )
       } else {
-        // Real implementation would handle actual data import
-        toast.info(
-          'Import ready', 
-          `Found ${validLists.length} valid lists. This feature will import your data when you sign up!`
-        )
+        // Real implementation - actually import the data
+        const { user } = await getCurrentUser()
+        if (!user) {
+          toast.error('Authentication required', 'Please sign in to import lists')
+          return
+        }
+
+        let importedCount = 0
+        let errorCount = 0
+
+        for (const listData of validLists) {
+          try {
+            // Create the shopping list
+            const { data: newList, error: listError } = await createShoppingList({
+              name: listData.name,
+              description: listData.description || null,
+              is_shared: listData.is_shared || false,
+              user_id: user.id
+            })
+
+            if (listError) {
+              console.error('Error creating list:', listError)
+              errorCount++
+              continue
+            }
+
+            // Import items if they exist
+            if (listData.items && Array.isArray(listData.items) && listData.items.length > 0) {
+              const itemsToCreate = listData.items.map((item: any, index: number) => ({
+                list_id: newList.id,
+                name: item.name,
+                amount: item.quantity || item.amount || 1,
+                unit: item.unit || 'pcs',
+                category: item.category || 'Other',
+                notes: item.notes || null,
+                is_checked: item.is_checked || false,
+                position: index
+              }))
+
+              const { error: itemsError } = await createManyItems(itemsToCreate)
+              if (itemsError) {
+                console.error('Error creating items for list:', itemsError)
+                // Continue even if items fail - the list was created successfully
+              }
+            }
+
+            importedCount++
+          } catch (error) {
+            console.error('Error importing list:', error)
+            errorCount++
+          }
+        }
+
+        // Refresh the shopping lists
+        await fetchShoppingLists(user.id)
+
+        if (errorCount > 0) {
+          toast.warning(
+            'Import completed with errors', 
+            `Successfully imported ${importedCount} list${importedCount > 1 ? 's' : ''}, ${errorCount} failed`
+          )
+        } else {
+          toast.success(
+            'Import successful!', 
+            `Successfully imported ${importedCount} shopping list${importedCount > 1 ? 's' : ''}`
+          )
+        }
       }
 
       setShowImportModal(false)
@@ -893,7 +975,7 @@ export default function DashboardPage() {
                   className="glass-button w-full p-3 flex items-center gap-2 justify-center"
                 >
                   <Upload className="w-4 h-4" />
-                  Import Data
+                  Import Lists
                 </button>
 
                 <div className="pt-2 border-t border-glass-white-light/30">
@@ -1246,7 +1328,7 @@ export default function DashboardPage() {
             
             <div className="mb-6">
               <p className="text-glass-muted text-sm mb-4">
-                Import your shopping lists from a previously exported JSON file or compatible format.
+                Import your shopping lists from a previously exported JSON file. Supports both single list and multiple lists formats.
               </p>
               
               <div className="border-2 border-dashed border-glass-white-light/30 rounded-lg p-6 text-center">
@@ -1315,9 +1397,11 @@ export default function DashboardPage() {
             <div className="mt-4 p-3 glass rounded-lg">
               <h4 className="font-medium text-glass-heading text-sm mb-2">Supported formats:</h4>
               <ul className="text-xs text-glass-muted space-y-1">
+                <li>• Single shopping list objects</li>
+                <li>• Multiple lists in "lists" array</li>
+                <li>• Single list wrapped in "list" object</li>
+                <li>• Direct array of shopping lists</li>
                 <li>• GlassList export files (.json)</li>
-                <li>• Lists with items and metadata</li>
-                <li>• Files must contain a "lists" array</li>
               </ul>
             </div>
           </div>
