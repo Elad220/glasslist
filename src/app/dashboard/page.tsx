@@ -448,7 +448,7 @@ export default function DashboardPage() {
             notes: '',
             is_checked: i < list.completedCount,
             image_url: null
-          })) : [],
+          })) : (list.items || []),
         exportDate: new Date().toISOString(),
         exportType: 'single-list'
       }
