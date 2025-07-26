@@ -104,6 +104,7 @@ export default function SettingsPage() {
     setSaveStatus(null)
 
     try {
+      
       if (isDemoMode) {
         // Simulate save in demo mode
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -116,16 +117,26 @@ export default function SettingsPage() {
           ...formData,
           updated_at: new Date().toISOString()
         })
-      } else {
-        // Real implementation - API key will be encrypted automatically in updateProfile
-        if (user?.id) {
-          const { data: updatedProfile, error } = await updateProfile(user.id, {
-            full_name: formData.full_name,
-            gemini_api_key: formData.gemini_api_key || null,
-            ai_suggestions_enabled: formData.ai_suggestions_enabled
-          })
+              } else {
+          // Real implementation - API key will be encrypted automatically in updateProfile
+          if (user?.id) {
+            const updateData = {
+              full_name: formData.full_name,
+              gemini_api_key: formData.gemini_api_key || null,
+              ai_suggestions_enabled: formData.ai_suggestions_enabled
+            }
+            
+            const { data: updatedProfile, error } = await updateProfile(user.id, updateData)
           
           if (error) {
+            // Check if the error is about the missing ai_suggestions_enabled column
+            if (error.message && error.message.includes('ai_suggestions_enabled')) {
+              console.log('Database migration needed for AI suggestions toggle')
+              // Still show success but with a note about the toggle
+              setSaveStatus('success')
+              toast.success('Settings saved', 'Profile updated (AI toggle requires database migration)')
+              return
+            }
             throw new Error(error.message || 'Failed to update profile')
           }
           
@@ -400,6 +411,11 @@ export default function SettingsPage() {
                         <p className="text-sm text-glass-muted">
                           AI-powered item recommendations based on your shopping patterns
                         </p>
+                        {isDemoMode && (
+                          <p className="text-xs text-blue-500 mt-1">
+                            Demo mode: Toggle functionality simulated
+                          </p>
+                        )}
                       </div>
                       <button
                         onClick={() => setFormData({

@@ -140,6 +140,23 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
     .select()
     .single()
 
+  // If the error is about a missing column, try updating without the new field
+  if (error && error.message && error.message.includes('column') && error.message.includes('ai_suggestions_enabled')) {
+    const { ai_suggestions_enabled, ...otherUpdates } = updateData
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('profiles')
+      .update(otherUpdates)
+      .eq('id', userId)
+      .select()
+      .single()
+    
+    if (fallbackError) {
+      return { data: null, error: fallbackError }
+    }
+    
+    return { data: fallbackData, error: null }
+  }
+
   // Decrypt the API key in the returned data for immediate use
   if (data && data.gemini_api_key) {
     const decryptResult = ensureDecrypted(data.gemini_api_key)
