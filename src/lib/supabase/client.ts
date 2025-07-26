@@ -2,6 +2,9 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database, ShoppingList, Item, NewItem, UpdateItem, ShoppingListWithMembers } from './types'
 import { getCurrentUser } from './auth'
 
+// Import offline-first client
+import * as offlineClient from '@/lib/offline/client'
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 export const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -24,11 +27,26 @@ export const createSupabaseClient = () => {
 
 export const supabase = createSupabaseClient()
 
+// Re-export offline client functions for backward compatibility
+export const getShoppingLists = offlineClient.getShoppingLists
+export const getShoppingList = offlineClient.getShoppingList  
+export const updateShoppingList = offlineClient.updateShoppingList
+export const deleteShoppingList = offlineClient.deleteShoppingList
+export const getListItems = offlineClient.getListItems
+export const createItem = offlineClient.createItem
+export const createManyItems = offlineClient.createManyItems
+export const updateItem = offlineClient.updateItem
+export const deleteItem = offlineClient.deleteItem
+export const toggleItemChecked = offlineClient.toggleItemChecked
+export const updateCategoryOrder = offlineClient.updateCategoryOrder
+export const getUserAnalytics = offlineClient.getUserAnalytics
+
 // =============================================
-// SHOPPING LIST OPERATIONS
+// ORIGINAL SUPABASE OPERATIONS (for fallback)
 // =============================================
 
-export async function getShoppingLists(userId: string) {
+// Original Supabase functions kept for fallback/legacy support
+export async function getShoppingListsOriginal(userId: string) {
   console.log('getShoppingLists called with userId:', userId)
   
   if (!supabase) {
@@ -91,7 +109,7 @@ export async function getShoppingLists(userId: string) {
   }
 }
 
-export async function getShoppingList(listId: string) {
+export async function getShoppingListOriginal(listId: string) {
   console.log('getShoppingList called with listId:', listId)
   
   if (!supabase) {
@@ -131,7 +149,7 @@ export async function getShoppingList(listId: string) {
   }
 }
 
-export async function updateShoppingList(listId: string, updates: Partial<ShoppingList>) {
+export async function updateShoppingListOriginal(listId: string, updates: Partial<ShoppingList>) {
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
   const { data, error } = await supabase
@@ -144,7 +162,7 @@ export async function updateShoppingList(listId: string, updates: Partial<Shoppi
   return { data, error }
 }
 
-export async function updateCategoryOrder(listId: string, categoryOrder: string[]) {
+export async function updateCategoryOrderOriginal(listId: string, categoryOrder: string[]) {
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
   const { data, error } = await supabase
@@ -157,7 +175,7 @@ export async function updateCategoryOrder(listId: string, categoryOrder: string[
   return { data, error }
 }
 
-export async function deleteShoppingList(listId: string) {
+export async function deleteShoppingListOriginal(listId: string) {
   if (!supabase) return { error: 'Supabase not available' }
 
   const { error } = await supabase
@@ -193,7 +211,7 @@ export async function getShoppingListByShareCode(shareCode: string) {
 // ITEM OPERATIONS
 // =============================================
 
-export async function getListItems(listId: string) {
+export async function getListItemsOriginal(listId: string) {
   console.log('getListItems called with listId:', listId)
   
   if (!supabase) return { data: null, error: 'Supabase not available' }
@@ -233,7 +251,7 @@ export async function getListItems(listId: string) {
   }
 }
 
-export async function createItem(item: NewItem) {
+export async function createItemOriginal(item: NewItem) {
   console.log('createItem called with:', item)
   
   if (!supabase) return { data: null, error: 'Supabase not available' }
@@ -300,7 +318,7 @@ export async function createItem(item: NewItem) {
   }
 }
 
-export async function createManyItems(items: NewItem[]) {
+export async function createManyItemsOriginal(items: NewItem[]) {
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
   const { data, error } = await supabase
@@ -311,7 +329,7 @@ export async function createManyItems(items: NewItem[]) {
   return { data, error }
 }
 
-export async function updateItem(itemId: string, updates: UpdateItem) {
+export async function updateItemOriginal(itemId: string, updates: UpdateItem) {
   console.log('updateItem called with itemId:', itemId)
   
   if (!supabase) return { data: null, error: 'Supabase not available' }
@@ -360,7 +378,7 @@ export async function updateItem(itemId: string, updates: UpdateItem) {
   }
 }
 
-export async function toggleItemChecked(itemId: string, isChecked: boolean) {
+export async function toggleItemCheckedOriginal(itemId: string, isChecked: boolean) {
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
   const { data, error } = await supabase
@@ -373,7 +391,7 @@ export async function toggleItemChecked(itemId: string, isChecked: boolean) {
   return { data, error }
 }
 
-export async function deleteItem(itemId: string) {
+export async function deleteItemOriginal(itemId: string) {
   if (!supabase) return { error: 'Supabase not available' }
 
   const { error } = await supabase
@@ -388,7 +406,7 @@ export async function deleteItem(itemId: string) {
 // ANALYTICS OPERATIONS
 // =============================================
 
-export async function getUserAnalytics(userId: string) {
+export async function getUserAnalyticsOriginal(userId: string) {
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
   try {

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/lib/toast/context";
 import LayoutWrapper from "@/components/LayoutWrapper";
+import OfflineIndicator, { SyncNotification } from "@/components/OfflineIndicator";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
@@ -30,6 +32,9 @@ export default function RootLayout({
           )}
           <div className={isDemoMode ? 'pt-10' : ''}>
             <LayoutWrapper>{children}</LayoutWrapper>
+            <OfflineIndicator position="bottom-right" />
+            <SyncNotification />
+            <ServiceWorkerRegistration />
           </div>
         </ToastProvider>
       </body>

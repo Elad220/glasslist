@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { LayoutDashboard, Settings, LogOut, ShoppingCart } from 'lucide-react'
 import { signOut } from '@/lib/supabase/auth'
+import { CompactOfflineIndicator } from './OfflineIndicator'
 
 export default function Navbar() {
   const router = useRouter()
@@ -23,10 +24,13 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 p-4">
       <div className="glass-card flex items-center justify-between p-2 px-4 rounded-full">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2 text-glass-heading font-semibold">
-          <ShoppingCart className="w-6 h-6 text-primary" />
-          <span className="hidden sm:inline">GlassList</span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard" className="flex items-center gap-2 text-glass-heading font-semibold">
+            <ShoppingCart className="w-6 h-6 text-primary" />
+            <span className="hidden sm:inline">GlassList</span>
+          </Link>
+          <CompactOfflineIndicator className="hidden sm:flex" />
+        </div>
         
         {/* Navigation Items */}
         <nav className="flex items-center gap-1">
