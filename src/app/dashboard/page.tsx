@@ -40,7 +40,7 @@ import {
   getUserAnalytics,
   getListItems,
   isDemoMode 
-} from '@/lib/supabase/client'
+} from '@/lib/offline/client'
 import { undoManager, createDeleteListUndoAction } from '@/lib/undo-redo/simple'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
 

@@ -569,4 +569,7 @@ export async function getUserAnalytics(userId: string) {
 export type { 
   OfflineClientResponse, 
   OfflineClientMultiResponse 
-} 
+}
+
+// Re-export isDemoMode from supabase client
+export { isDemoMode } from '@/lib/supabase/client' 
