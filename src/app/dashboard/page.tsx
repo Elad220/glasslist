@@ -590,6 +590,12 @@ export default function DashboardPage() {
           return
         }
 
+        // Check if we're in demo mode
+        if (isDemoMode) {
+          toast.info('Demo Mode', 'Import functionality is limited in demo mode. Sign up to use full import features!')
+          return
+        }
+
         let importedCount = 0
         let errorCount = 0
 
@@ -605,6 +611,10 @@ export default function DashboardPage() {
 
             if (listError) {
               console.error('Error creating list:', listError)
+              if (listError === 'Supabase not available') {
+                toast.error('Database not available', 'Please check your database configuration')
+                return
+              }
               errorCount++
               continue
             }
@@ -631,6 +641,10 @@ export default function DashboardPage() {
               
               if (itemsError) {
                 console.error('Error creating items for list:', itemsError)
+                if (itemsError === 'Supabase not available') {
+                  toast.error('Database not available', 'Please check your database configuration')
+                  return
+                }
                 toast.error('Item import failed', `Failed to import items for ${listData.name}: ${itemsError}`)
                 // Continue even if items fail - the list was created successfully
               } else {
