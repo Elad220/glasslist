@@ -103,43 +103,57 @@ export default function Navbar() {
 }
 
 function SyncPopover({ className = '' }: { className?: string }) {
-  const isOnline = useOnlineStatus()
-  const { syncing, lastSync, errors, forceSync } = useSyncStatus()
-  const { pendingCount } = usePendingChanges()
-  const [open, setOpen] = useState(false)
+  console.log('SyncPopover component starting to render')
+  
+  try {
+    const isOnline = useOnlineStatus()
+    const { syncing, lastSync, errors, forceSync } = useSyncStatus()
+    const { pendingCount } = usePendingChanges()
+    const [open, setOpen] = useState(false)
 
-  // Add debugging
-  console.log('SyncPopover render:', { isOnline, syncing, pendingCount, lastSync })
+    // Add debugging
+    console.log('SyncPopover render:', { isOnline, syncing, pendingCount, lastSync })
 
-  // Status logic (reuse from CompactOfflineIndicator)
-  const getStatusColor = () => {
-    if (!isOnline) return 'text-red-400'
-    if (syncing) return 'text-blue-400'
-    if (pendingCount > 0) return 'text-orange-400'
-    return 'text-green-400'
+    // Status logic (reuse from CompactOfflineIndicator)
+    const getStatusColor = () => {
+      if (!isOnline) return 'text-red-400'
+      if (syncing) return 'text-blue-400'
+      if (pendingCount > 0) return 'text-orange-400'
+      return 'text-green-400'
+    }
+    const getStatusIcon = () => {
+      if (!isOnline) return WifiOff
+      if (syncing) return RefreshCw
+      if (pendingCount > 0) return Upload
+      return CheckCircle
+    }
+    const Icon = getStatusIcon()
+
+    // Ensure we have valid values
+    const safeIsOnline = isOnline ?? true
+    const safeSyncing = syncing ?? false
+    const safePendingCount = pendingCount ?? 0
+    const safeErrors = errors ?? []
+
+    console.log('SyncPopover about to return JSX with:', { safeIsOnline, safeSyncing, safePendingCount, Icon })
+
+    // Temporarily simplify to just show the icon
+    return (
+      <div className={`flex items-center gap-1 p-1 bg-blue-500/20 rounded ${className}`} title="Sync Status">
+        <Icon className={`w-4 h-4 ${getStatusColor()} ${safeSyncing ? 'animate-spin' : ''}`} />
+        {safePendingCount > 0 && (
+          <span className="text-xs text-orange-400 font-medium">{safePendingCount}</span>
+        )}
+        <span className="text-xs text-blue-400">SYNC</span>
+      </div>
+    )
+  } catch (error) {
+    console.error('Error in SyncPopover:', error)
+    return (
+      <div className={`flex items-center gap-1 p-1 bg-red-500/20 rounded ${className}`} title="Sync Error">
+        <CheckCircle className="w-4 h-4 text-red-400" />
+        <span className="text-xs text-red-400">ERROR</span>
+      </div>
+    )
   }
-  const getStatusIcon = () => {
-    if (!isOnline) return WifiOff
-    if (syncing) return RefreshCw
-    if (pendingCount > 0) return Upload
-    return CheckCircle
-  }
-  const Icon = getStatusIcon()
-
-  // Ensure we have valid values
-  const safeIsOnline = isOnline ?? true
-  const safeSyncing = syncing ?? false
-  const safePendingCount = pendingCount ?? 0
-  const safeErrors = errors ?? []
-
-  // Temporarily simplify to just show the icon
-  return (
-    <div className={`flex items-center gap-1 p-1 bg-blue-500/20 rounded ${className}`} title="Sync Status">
-      <Icon className={`w-4 h-4 ${getStatusColor()} ${safeSyncing ? 'animate-spin' : ''}`} />
-      {safePendingCount > 0 && (
-        <span className="text-xs text-orange-400 font-medium">{safePendingCount}</span>
-      )}
-      <span className="text-xs text-blue-400">SYNC</span>
-    </div>
-  )
 }
