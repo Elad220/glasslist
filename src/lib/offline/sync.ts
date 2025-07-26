@@ -27,7 +27,8 @@ class SyncManager {
     lastSync: null,
     pendingChanges: 0,
     syncing: false,
-    errors: []
+    errors: [],
+    lastSyncCount: 0
   }
 
   constructor() {
@@ -160,7 +161,8 @@ class SyncManager {
       this.updateSyncStatus({
         syncing: false,
         lastSync: new Date().toISOString(),
-        pendingChanges: await this.getPendingChangesCount()
+        pendingChanges: await this.getPendingChangesCount(),
+        lastSyncCount: result.synced
       })
 
       return result
@@ -170,7 +172,8 @@ class SyncManager {
       
       this.updateSyncStatus({
         syncing: false,
-        errors: [errorMessage]
+        errors: [errorMessage],
+        lastSyncCount: 0
       })
 
       return {
@@ -504,6 +507,7 @@ export interface SyncStatus {
   pendingChanges: number
   syncing: boolean
   errors: string[]
+  lastSyncCount: number
 }
 
 // Export singleton instance

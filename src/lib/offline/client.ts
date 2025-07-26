@@ -260,6 +260,8 @@ class OfflineClient {
   }
 
   async updateItem(itemId: string, updates: Partial<UpdateItem>): Promise<OfflineClientResponse<Item>> {
+    await this.init()
+    
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first when online
       const { data, error } = await updateItemOriginal(itemId, updates)
@@ -312,6 +314,8 @@ class OfflineClient {
   }
 
   async createItem(itemData: NewItem): Promise<OfflineClientResponse<Item>> {
+    await this.init()
+    
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first when online
       const { data, error } = await createItemOriginal(itemData)
@@ -378,6 +382,8 @@ class OfflineClient {
   }
 
   async deleteItem(itemId: string): Promise<OfflineClientResponse<null>> {
+    await this.init()
+    
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first when online
       const { error } = await deleteItemOriginal(itemId)
@@ -412,6 +418,8 @@ class OfflineClient {
   }
 
   async toggleItemChecked(itemId: string, isChecked: boolean): Promise<OfflineClientResponse<Item>> {
+    await this.init()
+    
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first when online
       const { data, error } = await toggleItemCheckedOriginal(itemId, isChecked)
@@ -423,8 +431,44 @@ class OfflineClient {
       // If Supabase fails, fallback to IndexedDB
     }
     
-    // Offline or Supabase failed - use IndexedDB
-    return this.updateItem(itemId, { is_checked: isChecked })
+    // Offline or Supabase failed - use IndexedDB directly
+    try {
+      const existingRecord = await offlineStorage.getItem(itemId)
+      
+      if (!existingRecord) {
+        return {
+          data: null,
+          error: 'Item not found'
+        }
+      }
+
+      const updatedItem: Item = {
+        ...existingRecord.data,
+        is_checked: isChecked,
+        updated_at: new Date().toISOString()
+      }
+
+      const record = await offlineStorage.saveItem(updatedItem, 'update', true)
+      if (!record) {
+        return { data: null, error: 'Failed to update item' }
+      }
+      
+      // Trigger immediate sync if online (non-blocking)
+      if (syncManager.getStatus().isOnline) {
+        syncManager.forceSync().catch(console.error)
+      }
+
+      return {
+        data: record.data,
+        error: null
+      }
+    } catch (error) {
+      console.error('Failed to toggle item checked:', error)
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Failed to toggle item checked'
+      }
+    }
   }
 
   // Sync Operations
