@@ -18,7 +18,7 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
   const [selectedList, setSelectedList] = useState<string>('')
   const [lists, setLists] = useState<any[]>([])
   const [addingItems, setAddingItems] = useState<Set<string>>(new Set())
-  const { toast } = useToast()
+  const toast = useToast()
 
   useEffect(() => {
     if (userId && apiKey) {
@@ -48,6 +48,7 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
 
   const loadLists = async () => {
     try {
+      if (!supabase) return
       const { data, error } = await supabase
         .from('shopping_lists')
         .select('id, name')
@@ -86,7 +87,7 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
       }
     } catch (error) {
       console.error('Error adding item:', error)
-      toast.error('Failed to add item', 'Please try again')
+                             toast.error('Failed to add item', 'Please try again')
     } finally {
       setAddingItems(prev => {
         const newSet = new Set(prev)

@@ -42,6 +42,14 @@ export async function getAISuggestions(
   }
 
   try {
+    if (!supabase) {
+      return {
+        items: [],
+        success: false,
+        error: 'Database connection not available'
+      }
+    }
+    
     // Get user's shopping history
     const { data: historyData, error: historyError } = await supabase
       .from('items')
@@ -268,6 +276,13 @@ export async function addSuggestedItemToList(
   item: SuggestedItem
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    if (!supabase) {
+      return {
+        success: false,
+        error: 'Database connection not available'
+      }
+    }
+    
     const { error } = await supabase
       .from('items')
       .insert({
