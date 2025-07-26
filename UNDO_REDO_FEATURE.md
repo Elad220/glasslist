@@ -1,128 +1,143 @@
-# Undo/Redo Feature Implementation
+# Simplified Undo/Redo Feature Implementation
 
 ## Overview
 
-The undo/redo feature has been successfully implemented in the GlassList shopping list application. This feature allows users to undo accidental deletions or changes to their shopping lists and items.
+The undo/redo feature has been simplified to provide a more contextual and user-friendly experience. Instead of global undo/redo buttons, the system now shows undo buttons directly in the toast notifications when items or lists are deleted.
 
 ## Features
 
 ### Supported Actions
-- **Add Item**: Undo adding items to shopping lists
-- **Delete Item**: Undo deleting items from shopping lists  
-- **Update Item**: Undo editing item details (name, amount, unit, category, notes, image)
-- **Toggle Item**: Undo checking/unchecking items
+- **Delete Item**: Undo deleting items from shopping lists
 - **Delete List**: Undo deleting entire shopping lists
-- **Update List**: Undo editing list details (name, description, sharing settings)
 
 ### User Interface
-- **Undo/Redo Buttons**: Available in both dashboard and individual list pages
-- **Keyboard Shortcuts**: 
-  - `Ctrl+Z` (or `Cmd+Z` on Mac) for Undo
-  - `Ctrl+Y` or `Ctrl+Shift+Z` for Redo
-- **History Viewer**: Dropdown showing recent actions with timestamps
-- **Visual Feedback**: Toast notifications for successful undo/redo operations
+- **Toast-based Undo**: Undo buttons appear directly in success toasts after deletions
+- **Contextual**: Only shows when relevant (after delete operations)
+- **Simple**: No complex keyboard shortcuts or global buttons needed
 
 ## Technical Implementation
 
 ### Architecture
-The undo/redo system uses a state machine pattern with three states:
-- **Past**: Completed actions that can be undone
-- **Present**: Current state
-- **Future**: Actions that can be redone
+The simplified system uses a lightweight undo manager that:
+- Tracks recent delete actions
+- Provides undo functionality through toast actions
+- Maintains a small history (max 10 actions)
 
 ### Key Components
 
-#### 1. Context Provider (`src/lib/undo-redo/context.tsx`)
-- Manages the undo/redo state using React useReducer
-- Provides context for the entire application
-- Handles action history with configurable maximum size (default: 50 actions)
+#### 1. Simple Undo Manager (`src/lib/undo-redo/simple.ts`)
+- Lightweight class-based undo manager
+- Tracks delete actions with execution functions
+- Provides helper functions for common undo scenarios
 
-#### 2. Action Types (`src/lib/undo-redo/types.ts`)
-- Defines TypeScript interfaces for actions and state
-- Supports all shopping list operations
-
-#### 3. Action Execution (`src/lib/undo-redo/actions.ts`)
-- Handles the actual database operations for undo/redo
-- Integrates with Supabase client functions
-- Provides error handling and rollback capabilities
-
-#### 4. Custom Hooks (`src/lib/undo-redo/hooks.ts`)
-- `useUndoRedoWithExecution`: Main hook for undo/redo operations
-- `useItemActions`: Helper for item-specific actions
-- `useListActions`: Helper for list-specific actions
-
-#### 5. UI Components
-- `UndoRedoButtons`: Main undo/redo button component
-- `UndoRedoHistory`: History viewer component for debugging
+#### 2. Enhanced Toast System (`src/lib/toast/context.tsx`)
+- Added support for action buttons in toasts
+- Integrated with undo functionality
+- Maintains existing toast styling and behavior
 
 ### Integration Points
 
 #### Dashboard Page (`src/app/dashboard/page.tsx`)
-- Undo/redo buttons in header
-- Integration with list deletion and editing operations
-- History viewer for debugging
+- List deletion with undo toast
+- Simplified integration without complex state management
 
 #### List Page (`src/app/list/[listId]/page.tsx`)
-- Undo/redo buttons in list header
-- Integration with item operations (add, delete, edit, toggle)
-- History viewer for debugging
+- Item deletion with undo toast
+- Clean, contextual undo experience
 
 ## Usage
 
 ### For Users
-1. **Undo**: Click the undo button or press `Ctrl+Z`
-2. **Redo**: Click the redo button or press `Ctrl+Y`
-3. **View History**: Click the history button to see recent actions
-4. **Keyboard Shortcuts**: Work globally except when typing in input fields
+1. **Delete an item or list** - Normal delete operation
+2. **See undo toast** - Success toast appears with "Undo" button
+3. **Click Undo** - Item/list is restored immediately
+4. **Confirmation** - Success toast confirms the undo action
 
 ### For Developers
-1. **Adding New Actions**: Use the provided hooks in your components
-2. **Custom Actions**: Extend the action types and execution logic
-3. **Testing**: Use the history viewer to verify action tracking
+1. **Import the undo manager**: `import { undoManager, createDeleteItemUndoAction } from '@/lib/undo-redo/simple'`
+2. **Create undo action**: Use helper functions to create undo actions
+3. **Show toast with action**: Use the enhanced toast system with action buttons
+
+## Example Implementation
+
+```typescript
+// Create undo action
+const undoAction = await createDeleteItemUndoAction(listId, item, itemId, () => {
+  // Refresh data after undo
+  loadData()
+})
+undoManager.addAction(undoAction)
+
+// Show toast with undo button
+toast.success(
+  'Item removed', 
+  `${item.name} removed from your list`,
+  {
+    action: {
+      label: 'Undo',
+      onClick: async () => {
+        const latestAction = undoManager.getLatestAction()
+        if (latestAction && latestAction.id === undoAction.id) {
+          await latestAction.execute()
+          undoManager.removeAction(latestAction.id)
+          toast.success('Undone', `${item.name} has been restored`)
+        }
+      }
+    }
+  }
+)
+```
+
+## Benefits of Simplified Approach
+
+1. **Contextual**: Undo only appears when relevant
+2. **Intuitive**: Users see undo option immediately after action
+3. **Lightweight**: No complex state management or global UI
+4. **Focused**: Only handles the most important undo scenario (deletions)
+5. **Maintainable**: Simple codebase with clear responsibilities
 
 ## Configuration
 
 ### History Size
-The maximum number of actions stored in history can be configured in `src/lib/undo-redo/context.tsx`:
+The maximum number of actions stored can be configured in `src/lib/undo-redo/simple.ts`:
 
 ```typescript
-const initialState: UndoRedoState = {
-  past: [],
-  present: null,
-  future: [],
-  maxHistorySize: 50  // Change this value
+class UndoManager {
+  private maxActions = 10  // Change this value
 }
 ```
 
-### Demo Mode Support
-The undo/redo system works in both demo mode and production mode, with appropriate fallbacks for demo operations.
+### Toast Duration
+Toast duration can be configured in the toast system:
+
+```typescript
+const duration = toast.duration || 4000  // 4 seconds default
+```
 
 ## Error Handling
 
-- **Database Errors**: Failed undo/redo operations show error toasts
+- **Database Errors**: Failed undo operations show error toasts
 - **State Consistency**: Optimistic updates with rollback on errors
 - **Network Issues**: Graceful handling of connection problems
 
 ## Future Enhancements
 
-1. **Persistent History**: Save undo history to localStorage for session persistence
-2. **Bulk Operations**: Support for undoing multiple actions at once
-3. **Action Grouping**: Group related actions (e.g., AI bulk add)
+1. **More Actions**: Extend to support editing operations
+2. **Persistent History**: Save undo history to localStorage
+3. **Bulk Operations**: Support for undoing multiple actions
 4. **Visual Indicators**: Show which items have been modified recently
-5. **Conflict Resolution**: Handle concurrent edits in shared lists
 
 ## Testing
 
 The feature can be tested by:
-1. Performing various actions (add, delete, edit items/lists)
-2. Using undo/redo buttons and keyboard shortcuts
-3. Checking the history viewer for action tracking
-4. Verifying database state after undo/redo operations
+1. Deleting items from shopping lists
+2. Deleting shopping lists from dashboard
+3. Using the undo buttons in the toast notifications
+4. Verifying that items/lists are properly restored
 
 ## Dependencies
 
 - React 19.1.0+
 - TypeScript 5+
-- Lucide React (for icons)
 - Existing Supabase client functions
-- Toast notification system
+- Enhanced toast notification system

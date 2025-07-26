@@ -39,8 +39,7 @@ import {
   Upload,
   CheckCircle
 } from 'lucide-react'
-import UndoRedoButtons from '@/components/UndoRedoButtons'
-import UndoRedoHistory from '@/components/UndoRedoHistory'
+
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI } from '@/lib/ai/gemini'
@@ -56,7 +55,7 @@ import {
   isDemoMode,
   createManyItems
 } from '@/lib/supabase/client'
-import { useItemActions } from '@/lib/undo-redo/hooks'
+import { undoManager, createDeleteItemUndoAction } from '@/lib/undo-redo/simple'
 
 // Category icons mapping
 const categoryIcons: { [key: string]: any } = {
@@ -113,7 +112,7 @@ export default function ListPage() {
   const router = useRouter()
   const listId = params.listId as string
   const toast = useToast()
-  const { addItemAction, deleteItemAction, updateItemAction, toggleItemAction } = useItemActions()
+
 
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
@@ -238,8 +237,7 @@ export default function ListPage() {
 
     const newCheckedState = !item.is_checked
 
-    // Add to undo history before toggle
-    toggleItemAction(listId, itemId, item.is_checked, newCheckedState, item.name)
+
 
     // Optimistic update
     setItems(items.map(item => 
@@ -332,8 +330,6 @@ export default function ListPage() {
         }
         
         setItems([...items, createdItem])
-        // Add to undo history
-        addItemAction(listId, itemData, createdItem.id)
       } else {
         // Demo mode
         const item = {
@@ -344,8 +340,6 @@ export default function ListPage() {
           position: 0
         }
         setItems([...items, item])
-        // Add to undo history
-        addItemAction(listId, itemData, item.id)
       }
       
       // Show success toast
@@ -368,8 +362,12 @@ export default function ListPage() {
     const item = items.find(item => item.id === itemId)
     if (!item) return
 
-    // Add to undo history before deletion
-    deleteItemAction(listId, item, itemId)
+    // Create undo action
+    const undoAction = await createDeleteItemUndoAction(listId, item, itemId, () => {
+      // Refresh items after undo
+      loadData()
+    })
+    undoManager.addAction(undoAction)
 
     // Optimistic update
     setItems(items.filter(item => item.id !== itemId))
@@ -384,7 +382,29 @@ export default function ListPage() {
       }
     }
 
-    toast.success('Item removed', `${item.name} removed from your list`)
+    // Show toast with undo button
+    toast.success(
+      'Item removed', 
+      `${item.name} removed from your list`,
+      {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            try {
+              const latestAction = undoManager.getLatestAction()
+              if (latestAction && latestAction.id === undoAction.id) {
+                await latestAction.execute()
+                undoManager.removeAction(latestAction.id)
+                toast.success('Undone', `${item.name} has been restored`)
+              }
+            } catch (error) {
+              console.error('Error undoing action:', error)
+              toast.error('Undo failed', 'Failed to restore the item')
+            }
+          }
+        }
+      }
+    )
   }
 
   const handleAiAdd = async () => {
@@ -498,16 +518,7 @@ export default function ListPage() {
         image_url: imageUrl
       }
 
-      // Add to undo history before update
-      const previousState = {
-        name: editingItem.name,
-        amount: editingItem.amount,
-        unit: editingItem.unit,
-        category: editingItem.category,
-        notes: editingItem.notes,
-        image_url: editingItem.image_url
-      }
-      updateItemAction(listId, editingItem.id, previousState, updatedItemData, editingItem.name)
+
 
       if (!isDemoMode) {
         const { data: updatedItem, error } = await updateItem(editingItem.id, updatedItemData)
@@ -1000,8 +1011,6 @@ export default function ListPage() {
             
             {/* Action buttons */}
             <div className="flex items-center gap-2">
-              <UndoRedoButtons size="sm" />
-              <UndoRedoHistory />
               
               {!isShoppingMode && (
                 <div className="flex items-center gap-2">
