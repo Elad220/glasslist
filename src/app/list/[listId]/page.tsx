@@ -53,7 +53,8 @@ import {
   deleteItem, 
   toggleItemChecked,
   isDemoMode,
-  createManyItems
+  createManyItems,
+  updateCategoryOrder
 } from '@/lib/supabase/client'
 import { undoManager, createDeleteItemUndoAction } from '@/lib/undo-redo/simple'
 
@@ -205,8 +206,20 @@ export default function ListPage() {
         if (!itemsError && itemsData) {
           console.log('ListPage: Setting items data')
           setItems(itemsData)
-          const initialCategories = Array.from(new Set(itemsData.map(item => item.category || 'Other')))
-          setOrderedCategories(initialCategories)
+          
+          // Load category order from the list, or create default order from items
+          const savedCategoryOrder = listData.category_order as string[] | null
+          const availableCategories = Array.from(new Set(itemsData.map(item => item.category || 'Other')))
+          
+          if (savedCategoryOrder && savedCategoryOrder.length > 0) {
+            // Use saved order, but add any new categories that aren't in the saved order
+            const newCategories = availableCategories.filter(cat => !savedCategoryOrder.includes(cat))
+            const finalOrder = [...savedCategoryOrder, ...newCategories]
+            setOrderedCategories(finalOrder)
+          } else {
+            // No saved order, use default order from items
+            setOrderedCategories(availableCategories)
+          }
         } else if (itemsError) {
           console.error('ListPage: Items error:', itemsError)
         }
@@ -917,7 +930,7 @@ export default function ListPage() {
     }
   }
 
-  const onDragEnd = (result: any) => {
+  const onDragEnd = async (result: any) => {
     if (!result.destination) {
       return;
     }
@@ -927,6 +940,17 @@ export default function ListPage() {
     newOrderedCategories.splice(result.destination.index, 0, reorderedItem);
 
     setOrderedCategories(newOrderedCategories);
+
+    // Persist the new category order to the database
+    if (!isDemoMode) {
+      try {
+        await updateCategoryOrder(listId, newOrderedCategories);
+      } catch (error) {
+        console.error('Failed to save category order:', error);
+        // Optionally show a toast error, but don't revert the UI change
+        // as the user has already seen the reorder happen
+      }
+    }
   };
 
   const filteredItems = items.filter(item => {
@@ -955,11 +979,19 @@ export default function ListPage() {
       const removedCategories = currentOrderedCategories.filter(c => !newCategories.includes(c));
       if (addedCategories.length > 0 || removedCategories.length > 0) {
         const finalCategories = [...currentOrderedCategories.filter(c => !removedCategories.includes(c)), ...addedCategories];
+        
+        // Persist the updated category order when categories are added/removed
+        if (!isDemoMode && finalCategories.length > 0) {
+          updateCategoryOrder(listId, finalCategories).catch(error => {
+            console.error('Failed to save category order after category change:', error);
+          });
+        }
+        
         return finalCategories;
       }
       return currentOrderedCategories;
     });
-  }, [items]);
+  }, [items, listId, isDemoMode]);
 
 
   if (isLoading) {

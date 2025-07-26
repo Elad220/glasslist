@@ -25,6 +25,7 @@ CREATE TABLE shopping_lists (
   name TEXT NOT NULL,
   description TEXT,
   is_archived BOOLEAN DEFAULT FALSE,
+  category_order JSONB DEFAULT '[]'::jsonb, -- Store ordered array of category names
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
