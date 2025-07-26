@@ -31,6 +31,7 @@ import {
   HelpCircle
 } from 'lucide-react'
 
+import { motion } from 'framer-motion'
 import { getCurrentUser } from '@/lib/supabase/auth'
 import { useToast } from '@/lib/toast/context'
 import { 
@@ -620,10 +621,10 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="glass-card p-8 text-center">
+        <motion.div className="glass-card p-8 text-center animate-glass-fade-in" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
           <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
           <p className="text-glass">Loading your dashboard...</p>
-        </div>
+        </motion.div>
       </div>
     )
   }
@@ -638,7 +639,7 @@ export default function DashboardPage() {
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="glass-card p-6 mb-8">
+        <motion.div className="glass-card p-6 mb-8 animate-glass-fade-up" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <ShoppingCart className="w-8 h-8 text-primary" />
@@ -656,40 +657,40 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Analytics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="glass-card p-6 text-center">
-            <Package className="w-8 h-8 text-primary mx-auto mb-2" />
+          <motion.div className="glass-card p-6 text-center animate-glass-fade-up" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
+            <Package className="w-8 h-8 text-primary mx-auto mb-2 animate-glass-float" />
             <p className="text-2xl font-bold text-glass-heading">{analytics.total_lists}</p>
             <p className="text-glass-muted text-sm">Shopping Lists</p>
-          </div>
+          </motion.div>
           
-          <div className="glass-card p-6 text-center">
-            <ShoppingCart className="w-8 h-8 text-secondary mx-auto mb-2" />
+          <motion.div className="glass-card p-6 text-center animate-glass-fade-up" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7, ease: 'easeOut' }}>
+            <ShoppingCart className="w-8 h-8 text-secondary mx-auto mb-2 animate-glass-float" />
             <p className="text-2xl font-bold text-glass-heading">{analytics.total_items}</p>
             <p className="text-glass-muted text-sm">Total Items</p>
-          </div>
+          </motion.div>
           
-          <div className="glass-card p-6 text-center">
-            <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+          <motion.div className="glass-card p-6 text-center animate-glass-fade-up" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.7, ease: 'easeOut' }}>
+            <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2 animate-glass-float" />
             <p className="text-2xl font-bold text-glass-heading">{analytics.completed_items}</p>
             <p className="text-glass-muted text-sm">Completed</p>
-          </div>
+          </motion.div>
           
-          <div className="glass-card p-6 text-center">
-            <TrendingUp className="w-8 h-8 text-accent mx-auto mb-2" />
+          <motion.div className="glass-card p-6 text-center animate-glass-fade-up" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.7, ease: 'easeOut' }}>
+            <TrendingUp className="w-8 h-8 text-accent mx-auto mb-2 animate-glass-float" />
             <p className="text-2xl font-bold text-glass-heading">{analytics.items_this_month}</p>
             <p className="text-glass-muted text-sm">This Month</p>
-          </div>
+          </motion.div>
         </div>
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Shopping Lists */}
           <div className="lg:col-span-2">
-            <div className="glass-card p-6">
+            <motion.div className="glass-card p-6 animate-glass-fade-up" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold flex items-center gap-2 text-glass-heading">
                   <ShoppingCart className="w-5 h-5" />
@@ -705,10 +706,13 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-4">
-                {shoppingLists.map((list) => (
-                  <div
+                {shoppingLists.map((list, idx) => (
+                  <motion.div
                     key={list.id}
-                    className="glass-card p-4 hover:scale-[1.02] transition-all duration-200 relative group"
+                    className="glass-card p-4 hover:scale-[1.02] transition-all duration-200 relative group animate-glass-fade-in"
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.05 * idx, duration: 0.6, ease: 'easeOut' }}
                   >
                     <Link
                       href={`/list/${list.id}`}
@@ -780,16 +784,16 @@ export default function DashboardPage() {
                         <Trash2 className="w-4 h-4 text-red-500" />
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Insights Sidebar */}
           <div className="space-y-6">
             {/* Quick Stats */}
-            <div className="glass-card p-6">
+            <motion.div className="glass-card p-6 animate-glass-fade-up" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
               <h3 className="font-bold mb-4 flex items-center gap-2 text-glass-heading">
                 <BarChart3 className="w-5 h-5" />
                 Quick Insights
@@ -813,11 +817,11 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Recent Lists */}
             {shoppingLists.length > 0 && (
-              <div className="glass-card p-6 mb-6">
+              <motion.div className="glass-card p-6 mb-6 animate-glass-fade-up" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7, ease: 'easeOut' }}>
                 <h3 className="font-bold mb-4 text-glass-heading flex items-center gap-2">
                   <Clock className="w-5 h-5" />
                   Recent Lists
@@ -844,11 +848,11 @@ export default function DashboardPage() {
                     </Link>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Quick Actions */}
-            <div className="glass-card p-6">
+            <motion.div className="glass-card p-6 animate-glass-fade-up" initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.7, ease: 'easeOut' }}>
               <h3 className="font-bold mb-4 text-glass-heading">Quick Actions</h3>
               <div className="space-y-3">
                 <Link 
@@ -919,22 +923,29 @@ export default function DashboardPage() {
                   </button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
       
       {/* Edit List Modal */}
       {showEditList && editingList && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+        <motion.div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-glass-fade-in"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
           onClick={() => {
             setShowEditList(false)
             setEditingList(null)
           }}
         >
-          <div 
-            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+          <motion.div 
+            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-glass-fade-up"
+            initial={{ scale: 0.98, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
@@ -1002,21 +1013,28 @@ export default function DashboardPage() {
                 Cancel
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && listToDelete && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+        <motion.div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-glass-fade-in"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
           onClick={() => {
             setShowDeleteConfirm(false)
             setListToDelete(null)
           }}
         >
-          <div 
-            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+          <motion.div 
+            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-glass-fade-up"
+            initial={{ scale: 0.98, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -1056,21 +1074,28 @@ export default function DashboardPage() {
                 Cancel
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Search Modal */}
       {showSearchModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+        <motion.div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-glass-fade-in"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
           onClick={() => {
             setShowSearchModal(false)
             setSearchQuery('')
           }}
         >
-          <div 
-            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+          <motion.div 
+            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-glass-fade-up"
+            initial={{ scale: 0.98, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
@@ -1123,21 +1148,28 @@ export default function DashboardPage() {
                 Close
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Join List Modal */}
       {showJoinModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+        <motion.div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-glass-fade-in"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
           onClick={() => {
             setShowJoinModal(false)
             setShareCode('')
           }}
         >
-          <div 
-            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+          <motion.div 
+            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-glass-fade-up"
+            initial={{ scale: 0.98, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
@@ -1180,18 +1212,25 @@ export default function DashboardPage() {
                 Cancel
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Templates Modal */}
       {showTemplatesModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+        <motion.div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-glass-fade-in"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
           onClick={() => setShowTemplatesModal(false)}
         >
-          <div 
-            className="glass-card p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+          <motion.div 
+            className="glass-card p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-glass-fade-up"
+            initial={{ scale: 0.98, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
@@ -1235,21 +1274,28 @@ export default function DashboardPage() {
                 Close
               </button>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Import Modal */}
       {showImportModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+        <motion.div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-glass-fade-in"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
           onClick={() => {
             setShowImportModal(false)
             setImportFile(null)
           }}
         >
-          <div 
-            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+          <motion.div 
+            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-glass-fade-up"
+            initial={{ scale: 0.98, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
@@ -1333,8 +1379,8 @@ export default function DashboardPage() {
                 <li>• Files must contain a "lists" array</li>
               </ul>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   )
