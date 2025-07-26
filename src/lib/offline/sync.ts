@@ -172,7 +172,8 @@ class SyncManager {
       
       this.updateSyncStatus({
         syncing: false,
-        errors: [errorMessage]
+        errors: [errorMessage],
+        lastSyncCount: 0
       })
 
       return {
