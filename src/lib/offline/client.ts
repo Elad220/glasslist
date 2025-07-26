@@ -423,8 +423,44 @@ class OfflineClient {
       // If Supabase fails, fallback to IndexedDB
     }
     
-    // Offline or Supabase failed - use IndexedDB
-    return this.updateItem(itemId, { is_checked: isChecked })
+    // Offline or Supabase failed - use IndexedDB directly
+    try {
+      const existingRecord = await offlineStorage.getItem(itemId)
+      
+      if (!existingRecord) {
+        return {
+          data: null,
+          error: 'Item not found'
+        }
+      }
+
+      const updatedItem: Item = {
+        ...existingRecord.data,
+        is_checked: isChecked,
+        updated_at: new Date().toISOString()
+      }
+
+      const record = await offlineStorage.saveItem(updatedItem, 'update', true)
+      if (!record) {
+        return { data: null, error: 'Failed to update item' }
+      }
+      
+      // Trigger immediate sync if online (non-blocking)
+      if (syncManager.getStatus().isOnline) {
+        syncManager.forceSync().catch(console.error)
+      }
+
+      return {
+        data: record.data,
+        error: null
+      }
+    } catch (error) {
+      console.error('Failed to toggle item checked:', error)
+      return {
+        data: null,
+        error: error instanceof Error ? error.message : 'Failed to toggle item checked'
+      }
+    }
   }
 
   // Sync Operations
