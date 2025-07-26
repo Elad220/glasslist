@@ -32,6 +32,7 @@ const mockProfile = {
   full_name: 'Demo User',
   avatar_url: null,
   gemini_api_key: null,
+  ai_suggestions_enabled: true,
   created_at: '2024-01-15T10:00:00Z',
   updated_at: '2024-01-15T10:00:00Z'
 }
@@ -51,7 +52,8 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    gemini_api_key: ''
+    gemini_api_key: '',
+    ai_suggestions_enabled: true
   })
 
   useEffect(() => {
@@ -72,17 +74,19 @@ export default function SettingsPage() {
             setFormData({
               full_name: profileData.full_name || '',
               email: profileData.email || '',
-              gemini_api_key: profileData.gemini_api_key || ''
+              gemini_api_key: profileData.gemini_api_key || '',
+              ai_suggestions_enabled: profileData.ai_suggestions_enabled ?? true
             })
           }
         } else {
           // Use demo data
           setProfile(mockProfile)
-          setFormData({
-            full_name: mockProfile.full_name || '',
-            email: mockProfile.email || '',
-            gemini_api_key: mockProfile.gemini_api_key || ''
-          })
+                      setFormData({
+              full_name: mockProfile.full_name || '',
+              email: mockProfile.email || '',
+              gemini_api_key: mockProfile.gemini_api_key || '',
+              ai_suggestions_enabled: mockProfile.ai_suggestions_enabled ?? true
+            })
         }
       } catch (error) {
         console.error('Error loading profile:', error)
@@ -117,7 +121,8 @@ export default function SettingsPage() {
         if (user?.id) {
           const { data: updatedProfile, error } = await updateProfile(user.id, {
             full_name: formData.full_name,
-            gemini_api_key: formData.gemini_api_key || null
+            gemini_api_key: formData.gemini_api_key || null,
+            ai_suggestions_enabled: formData.ai_suggestions_enabled
           })
           
           if (error) {
@@ -396,9 +401,23 @@ export default function SettingsPage() {
                           AI-powered item recommendations based on your shopping patterns
                         </p>
                       </div>
-                      <div className="w-6 h-6 rounded-full bg-green-500/20 border border-green-200/30 flex items-center justify-center">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      </div>
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          ai_suggestions_enabled: !formData.ai_suggestions_enabled
+                        })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 ${
+                          formData.ai_suggestions_enabled 
+                            ? 'bg-green-500' 
+                            : 'bg-glass-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.ai_suggestions_enabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
                 </div>

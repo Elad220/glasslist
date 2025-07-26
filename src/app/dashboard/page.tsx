@@ -52,6 +52,7 @@ const mockProfile: Profile = {
   full_name: 'Demo User',
   avatar_url: null,
   gemini_api_key: null,
+  ai_suggestions_enabled: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 }
@@ -936,7 +937,7 @@ export default function DashboardPage() {
             </div>
 
             {/* AI Suggestions */}
-            {user && (
+            {user && profile?.ai_suggestions_enabled && (
               <AISuggestions 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
