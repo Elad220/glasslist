@@ -563,6 +563,8 @@ export default function DashboardPage() {
         throw new Error('No valid lists found in the imported file')
       }
 
+      // Check if we're in demo mode first
+      console.log('Import: isDemoMode =', isDemoMode)
       if (isDemoMode) {
         // Simulate import in demo mode
         await new Promise(resolve => setTimeout(resolve, 1500))
@@ -584,15 +586,10 @@ export default function DashboardPage() {
         )
       } else {
         // Real implementation - actually import the data
+        console.log('Import: Using real database implementation')
         const { user } = await getCurrentUser()
         if (!user) {
           toast.error('Authentication required', 'Please sign in to import lists')
-          return
-        }
-
-        // Check if we're in demo mode
-        if (isDemoMode) {
-          toast.info('Demo Mode', 'Import functionality is limited in demo mode. Sign up to use full import features!')
           return
         }
 
