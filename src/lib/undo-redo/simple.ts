@@ -8,11 +8,17 @@ export interface UndoAction {
   timestamp: number
 }
 
+export interface UndoActionData {
+  type: 'DELETE_ITEM' | 'DELETE_LIST'
+  description: string
+  execute: () => Promise<void>
+}
+
 class UndoManager {
   private actions: UndoAction[] = []
   private maxActions = 10
 
-  addAction(action: Omit<UndoAction, 'id' | 'timestamp'>) {
+  addAction(action: UndoActionData) {
     const newAction: UndoAction = {
       ...action,
       id: crypto.randomUUID(),
@@ -55,7 +61,7 @@ export function createDeleteItemUndoAction(
   item: any, 
   itemId: string,
   onSuccess?: () => void
-): UndoAction {
+): UndoActionData {
   return {
     type: 'DELETE_ITEM',
     description: `Deleted "${item.name}"`,
@@ -87,7 +93,7 @@ export function createDeleteItemUndoAction(
 export function createDeleteListUndoAction(
   list: any,
   onSuccess?: () => void
-): UndoAction {
+): UndoActionData {
   // Note: This is a simplified version - in a real implementation,
   // you'd need to restore the list and all its items
   return {
