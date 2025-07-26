@@ -6,7 +6,7 @@ import { LayoutDashboard, Settings, LogOut, ShoppingCart, WifiOff, RefreshCw, Up
 import { signOut } from '@/lib/supabase/auth'
 import * as Popover from '@radix-ui/react-popover'
 import { useState } from 'react'
-import { CompactOfflineIndicator, useSyncStatus, useOnlineStatus, usePendingChanges } from './OfflineIndicator'
+import { useSyncStatus, useOnlineStatus, usePendingChanges } from '@/lib/offline/hooks'
 
 export default function Navbar() {
   const router = useRouter()
