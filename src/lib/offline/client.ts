@@ -260,6 +260,8 @@ class OfflineClient {
   }
 
   async updateItem(itemId: string, updates: Partial<UpdateItem>): Promise<OfflineClientResponse<Item>> {
+    await this.init()
+    
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first when online
       const { data, error } = await updateItemOriginal(itemId, updates)
@@ -312,6 +314,8 @@ class OfflineClient {
   }
 
   async createItem(itemData: NewItem): Promise<OfflineClientResponse<Item>> {
+    await this.init()
+    
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first when online
       const { data, error } = await createItemOriginal(itemData)
@@ -378,6 +382,8 @@ class OfflineClient {
   }
 
   async deleteItem(itemId: string): Promise<OfflineClientResponse<null>> {
+    await this.init()
+    
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first when online
       const { error } = await deleteItemOriginal(itemId)
@@ -412,6 +418,8 @@ class OfflineClient {
   }
 
   async toggleItemChecked(itemId: string, isChecked: boolean): Promise<OfflineClientResponse<Item>> {
+    await this.init()
+    
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first when online
       const { data, error } = await toggleItemCheckedOriginal(itemId, isChecked)
