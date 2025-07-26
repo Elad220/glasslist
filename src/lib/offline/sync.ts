@@ -1,5 +1,6 @@
 import { offlineStorage, type OfflineRecord } from './storage'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase/client'
+import { getCurrentUser } from '@/lib/supabase/auth'
 import type { Database, ShoppingList, Item } from '@/lib/supabase/types'
 
 interface SyncResult {
@@ -16,13 +17,10 @@ interface ConflictResolution {
 }
 
 class SyncManager {
-  private supabase = createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
   private syncInProgress = false
   private autoSyncInterval: NodeJS.Timeout | null = null
   private listeners: Set<(status: SyncStatus) => void> = new Set()
+  private initialized = false
 
   private syncStatus: SyncStatus = {
     isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
@@ -45,20 +43,39 @@ class SyncManager {
 
   // Public API
   async startAutoSync(intervalMs: number = 30000): Promise<void> {
+    if (this.initialized) return
+    
     if (this.autoSyncInterval) {
       clearInterval(this.autoSyncInterval)
     }
 
-    this.autoSyncInterval = setInterval(() => {
+    this.autoSyncInterval = setInterval(async () => {
       if (this.syncStatus.isOnline && !this.syncStatus.syncing) {
-        this.syncAll().catch(console.error)
+        // Check authentication before attempting sync
+        try {
+          const { user, error: authError } = await getCurrentUser()
+          if (!authError && user) {
+            this.syncAll().catch(console.error)
+          }
+        } catch (error) {
+          // Silent fail for authentication check
+        }
       }
     }, intervalMs)
 
-    // Initial sync if online
-    if (this.syncStatus.isOnline) {
-      this.syncAll().catch(console.error)
-    }
+          // Initial sync if online and authenticated
+      if (this.syncStatus.isOnline) {
+        try {
+          const { user, error: authError } = await getCurrentUser()
+          if (!authError && user) {
+            this.syncAll().catch(console.error)
+          }
+        } catch (error) {
+          // Silent fail for authentication check
+        }
+      }
+    
+    this.initialized = true
   }
 
   stopAutoSync(): void {
@@ -82,7 +99,7 @@ class SyncManager {
     return { ...this.syncStatus }
   }
 
-  async forcSync(): Promise<SyncResult> {
+  async forceSync(): Promise<SyncResult> {
     return await this.syncAll()
   }
 
@@ -105,6 +122,28 @@ class SyncManager {
         failed: 0,
         conflicts: 0,
         errors: ['Device is offline']
+      }
+    }
+
+    // Check authentication before starting sync
+    try {
+      const { user, error: authError } = await getCurrentUser()
+      if (authError || !user) {
+        return {
+          success: false,
+          synced: 0,
+          failed: 0,
+          conflicts: 0,
+          errors: ['User not authenticated']
+        }
+      }
+    } catch (error) {
+      return {
+        success: false,
+        synced: 0,
+        failed: 0,
+        conflicts: 0,
+        errors: ['Authentication failed']
       }
     }
 
@@ -150,15 +189,17 @@ class SyncManager {
   private async pullFromServer(): Promise<void> {
     try {
       // Get current user
-      const { data: { user } } = await this.supabase.auth.getUser()
-      if (!user) throw new Error('User not authenticated')
+      const { user, error: authError } = await getCurrentUser()
+      if (authError || !user) throw new Error('User not authenticated')
+
+      if (!supabase) throw new Error('Supabase client not available')
 
       // Get last sync timestamp
       const syncMetadata = await offlineStorage.getSyncMetadata(user.id)
       const lastSync = syncMetadata?.lastSyncTimestamp || 0
 
       // Fetch lists updated since last sync
-      const { data: lists, error: listsError } = await this.supabase
+      const { data: lists, error: listsError } = await supabase
         .from('shopping_lists')
         .select('*')
         .eq('user_id', user.id)
@@ -167,7 +208,7 @@ class SyncManager {
       if (listsError) throw listsError
 
       // Fetch items updated since last sync
-      const { data: items, error: itemsError } = await this.supabase
+      const { data: items, error: itemsError } = await supabase
         .from('items')
         .select(`
           *,
@@ -287,9 +328,11 @@ class SyncManager {
   private async syncListToServer(record: OfflineRecord<ShoppingList>): Promise<void> {
     const { data: list, pendingOperation } = record
 
+    if (!supabase) throw new Error('Supabase client not available')
+
     try {
       if (pendingOperation === 'create') {
-        const { error } = await this.supabase
+        const { error } = await supabase
           .from('shopping_lists')
           .insert(list)
 
@@ -297,7 +340,7 @@ class SyncManager {
         await offlineStorage.markListSynced(list.id)
 
       } else if (pendingOperation === 'update') {
-        const { error } = await this.supabase
+        const { error } = await supabase
           .from('shopping_lists')
           .update(list)
           .eq('id', list.id)
@@ -306,7 +349,7 @@ class SyncManager {
         await offlineStorage.markListSynced(list.id)
 
       } else if (pendingOperation === 'delete') {
-        const { error } = await this.supabase
+        const { error } = await supabase
           .from('shopping_lists')
           .delete()
           .eq('id', list.id)
@@ -324,9 +367,11 @@ class SyncManager {
   private async syncItemToServer(record: OfflineRecord<Item>): Promise<void> {
     const { data: item, pendingOperation } = record
 
+    if (!supabase) throw new Error('Supabase client not available')
+
     try {
       if (pendingOperation === 'create') {
-        const { error } = await this.supabase
+        const { error } = await supabase
           .from('items')
           .insert(item)
 
@@ -334,7 +379,7 @@ class SyncManager {
         await offlineStorage.markItemSynced(item.id)
 
       } else if (pendingOperation === 'update') {
-        const { error } = await this.supabase
+        const { error } = await supabase
           .from('items')
           .update(item)
           .eq('id', item.id)
@@ -343,7 +388,7 @@ class SyncManager {
         await offlineStorage.markItemSynced(item.id)
 
       } else if (pendingOperation === 'delete') {
-        const { error } = await this.supabase
+        const { error } = await supabase
           .from('items')
           .delete()
           .eq('id', item.id)

@@ -18,7 +18,7 @@ export function useSyncStatus() {
   }, [])
 
   const forceSync = useCallback(async () => {
-    return await syncManager.forcSync()
+    return await syncManager.forceSync()
   }, [])
 
   return {

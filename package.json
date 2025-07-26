@@ -12,6 +12,7 @@
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.5",
     "@hello-pangea/dnd": "^18.0.1",
+    "@radix-ui/react-popover": "^1.1.14",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.52.1",
     "lucide-react": "^0.525.0",

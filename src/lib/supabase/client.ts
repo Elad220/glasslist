@@ -47,16 +47,12 @@ export const getUserAnalytics = offlineClient.getUserAnalytics
 
 // Original Supabase functions kept for fallback/legacy support
 export async function getShoppingListsOriginal(userId: string) {
-  console.log('getShoppingLists called with userId:', userId)
-  
   if (!supabase) {
     console.error('Supabase client not available')
     return { data: null, error: 'Supabase not available' }
   }
 
   try {
-    console.log('Attempting to fetch shopping lists...')
-    
     // Fetch lists with their items using a join
     const { data, error } = await supabase
       .from('shopping_lists')
@@ -87,8 +83,6 @@ export async function getShoppingListsOriginal(userId: string) {
       .eq('is_archived', false)
       .order('created_at', { ascending: false })
 
-    console.log('Query result:', { data, error })
-
     if (error) {
       console.error('getShoppingLists Supabase error:', error)
       return { data: null, error: error.message || 'Database query failed' }
@@ -100,7 +94,6 @@ export async function getShoppingListsOriginal(userId: string) {
       items: list.items || []
     }))
 
-    console.log('Returning lists with items:', listsWithItems)
     return { data: listsWithItems, error: null }
 
   } catch (error) {
@@ -110,24 +103,18 @@ export async function getShoppingListsOriginal(userId: string) {
 }
 
 export async function getShoppingListOriginal(listId: string) {
-  console.log('getShoppingList called with listId:', listId)
-  
   if (!supabase) {
     console.error('Supabase client not available')
     return { data: null, error: 'Supabase not available' }
   }
 
   try {
-    console.log('Attempting to fetch shopping list...')
-    
     // Simplified query without the complex join that might be causing 400 error
     const { data, error } = await supabase
       .from('shopping_lists')
       .select('*')
       .eq('id', listId)
       .single()
-
-    console.log('getShoppingList query result:', { data, error })
 
     if (error) {
       console.error('getShoppingList Supabase error:', error)
@@ -140,7 +127,6 @@ export async function getShoppingListOriginal(listId: string) {
       list_members: []
     }
 
-    console.log('Returning list:', listWithEmptyMembers)
     return { data: listWithEmptyMembers, error: null }
 
   } catch (error) {
@@ -212,8 +198,6 @@ export async function getShoppingListByShareCode(shareCode: string) {
 // =============================================
 
 export async function getListItemsOriginal(listId: string) {
-  console.log('getListItems called with listId:', listId)
-  
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
   try {
@@ -242,7 +226,6 @@ export async function getListItemsOriginal(listId: string) {
       .order('position', { ascending: true })
       .order('created_at', { ascending: true })
 
-    console.log('getListItems result:', { count: data?.length, error })
     return { data, error }
 
   } catch (error) {
@@ -252,8 +235,6 @@ export async function getListItemsOriginal(listId: string) {
 }
 
 export async function createItemOriginal(item: NewItem) {
-  console.log('createItem called with:', item)
-  
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
   try {
@@ -263,16 +244,12 @@ export async function createItemOriginal(item: NewItem) {
       return { data: null, error: 'User not authenticated' }
     }
 
-    console.log('User authenticated:', user.id)
-
     // Check if user owns the list
     const { data: listCheck, error: listError } = await supabase
       .from('shopping_lists')
       .select('user_id')
       .eq('id', item.list_id)
       .single()
-
-    console.log('List ownership check:', { listCheck, listError })
 
     if (listError || !listCheck || listCheck.user_id !== user.id) {
       return { data: null, error: 'Access denied to this list' }
@@ -291,16 +268,12 @@ export async function createItemOriginal(item: NewItem) {
       position: item.position || 0
     }
 
-    console.log('Prepared item data:', itemToInsert)
-
     // Create the item
     const { data, error } = await supabase
       .from('items')
       .insert(itemToInsert)
       .select()
       .single()
-
-    console.log('Insert result:', { data: data?.id, error })
 
     if (error) {
       console.error('Supabase insert error:', error)
@@ -330,8 +303,6 @@ export async function createManyItemsOriginal(items: NewItem[]) {
 }
 
 export async function updateItemOriginal(itemId: string, updates: UpdateItem) {
-  console.log('updateItem called with itemId:', itemId)
-  
   if (!supabase) return { data: null, error: 'Supabase not available' }
 
   try {
@@ -369,7 +340,6 @@ export async function updateItemOriginal(itemId: string, updates: UpdateItem) {
       .select()
       .single()
 
-    console.log('updateItem result:', { data: data?.id, error })
     return { data, error }
 
   } catch (error) {

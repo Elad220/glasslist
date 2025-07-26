@@ -158,11 +158,8 @@ export default function DashboardPage() {
   }, [])
 
   const fetchShoppingLists = async (userId: string) => {
-    console.log('Dashboard: fetchShoppingLists called with userId:', userId)
     try {
-      console.log('Dashboard: About to call getShoppingLists...')
       const { data, error } = await getShoppingLists(userId)
-      console.log('Dashboard: getShoppingLists returned:', { data, error })
       
       if (error) {
         console.error('Dashboard: Shopping lists fetch error:', error)
@@ -173,17 +170,14 @@ export default function DashboardPage() {
       }
       
       if (data) {
-        console.log('Dashboard: Processing data, count:', data.length)
         // Transform data to include item counts
         const listsWithCounts: ShoppingListWithCounts[] = data.map((list: any) => {
-          console.log('Dashboard: Processing list:', list.id, list.name)
           return {
             ...list,
             itemCount: list.items?.length || 0,
             completedCount: list.items?.filter((item: any) => item.is_checked)?.length || 0
           }
         })
-        console.log('Dashboard: Setting shopping lists:', listsWithCounts)
         setShoppingLists(listsWithCounts)
       }
     } catch (error) {
@@ -194,56 +188,41 @@ export default function DashboardPage() {
   }
 
   const fetchAnalytics = async (userId: string) => {
-    console.log('Dashboard: fetchAnalytics called with userId:', userId)
     try {
-      console.log('Dashboard: About to call getUserAnalytics...')
       const { data, error } = await getUserAnalytics(userId)
-      console.log('Dashboard: getUserAnalytics returned:', { data, error })
       
       if (error) {
         console.error('Dashboard: Analytics fetch error:', error)
         // Fallback to mock analytics if function doesn't exist or fails
-        console.log('Dashboard: Using mock analytics due to error')
         setAnalytics(mockAnalytics)
       } else if (data) {
-        console.log('Dashboard: Setting real analytics data')
         setAnalytics(data)
       } else {
-        console.log('Dashboard: No analytics data, using mock')
         setAnalytics(mockAnalytics)
       }
     } catch (error) {
       console.error('Dashboard: Unexpected error fetching analytics:', error)
-      console.log('Dashboard: Using mock analytics due to exception')
       setAnalytics(mockAnalytics)
     }
   }
 
   const checkAuth = async () => {
-    console.log('Dashboard: checkAuth called')
     try {
-      console.log('Dashboard: Getting current user...')
       const { user, error } = await getCurrentUser()
-      console.log('Dashboard: getCurrentUser returned:', { user: user?.id, error })
       
       if (error || !user) {
-        console.log('Dashboard: No user found, redirecting to auth')
         router.push('/auth')
         return
       }
 
-      console.log('Dashboard: Setting user:', user.id)
       setUser(user)
       
       if (!isDemoMode) {
-        console.log('Dashboard: Not in demo mode, fetching real data...')
         await Promise.all([
           fetchShoppingLists(user.id),
           fetchAnalytics(user.id)
         ])
-        console.log('Dashboard: Data fetching completed')
       } else {
-        console.log('Dashboard: In demo mode, using mock data')
         setShoppingLists(mockShoppingLists as unknown as ShoppingListWithCounts[])
         setAnalytics(mockAnalytics)
       }
@@ -251,7 +230,6 @@ export default function DashboardPage() {
       console.error('Dashboard: Auth check failed:', error)
       router.push('/auth')
     } finally {
-      console.log('Dashboard: Setting loading to false')
       setIsLoading(false)
     }
   }
