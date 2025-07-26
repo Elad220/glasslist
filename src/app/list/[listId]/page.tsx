@@ -175,6 +175,8 @@ export default function ListPage() {
   const [selectedVoiceItems, setSelectedVoiceItems] = useState<Set<string>>(new Set())
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
   const [audioChunks, setAudioChunks] = useState<Blob[]>([])
+  const [showVoiceFallback, setShowVoiceFallback] = useState(false)
+  const [voiceFallbackInput, setVoiceFallbackInput] = useState('')
 
   const loadData = async () => {
     console.log('ListPage: loadData called with listId:', listId)
@@ -948,9 +950,38 @@ export default function ListPage() {
   // Voice recording functions
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100
+        } 
+      });
+      
+      // Try different MIME types in order of preference
+      const mimeTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/wav'
+      ];
+      
+      let selectedMimeType = null;
+      for (const mimeType of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(mimeType)) {
+          selectedMimeType = mimeType;
+          break;
+        }
+      }
+      
+      if (!selectedMimeType) {
+        throw new Error('No supported audio format found');
+      }
+      
+      console.log('Using audio format:', selectedMimeType);
+      
       const recorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: selectedMimeType
       });
       
       const chunks: Blob[] = [];
@@ -962,12 +993,24 @@ export default function ListPage() {
       };
       
       recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const blob = new Blob(chunks, { type: selectedMimeType });
         setAudioBlob(blob);
         setAudioUrl(URL.createObjectURL(blob));
         setAudioChunks(chunks);
         
+        console.log('Recording stopped', {
+          blobSize: blob.size,
+          blobType: blob.type,
+          chunksCount: chunks.length
+        });
+        
         // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      recorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        toast.error('Recording error', 'Failed to record audio. Please try again.');
         stream.getTracks().forEach(track => track.stop());
       };
       
@@ -979,7 +1022,19 @@ export default function ListPage() {
       toast.success('Recording started', 'Speak your shopping list items');
     } catch (error) {
       console.error('Error starting recording:', error);
-      toast.error('Recording failed', 'Unable to access microphone. Please check permissions.');
+      let errorMessage = 'Unable to access microphone. Please check permissions.';
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = 'Microphone access denied. Please allow microphone permissions.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'No microphone found. Please connect a microphone.';
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = 'Audio recording not supported in this browser.';
+        }
+      }
+      
+      toast.error('Recording failed', errorMessage);
     }
   };
 
@@ -998,24 +1053,77 @@ export default function ListPage() {
 
     setIsProcessingVoice(true);
     try {
-      // Convert audio to base64
+      console.log('Processing voice recording...', { 
+        audioBlobSize: audioBlob.size, 
+        audioBlobType: audioBlob.type,
+        hasApiKey: !!profile?.gemini_api_key 
+      });
+
+      // In demo mode, simulate voice analysis
+      if (isDemoMode) {
+        console.log('Demo mode: simulating voice analysis');
+        const demoItems = [
+          { name: 'Milk', amount: 1, unit: 'gallon', category: 'Dairy', notes: 'From voice recording' },
+          { name: 'Bread', amount: 2, unit: 'loaves', category: 'Bakery', notes: 'Whole wheat' },
+          { name: 'Apples', amount: 6, unit: 'pcs', category: 'Produce', notes: 'Honeycrisp' },
+          { name: 'Chicken Breast', amount: 2, unit: 'lb', category: 'Meat', notes: 'Free range' }
+        ];
+        
+        setVoiceParsedItems(demoItems);
+        setSelectedVoiceItems(new Set(demoItems.map((_, index) => index.toString())));
+        setShowVoiceResults(true);
+        setShowVoiceAdd(false);
+        toast.success('Voice analysis complete', 'Demo mode: simulated items from voice recording');
+        return;
+      }
+
+      // Convert audio to base64 with proper encoding
       const arrayBuffer = await audioBlob.arrayBuffer();
-      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const base64Audio = btoa(String.fromCharCode(...uint8Array));
+      
+      console.log('Audio converted to base64', { 
+        base64Length: base64Audio.length,
+        audioFormat: audioBlob.type 
+      });
       
       // Send to Gemini for analysis
       const result = await analyzeVoiceRecording(base64Audio, profile.gemini_api_key);
       
-      if (result.success && result.items) {
+      console.log('Gemini analysis result:', result);
+      
+      if (result.success && result.items && result.items.length > 0) {
         setVoiceParsedItems(result.items);
         setSelectedVoiceItems(new Set(result.items.map((item: any, index: number) => index.toString())));
         setShowVoiceResults(true);
         setShowVoiceAdd(false);
+        toast.success('Voice analysis complete', `Found ${result.items.length} items in your recording`);
       } else {
-        toast.error('Voice analysis failed', result.error || 'Unable to process your voice recording');
+        console.error('Voice analysis failed:', result.error);
+        toast.error('Voice analysis failed', result.error || 'Unable to process your voice recording. Please try speaking more clearly.');
+        
+        // Show fallback option for manual input
+        setShowVoiceFallback(true);
       }
     } catch (error) {
       console.error('Voice processing error:', error);
-      toast.error('Voice processing error', 'Something went wrong. Please try again.');
+      
+      // Provide more specific error messages
+      let errorMessage = 'Something went wrong. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('API key')) {
+          errorMessage = 'Invalid API key. Please check your Gemini API key in Settings.';
+        } else if (error.message.includes('audio')) {
+          errorMessage = 'Audio processing failed. Please try recording again.';
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Network error. Please check your internet connection.';
+        }
+      }
+      
+      toast.error('Voice processing error', errorMessage);
+      
+      // Show fallback option for manual input
+      setShowVoiceFallback(true);
     } finally {
       setIsProcessingVoice(false);
     }
@@ -1086,6 +1194,35 @@ export default function ListPage() {
     }
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
+    }
+  };
+
+  const handleVoiceFallback = async () => {
+    if (!voiceFallbackInput.trim()) {
+      toast.warning('No input', 'Please enter your shopping list items');
+      return;
+    }
+
+    setIsProcessingVoice(true);
+    try {
+      // Use the existing AI parsing function for text input
+      const result = await parseShoppingListWithAI(voiceFallbackInput, profile?.gemini_api_key || '');
+      
+      if (result.success && result.items && result.items.length > 0) {
+        setVoiceParsedItems(result.items);
+        setSelectedVoiceItems(new Set(result.items.map((item: any, index: number) => index.toString())));
+        setShowVoiceResults(true);
+        setShowVoiceFallback(false);
+        setShowVoiceAdd(false);
+        toast.success('Items parsed', `Found ${result.items.length} items in your input`);
+      } else {
+        toast.error('Parsing failed', result.error || 'Unable to parse your input. Please try being more specific.');
+      }
+    } catch (error) {
+      console.error('Fallback parsing error:', error);
+      toast.error('Parsing error', 'Something went wrong. Please try again.');
+    } finally {
+      setIsProcessingVoice(false);
     }
   };
 
@@ -2430,6 +2567,91 @@ export default function ListPage() {
                     setSelectedVoiceItems(new Set())
                   }}
                   className="glass-button px-4 py-2"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Voice Fallback Modal */}
+        {showVoiceFallback && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            onClick={() => {
+              setShowVoiceFallback(false)
+              setVoiceFallbackInput('')
+            }}
+          >
+            <div 
+              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 flex items-center justify-center">
+                  <Mic className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-glass-heading">Voice Analysis Failed</h3>
+                  <p className="text-sm text-glass-muted">Try typing your items instead</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-glass-muted mb-2">
+                    Type Your Shopping List
+                  </label>
+                  <p className="text-sm text-glass-muted mb-3">
+                    Enter items naturally like: <span className="font-medium">"2 lbs chicken breast, 1 gallon milk, 3 apples"</span>
+                  </p>
+                  <textarea
+                    placeholder="Type your shopping list items..."
+                    value={voiceFallbackInput}
+                    onChange={(e) => setVoiceFallbackInput(e.target.value)}
+                    className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted resize-none focus:ring-2 focus:ring-orange-500/50"
+                    rows={4}
+                    autoFocus
+                  />
+                </div>
+                
+                {isDemoMode && (
+                  <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3">
+                    <p className="text-sm text-blue-700">
+                      <strong>Demo Mode:</strong> AI will simulate parsing by splitting your input into individual items.
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button 
+                  onClick={handleVoiceFallback}
+                  disabled={isProcessingVoice || !voiceFallbackInput.trim()}
+                  className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-orange-500/20 to-red-500/20 hover:from-orange-500/30 hover:to-red-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-orange-700 font-medium"
+                >
+                  {isProcessingVoice ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Parse Items
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowVoiceFallback(false)
+                    setVoiceFallbackInput('')
+                    setShowVoiceAdd(false)
+                    resetVoiceRecording()
+                  }}
+                  className="glass-button px-4 py-2"
+                  disabled={isProcessingVoice}
                 >
                   Cancel
                 </button>
