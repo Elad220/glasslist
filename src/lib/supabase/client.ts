@@ -144,6 +144,19 @@ export async function updateShoppingList(listId: string, updates: Partial<Shoppi
   return { data, error }
 }
 
+export async function updateCategoryOrder(listId: string, categoryOrder: string[]) {
+  if (!supabase) return { data: null, error: 'Supabase not available' }
+
+  const { data, error } = await supabase
+    .from('shopping_lists')
+    .update({ category_order: categoryOrder })
+    .eq('id', listId)
+    .select()
+    .single()
+
+  return { data, error }
+}
+
 export async function deleteShoppingList(listId: string) {
   if (!supabase) return { error: 'Supabase not available' }
 

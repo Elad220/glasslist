@@ -45,6 +45,7 @@ export type Database = {
           name: string
           description: string | null
           is_archived: boolean
+          category_order: Json | null
           is_shared: boolean | null
           share_code: string | null
           created_by: string | null
@@ -57,6 +58,7 @@ export type Database = {
           name: string
           description?: string | null
           is_archived?: boolean
+          category_order?: Json | null
           is_shared?: boolean | null
           share_code?: string | null
           created_by?: string | null
@@ -69,6 +71,7 @@ export type Database = {
           name?: string
           description?: string | null
           is_archived?: boolean
+          category_order?: Json | null
           is_shared?: boolean | null
           share_code?: string | null
           created_by?: string | null
