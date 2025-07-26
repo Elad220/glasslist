@@ -43,6 +43,7 @@ import {
 } from '@/lib/supabase/client'
 import { undoManager, createDeleteListUndoAction } from '@/lib/undo-redo/simple'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
+import AISuggestions from '@/components/AISuggestions'
 
 const mockAnalytics = {
   total_lists: 3,
@@ -910,16 +911,26 @@ export default function DashboardPage() {
                 </button>
 
                 <div className="pt-2 border-t border-glass-white-light/30">
-                  <button 
-                    onClick={() => toast.info('AI Assistant', 'Ask AI to help create smart shopping lists based on your preferences!')}
-                    className="glass-button w-full p-3 flex items-center gap-2 justify-center bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-200/30"
-                  >
-                    <Sparkles className="w-4 h-4 text-purple-500" />
-                    <span className="text-purple-600">AI Suggestions</span>
-                  </button>
+                  <div className="text-xs text-glass-muted text-center mb-2">
+                    AI suggestions are now available in the sidebar →
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* AI Suggestions */}
+            {user && (
+              <AISuggestions 
+                userId={user.id}
+                apiKey={user.gemini_api_key || ''}
+                onItemAdded={() => {
+                  // Refresh shopping lists when items are added
+                  if (!isDemoMode) {
+                    fetchShoppingLists(user.id)
+                  }
+                }}
+              />
+            )}
           </div>
         </div>
       </div>

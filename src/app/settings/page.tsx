@@ -388,15 +388,17 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   
-                  <div className="glass p-4 rounded-lg opacity-50">
+                  <div className="glass p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium text-glass">Smart Suggestions</h4>
                         <p className="text-sm text-glass-muted">
-                          AI-powered item recommendations (Coming soon)
+                          AI-powered item recommendations based on your shopping patterns
                         </p>
                       </div>
-                      <div className="w-6 h-6 rounded-full bg-glass-muted"></div>
+                      <div className="w-6 h-6 rounded-full bg-green-500/20 border border-green-200/30 flex items-center justify-center">
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
