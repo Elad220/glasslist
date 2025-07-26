@@ -33,14 +33,22 @@ interface OfflineClientMultiResponse<T> {
 }
 
 class OfflineClient {
+  private initialized = false
+
   constructor() {
     this.init()
   }
 
   private async init() {
+    if (this.initialized) return
+    
     try {
       await offlineStorage.init()
-      syncManager.startAutoSync(30000)
+      // Only start auto sync if we're in a browser environment
+      if (typeof window !== 'undefined') {
+        syncManager.startAutoSync(30000)
+      }
+      this.initialized = true
     } catch (error) {
       console.error('Failed to initialize offline client:', error)
     }
@@ -105,7 +113,7 @@ class OfflineClient {
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
-        syncManager.forcSync().catch(console.error)
+        syncManager.forceSync().catch(console.error)
       }
 
       return {
@@ -145,7 +153,7 @@ class OfflineClient {
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
-        syncManager.forcSync().catch(console.error)
+        syncManager.forceSync().catch(console.error)
       }
 
       return {
@@ -167,7 +175,7 @@ class OfflineClient {
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
-        syncManager.forcSync().catch(console.error)
+        syncManager.forceSync().catch(console.error)
       }
 
       return {
@@ -204,7 +212,7 @@ class OfflineClient {
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
-        syncManager.forcSync().catch(console.error)
+        syncManager.forceSync().catch(console.error)
       }
 
       return {
@@ -287,7 +295,7 @@ class OfflineClient {
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
-        syncManager.forcSync().catch(console.error)
+        syncManager.forceSync().catch(console.error)
       }
 
       return {
@@ -324,7 +332,7 @@ class OfflineClient {
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
-        syncManager.forcSync().catch(console.error)
+        syncManager.forceSync().catch(console.error)
       }
 
       return {
@@ -353,7 +361,7 @@ class OfflineClient {
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
-        syncManager.forcSync().catch(console.error)
+        syncManager.forceSync().catch(console.error)
       }
 
       return {
@@ -387,7 +395,7 @@ class OfflineClient {
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
-        syncManager.forcSync().catch(console.error)
+        syncManager.forceSync().catch(console.error)
       }
 
       return {
@@ -429,7 +437,7 @@ class OfflineClient {
   }
 
   async forceSync() {
-    return syncManager.forcSync()
+    return syncManager.forceSync()
   }
 
   // Utility Operations

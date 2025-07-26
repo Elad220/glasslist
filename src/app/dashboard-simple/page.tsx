@@ -15,11 +15,8 @@ export default function SimpleDashboard() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        console.log('Simple Dashboard: Starting...')
-        
         // Step 1: Check auth
         const { user: currentUser, error: authError } = await getCurrentUser()
-        console.log('Simple Dashboard: Auth result:', { user: currentUser?.id, authError })
         
         if (authError || !currentUser) {
           router.push('/auth')
@@ -27,11 +24,9 @@ export default function SimpleDashboard() {
         }
 
         setUser(currentUser)
-        console.log('Simple Dashboard: User set, now fetching lists...')
 
         // Step 2: Fetch lists
         const { data: listsData, error: listsError } = await getShoppingLists(currentUser.id)
-        console.log('Simple Dashboard: Lists result:', { data: listsData?.length, error: listsError })
         
         if (listsError) {
           setError(`Lists error: ${listsError}`)
@@ -39,7 +34,6 @@ export default function SimpleDashboard() {
         }
 
         setLists(listsData || [])
-        console.log('Simple Dashboard: Success!')
         
       } catch (err) {
         console.error('Simple Dashboard: Exception:', err)

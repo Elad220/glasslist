@@ -26,7 +26,6 @@ const mockProfile: Profile = {
 export async function signUp(email: string, password: string, fullName?: string) {
   if (isDemoMode || !supabase) {
     // Demo mode - simulate successful signup
-    console.log('Demo mode: Simulating signup for', email)
     return {
       data: { user: mockUser, session: null },
       error: null
@@ -49,7 +48,6 @@ export async function signUp(email: string, password: string, fullName?: string)
 export async function signIn(email: string, password: string) {
   if (isDemoMode || !supabase) {
     // Demo mode - simulate successful signin
-    console.log('Demo mode: Simulating signin for', email)
     return {
       data: { 
         user: mockUser, 
@@ -76,7 +74,6 @@ export async function signIn(email: string, password: string) {
 
 export async function signOut() {
   if (isDemoMode || !supabase) {
-    console.log('Demo mode: Simulating signout')
     return { error: null }
   }
 
@@ -86,7 +83,6 @@ export async function signOut() {
 
 export async function getCurrentUser() {
   if (isDemoMode || !supabase) {
-    console.log('Demo mode: Returning mock user')
     return { user: mockUser, error: null }
   }
 
@@ -96,7 +92,6 @@ export async function getCurrentUser() {
 
 export async function getProfile(userId: string): Promise<{ profile: Profile | null; error: any }> {
   if (isDemoMode || !supabase) {
-    console.log('Demo mode: Returning mock profile')
     return { profile: mockProfile, error: null }
   }
 
@@ -122,7 +117,6 @@ export async function getProfile(userId: string): Promise<{ profile: Profile | n
 
 export async function updateProfile(userId: string, updates: Partial<Profile>) {
   if (isDemoMode || !supabase) {
-    console.log('Demo mode: Simulating profile update')
     return { data: { ...mockProfile, ...updates }, error: null }
   }
 
@@ -158,7 +152,6 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
 
 export async function deleteAccount(userId: string) {
   if (isDemoMode || !supabase) {
-    console.log('Demo mode: Simulating account deletion')
     return { error: null }
   }
 
