@@ -41,7 +41,8 @@ import {
   Mic,
   MicOff,
   Play,
-  Square
+  Square,
+  Type
 } from 'lucide-react'
 
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
@@ -143,6 +144,7 @@ export default function ListPage() {
   })
   const [aiInput, setAiInput] = useState('')
   const [isAiProcessing, setIsAiProcessing] = useState(false)
+  const [aiInputMode, setAiInputMode] = useState<'text' | 'voice'>('text')
   
   // Edit form state for items only
   const [editItemForm, setEditItemForm] = useState({
@@ -166,7 +168,6 @@ export default function ListPage() {
   const [importProgress, setImportProgress] = useState(false)
 
   // Voice recording state
-  const [showVoiceAdd, setShowVoiceAdd] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessingVoice, setIsProcessingVoice] = useState(false)
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
@@ -1096,7 +1097,7 @@ export default function ListPage() {
         setVoiceParsedItems(demoItems);
         setSelectedVoiceItems(new Set(demoItems.map((_, index) => index.toString())));
         setShowVoiceResults(true);
-        setShowVoiceAdd(false);
+        setShowAiAdd(false);
         toast.success('Voice analysis complete', 'Demo mode: simulated items from voice recording');
         return;
       }
@@ -1120,7 +1121,7 @@ export default function ListPage() {
         setVoiceParsedItems(result.items);
         setSelectedVoiceItems(new Set(result.items.map((item: any, index: number) => index.toString())));
         setShowVoiceResults(true);
-        setShowVoiceAdd(false);
+        setShowAiAdd(false);
         toast.success('Voice analysis complete', `Found ${result.items.length} items in your recording`);
       } else {
         console.error('Voice analysis failed:', result.error);
@@ -1199,6 +1200,7 @@ export default function ListPage() {
       setSelectedVoiceItems(new Set());
       setAudioBlob(null);
       setAudioUrl(null);
+      setAiInputMode('text');
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
@@ -1213,6 +1215,7 @@ export default function ListPage() {
     setAudioBlob(null);
     setAudioUrl(null);
     setAudioChunks([]);
+    setAiInputMode('text');
     if (mediaRecorder) {
       mediaRecorder.stop();
     }
@@ -1237,7 +1240,7 @@ export default function ListPage() {
         setSelectedVoiceItems(new Set(result.items.map((item: any, index: number) => index.toString())));
         setShowVoiceResults(true);
         setShowVoiceFallback(false);
-        setShowVoiceAdd(false);
+        setShowAiAdd(false);
         toast.success('Items parsed', `Found ${result.items.length} items in your input`);
       } else {
         toast.error('Parsing failed', result.error || 'Unable to parse your input. Please try being more specific.');
@@ -1518,14 +1521,6 @@ export default function ListPage() {
             >
               <Sparkles className="w-4 h-4" />
               AI Quick Add
-            </button>
-            
-            <button 
-              onClick={() => setShowVoiceAdd(true)}
-              className="glass-button px-4 py-3 flex items-center gap-2"
-            >
-              <Mic className="w-4 h-4" />
-              Voice Add
             </button>
           </div>
         )}
@@ -1959,7 +1954,11 @@ export default function ListPage() {
         {showAiAdd && (
           <div 
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
-            onClick={() => setShowAiAdd(false)}
+            onClick={() => {
+              setShowAiAdd(false)
+              setAiInput('')
+              resetVoiceRecording()
+            }}
           >
             <div 
               className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
@@ -1975,58 +1974,193 @@ export default function ListPage() {
                 </div>
               </div>
               
+              {/* Input Mode Tabs */}
+              <div className="flex gap-1 mb-6 p-1 bg-glass-white-light rounded-lg">
+                <button
+                  onClick={() => setAiInputMode('text')}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    aiInputMode === 'text'
+                      ? 'bg-white text-purple-700 shadow-sm'
+                      : 'text-glass-muted hover:text-glass'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 justify-center">
+                    <Type className="w-4 h-4" />
+                    Text Input
+                  </div>
+                </button>
+                <button
+                  onClick={() => setAiInputMode('voice')}
+                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    aiInputMode === 'voice'
+                      ? 'bg-white text-purple-700 shadow-sm'
+                      : 'text-glass-muted hover:text-glass'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 justify-center">
+                    <Mic className="w-4 h-4" />
+                    Voice Recording
+                  </div>
+                </button>
+              </div>
+              
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-glass-muted mb-2">
-                    Natural Language Input
-                  </label>
-                  <p className="text-sm text-glass-muted mb-3">
-                    Enter items naturally like: <span className="font-medium">"2 lbs chicken breast, 1 gallon milk, 3 apples"</span>
-                  </p>
-                  <textarea
-                    placeholder="Type your shopping list items..."
-                    value={aiInput}
-                    onChange={(e) => setAiInput(e.target.value)}
-                    className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted resize-none focus:ring-2 focus:ring-purple-500/50"
-                    rows={4}
-                    autoFocus
-                  />
-                </div>
-                
-                {isDemoMode && (
-                  <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3">
-                    <p className="text-sm text-blue-700">
-                      <strong>Demo Mode:</strong> AI will simulate parsing by splitting your input into individual items.
+                {aiInputMode === 'text' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-glass-muted mb-2">
+                      Natural Language Input
+                    </label>
+                    <p className="text-sm text-glass-muted mb-3">
+                      Enter items naturally like: <span className="font-medium">"2 lbs chicken breast, 1 gallon milk, 3 apples"</span>
                     </p>
+                    <textarea
+                      placeholder="Type your shopping list items..."
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted resize-none focus:ring-2 focus:ring-purple-500/50"
+                      rows={4}
+                      autoFocus
+                    />
+                    
+                    {isDemoMode && (
+                      <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3 mt-3">
+                        <p className="text-sm text-blue-700">
+                          <strong>Demo Mode:</strong> AI will simulate parsing by splitting your input into individual items.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-glass-muted mb-2">
+                      Voice Recording
+                    </label>
+                    <p className="text-sm text-glass-muted mb-3">
+                      Speak your shopping list items clearly and naturally.
+                    </p>
+                    
+                    {!audioBlob ? (
+                      <div className="text-center py-6">
+                        <div className="mb-4">
+                          <p className="text-sm text-glass-muted mb-4">
+                            Click the microphone button to start recording. Speak clearly and list your items naturally.
+                          </p>
+                          <p className="text-xs text-glass-muted">
+                            Example: "2 pounds of chicken breast, 1 gallon of milk, 3 apples, and a loaf of bread"
+                          </p>
+                        </div>
+                        
+                        <button
+                          onClick={isRecording ? stopRecording : startRecording}
+                          disabled={isRecording && !mediaRecorder}
+                          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+                            isRecording 
+                              ? 'bg-red-500 animate-pulse' 
+                              : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                          }`}
+                        >
+                          {isRecording ? (
+                            <Square className="w-8 h-8 text-white" />
+                          ) : (
+                            <Mic className="w-8 h-8 text-white" />
+                          )}
+                        </button>
+                        
+                        {isRecording && (
+                          <p className="text-sm text-red-500 mt-2 animate-pulse">
+                            Recording... Click to stop
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <p className="text-sm text-glass-muted mb-4">
+                            Recording complete! Review your audio and process it.
+                          </p>
+                          
+                          {audioUrl && (
+                            <audio 
+                              controls 
+                              className="w-full mb-4"
+                              src={audioUrl}
+                            >
+                              Your browser does not support the audio element.
+                            </audio>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-3">
+                          <button
+                            onClick={processVoiceRecording}
+                            disabled={isProcessingVoice || !profile?.gemini_api_key}
+                            className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium"
+                          >
+                            {isProcessingVoice ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="w-4 h-4" />
+                                Analyze Recording
+                              </>
+                            )}
+                          </button>
+                          
+                          <button
+                            onClick={resetVoiceRecording}
+                            className="glass-button px-4 py-2"
+                            disabled={isProcessingVoice}
+                          >
+                            Record Again
+                          </button>
+                        </div>
+                        
+                        {!profile?.gemini_api_key && (
+                          <div className="bg-yellow-50/50 border border-yellow-200/50 rounded-lg p-3">
+                            <p className="text-sm text-yellow-700">
+                              <strong>API Key Required:</strong> Please add your Gemini API key in Settings to use voice analysis.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
               
               <div className="flex gap-3 mt-6">
-                <button 
-                  onClick={handleAiAdd}
-                  disabled={isAiProcessing || !aiInput.trim()}
-                  className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium"
-                >
-                  {isAiProcessing ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      Add Items
-                    </>
-                  )}
-                </button>
+                {aiInputMode === 'text' ? (
+                  <button 
+                    onClick={handleAiAdd}
+                    disabled={isAiProcessing || !aiInput.trim()}
+                    className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium"
+                  >
+                    {isAiProcessing ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        Add Items
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <div className="flex-1" />
+                )}
                 <button 
                   onClick={() => {
                     setShowAiAdd(false)
                     setAiInput('')
+                    resetVoiceRecording()
                   }}
                   className="glass-button px-4 py-2"
-                  disabled={isAiProcessing}
+                  disabled={isAiProcessing || isProcessingVoice}
                 >
                   Cancel
                 </button>
@@ -2375,144 +2509,16 @@ export default function ListPage() {
           </div>
         )}
 
-        {/* Voice Recording Modal */}
-        {showVoiceAdd && (
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
-            onClick={() => {
-              setShowVoiceAdd(false)
-              resetVoiceRecording()
-            }}
-          >
-            <div 
-              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
-                  <Mic className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-glass-heading">Voice Recording</h3>
-                  <p className="text-sm text-glass-muted">Record your shopping list items</p>
-                </div>
-              </div>
-              
-              <div className="space-y-6">
-                {!audioBlob ? (
-                  <div className="text-center">
-                    <div className="mb-4">
-                      <p className="text-sm text-glass-muted mb-4">
-                        Click the microphone button to start recording. Speak clearly and list your items naturally.
-                      </p>
-                      <p className="text-xs text-glass-muted">
-                        Example: "2 pounds of chicken breast, 1 gallon of milk, 3 apples, and a loaf of bread"
-                      </p>
-                    </div>
-                    
-                    <button
-                      onClick={isRecording ? stopRecording : startRecording}
-                      disabled={isRecording && !mediaRecorder}
-                      className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
-                        isRecording 
-                          ? 'bg-red-500 animate-pulse' 
-                          : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
-                      }`}
-                    >
-                      {isRecording ? (
-                        <Square className="w-8 h-8 text-white" />
-                      ) : (
-                        <Mic className="w-8 h-8 text-white" />
-                      )}
-                    </button>
-                    
-                    {isRecording && (
-                      <p className="text-sm text-red-500 mt-2 animate-pulse">
-                        Recording... Click to stop
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <p className="text-sm text-glass-muted mb-4">
-                        Recording complete! Review your audio and process it.
-                      </p>
-                      
-                      {audioUrl && (
-                        <audio 
-                          controls 
-                          className="w-full mb-4"
-                          src={audioUrl}
-                        >
-                          Your browser does not support the audio element.
-                        </audio>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <button
-                        onClick={processVoiceRecording}
-                        disabled={isProcessingVoice || !profile?.gemini_api_key}
-                        className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 hover:from-blue-500/30 hover:to-indigo-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-blue-700 font-medium"
-                      >
-                        {isProcessingVoice ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4" />
-                            Analyze Recording
-                          </>
-                        )}
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          resetVoiceRecording()
-                          setShowVoiceAdd(false)
-                        }}
-                        className="glass-button px-4 py-2"
-                        disabled={isProcessingVoice}
-                      >
-                        Record Again
-                      </button>
-                    </div>
-                    
-                    {!profile?.gemini_api_key && (
-                      <div className="bg-yellow-50/50 border border-yellow-200/50 rounded-lg p-3">
-                        <p className="text-sm text-yellow-700">
-                          <strong>API Key Required:</strong> Please add your Gemini API key in Settings to use voice analysis.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <button 
-                  onClick={() => {
-                    setShowVoiceAdd(false)
-                    resetVoiceRecording()
-                  }}
-                  className="glass-button px-4 py-2"
-                  disabled={isRecording || isProcessingVoice}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Voice Results Modal */}
         {showVoiceResults && (
           <div 
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
-            onClick={() => setShowVoiceResults(false)}
+            onClick={() => {
+              setShowVoiceResults(false);
+              setAiInputMode('text');
+            }}
           >
             <div 
               className="glass-card p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
@@ -2597,6 +2603,7 @@ export default function ListPage() {
                     setShowVoiceResults(false)
                     setVoiceParsedItems([])
                     setSelectedVoiceItems(new Set())
+                    setAiInputMode('text')
                   }}
                   className="glass-button px-4 py-2"
                 >
@@ -2679,7 +2686,7 @@ export default function ListPage() {
                   onClick={() => {
                     setShowVoiceFallback(false)
                     setVoiceFallbackInput('')
-                    setShowVoiceAdd(false)
+                    setAiInputMode('text')
                     resetVoiceRecording()
                   }}
                   className="glass-button px-4 py-2"
