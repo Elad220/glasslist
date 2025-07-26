@@ -149,4 +149,154 @@ export function fallbackParseShoppingList(userInput: string): ParsedItem[] {
       category
     }
   })
+}
+
+export async function analyzeVoiceRecording(
+  base64Audio: string,
+  apiKey: string
+): Promise<QuickAddResponse> {
+  if (!apiKey || !base64Audio) {
+    return {
+      items: [],
+      success: false,
+      error: 'API key and audio data are required'
+    }
+  }
+
+  try {
+    console.log('Starting voice analysis with Gemini...');
+    
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+
+    const prompt = `
+You are a voice-to-shopping-list analyzer. I will provide you with an audio recording of someone speaking their shopping list items. Your task is to:
+
+1. Transcribe the speech to text
+2. Parse the transcribed text into individual shopping items
+3. Return a JSON array of parsed items
+
+Return ONLY a valid JSON array with objects containing these exact fields:
+- name: string (item name, normalized)
+- amount: number (quantity, default to 1 if not specified)
+- unit: string (one of: ${VALID_UNITS.join(', ')})
+- category: string (one of: ${COMMON_CATEGORIES.join(', ')})
+- notes: string (optional, for any extra details)
+
+Rules:
+1. Normalize item names (e.g., "tomatos" → "tomatoes")
+2. Choose the most appropriate unit (default to "pcs" for countable items)
+3. Categorize items logically (e.g., "milk" → "Dairy", "apples" → "Produce")
+4. If amount/unit is unclear, use reasonable defaults
+5. Split combined items (e.g., "bread and butter" → separate items)
+6. Handle speech recognition errors gracefully
+7. Return ONLY the JSON array, no other text
+
+Example output: [
+  {"name": "milk", "amount": 2, "unit": "L", "category": "Dairy"},
+  {"name": "bread", "amount": 1, "unit": "pcs", "category": "Bakery"},
+  {"name": "eggs", "amount": 12, "unit": "pcs", "category": "Dairy"}
+]
+`
+
+    // Try different audio formats that Gemini might support
+    const audioFormats = [
+      { mimeType: 'audio/webm', description: 'WebM audio' },
+      { mimeType: 'audio/mp4', description: 'MP4 audio' },
+      { mimeType: 'audio/wav', description: 'WAV audio' }
+    ];
+
+    let lastError = null;
+    
+    for (const format of audioFormats) {
+      try {
+        console.log(`Trying ${format.description}...`);
+        
+        const audioPart = {
+          inlineData: {
+            data: base64Audio,
+            mimeType: format.mimeType
+          }
+        }
+
+        console.log('Sending audio to Gemini...', { 
+          audioDataLength: base64Audio.length,
+          mimeType: format.mimeType
+        });
+
+        const result = await model.generateContent([prompt, audioPart])
+        const response = result.response
+        const text = response.text()
+
+        console.log('Gemini response received:', { 
+          responseLength: text.length,
+          responsePreview: text.substring(0, 200) + '...'
+        });
+
+        // Clean the response to extract just the JSON
+        const jsonMatch = text.match(/\[[\s\S]*\]/)
+        if (!jsonMatch) {
+          console.error('No JSON array found in response:', text);
+          throw new Error('Invalid response format from AI - no JSON array found')
+        }
+
+        const parsedItems: ParsedItem[] = JSON.parse(jsonMatch[0])
+
+        console.log('Parsed items from JSON:', parsedItems);
+
+        // Validate and clean the parsed items
+        const validatedItems = parsedItems
+          .filter(item => item.name && item.name.trim())
+          .map(item => ({
+            name: item.name.trim(),
+            amount: Math.max(Number(item.amount) || 1, 0.01),
+            unit: VALID_UNITS.includes(item.unit) ? item.unit : 'pcs',
+            category: COMMON_CATEGORIES.includes(item.category) ? item.category : 'General',
+            notes: item.notes?.trim() || undefined
+          }))
+
+        console.log('Validated items:', validatedItems);
+
+        return {
+          items: validatedItems,
+          success: true
+        }
+        
+      } catch (error) {
+        console.log(`${format.description} failed:`, error);
+        lastError = error;
+        continue; // Try next format
+      }
+    }
+
+    // If all formats failed, throw the last error
+    throw lastError || new Error('All audio formats failed');
+
+  } catch (error) {
+    console.error('Voice analysis error:', error)
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to analyze voice recording';
+    if (error instanceof Error) {
+      if (error.message.includes('API key') || error.message.includes('authentication')) {
+        errorMessage = 'Invalid API key. Please check your Gemini API key.';
+      } else if (error.message.includes('audio') || error.message.includes('format')) {
+        errorMessage = 'Audio format not supported by Gemini. Please try recording again.';
+      } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (error.message.includes('JSON')) {
+        errorMessage = 'AI response format error. Please try recording again.';
+      } else if (error.message.includes('quota') || error.message.includes('limit')) {
+        errorMessage = 'API quota exceeded. Please try again later.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
+    return {
+      items: [],
+      success: false,
+      error: errorMessage
+    }
+  }
 } 
