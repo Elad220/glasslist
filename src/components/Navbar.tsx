@@ -12,6 +12,8 @@ export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
 
+  console.log('Navbar rendering, pathname:', pathname)
+
   const handleSignOut = async () => {
     await signOut()
     router.push('/')
@@ -36,6 +38,10 @@ export default function Navbar() {
           <div className="hidden sm:flex items-center gap-1 p-1 bg-red-500/20 rounded">
             <CheckCircle className="w-4 h-4 text-green-400" />
             <span className="text-xs text-green-400">SYNC</span>
+          </div>
+          {/* Very obvious debug element */}
+          <div className="flex items-center gap-1 p-2 bg-yellow-500 text-black rounded font-bold">
+            <span>NAVBAR DEBUG</span>
           </div>
         </div>
         
