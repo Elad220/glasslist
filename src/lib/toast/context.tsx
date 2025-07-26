@@ -3,19 +3,25 @@
 import React, { createContext, useContext, useState, useCallback } from 'react'
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react'
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface Toast {
   id: string
   type: 'success' | 'error' | 'warning' | 'info'
   title: string
   message?: string
   duration?: number
+  action?: ToastAction
 }
 
 interface ToastContextType {
   toasts: Toast[]
   showToast: (toast: Omit<Toast, 'id'>) => void
   hideToast: (id: string) => void
-  success: (title: string, message?: string) => void
+  success: (title: string, message?: string, options?: { action?: ToastAction }) => void
   error: (title: string, message?: string) => void
   warning: (title: string, message?: string) => void
   info: (title: string, message?: string) => void
@@ -51,8 +57,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
 
-  const success = useCallback((title: string, message?: string) => {
-    showToast({ type: 'success', title, message })
+  const success = useCallback((title: string, message?: string, options?: { action?: ToastAction }) => {
+    showToast({ type: 'success', title, message, action: options?.action })
   }, [showToast])
 
   const error = useCallback((title: string, message?: string) => {
@@ -123,6 +129,17 @@ function ToastContainer({ toasts, onHide }: { toasts: Toast[], onHide: (id: stri
                 <p className="text-glass-muted text-xs mt-1">
                   {toast.message}
                 </p>
+              )}
+              {toast.action && (
+                <button
+                  onClick={() => {
+                    toast.action?.onClick()
+                    onHide(toast.id)
+                  }}
+                  className="mt-2 px-3 py-1.5 bg-primary/20 text-primary text-xs font-medium rounded-lg hover:bg-primary/30 transition-colors"
+                >
+                  {toast.action.label}
+                </button>
               )}
             </div>
             <button

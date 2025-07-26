@@ -39,6 +39,7 @@ import {
   Upload,
   CheckCircle
 } from 'lucide-react'
+
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI } from '@/lib/ai/gemini'
@@ -54,6 +55,7 @@ import {
   isDemoMode,
   createManyItems
 } from '@/lib/supabase/client'
+import { undoManager, createDeleteItemUndoAction } from '@/lib/undo-redo/simple'
 
 // Category icons mapping
 const categoryIcons: { [key: string]: any } = {
@@ -111,6 +113,7 @@ export default function ListPage() {
   const listId = params.listId as string
   const toast = useToast()
 
+
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [list, setList] = useState<any>(null)
@@ -157,82 +160,84 @@ export default function ListPage() {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importProgress, setImportProgress] = useState(false)
 
-  useEffect(() => {
-    const loadData = async () => {
-      console.log('ListPage: loadData called with listId:', listId)
-      try {
-        if (!isDemoMode) {
-          console.log('ListPage: Not in demo mode, loading real data')
-          
-          // Load real data from Supabase
-          console.log('ListPage: Getting current user...')
-          const { user: currentUser } = await getCurrentUser()
-          if (!currentUser) {
-            console.log('ListPage: No user found, redirecting to auth')
-            router.push('/auth')
-            return
-          }
-          console.log('ListPage: User found:', currentUser.id)
-          setUser(currentUser)
-          
-          // Load user profile (including decrypted API key)
-          console.log('ListPage: Getting user profile...')
-          const { profile: userProfile } = await getProfile(currentUser.id)
-          console.log('ListPage: Profile loaded:', userProfile?.id)
-          setProfile(userProfile)
-          
-          // Load list data
-          console.log('ListPage: About to fetch list data for listId:', listId)
-          const { data: listData, error: listError } = await getShoppingList(listId)
-          console.log('ListPage: List data result:', { data: listData?.id, error: listError })
-          
-          if (listError || !listData) {
-            console.error('ListPage: List error or no data:', listError)
-            toast.error('List not found', 'The requested list could not be found')
-            router.push('/dashboard')
-            return
-          }
-          console.log('ListPage: Setting list data')
-          setList(listData)
-          
-          // Load items
-          console.log('ListPage: About to fetch items for listId:', listId)
-          const { data: itemsData, error: itemsError } = await getListItems(listId)
-          console.log('ListPage: Items data result:', { count: itemsData?.length, error: itemsError })
-          
-          if (!itemsError && itemsData) {
-            console.log('ListPage: Setting items data')
-            setItems(itemsData)
-            const initialCategories = Array.from(new Set(itemsData.map(item => item.category || 'Other')))
-            setOrderedCategories(initialCategories)
-          } else if (itemsError) {
-            console.error('ListPage: Items error:', itemsError)
-          }
-        } else {
-          console.log('ListPage: In demo mode, using mock data')
-          // Use demo data
-          setList(mockList)
-          setItems(mockItems)
-          const initialCategories = Array.from(new Set(mockItems.map(item => item.category || 'Other')))
-          setOrderedCategories(initialCategories)
+  const loadData = async () => {
+    console.log('ListPage: loadData called with listId:', listId)
+    try {
+      if (!isDemoMode) {
+        console.log('ListPage: Not in demo mode, loading real data')
+        
+        // Load real data from Supabase
+        console.log('ListPage: Getting current user...')
+        const { user: currentUser } = await getCurrentUser()
+        if (!currentUser) {
+          console.log('ListPage: No user found, redirecting to auth')
+          router.push('/auth')
+          return
         }
-      } catch (error) {
-        console.error('ListPage: Error loading list:', error)
-        toast.error('Loading failed', 'Failed to load list data')
-      } finally {
-        console.log('ListPage: Setting loading to false')
-        setIsLoading(false)
+        console.log('ListPage: User found:', currentUser.id)
+        setUser(currentUser)
+        
+        // Load user profile (including decrypted API key)
+        console.log('ListPage: Getting user profile...')
+        const { profile: userProfile } = await getProfile(currentUser.id)
+        console.log('ListPage: Profile loaded:', userProfile?.id)
+        setProfile(userProfile)
+        
+        // Load list data
+        console.log('ListPage: About to fetch list data for listId:', listId)
+        const { data: listData, error: listError } = await getShoppingList(listId)
+        console.log('ListPage: List data result:', { data: listData?.id, error: listError })
+        
+        if (listError || !listData) {
+          console.error('ListPage: List error or no data:', listError)
+          toast.error('List not found', 'The requested list could not be found')
+          router.push('/dashboard')
+          return
+        }
+        console.log('ListPage: Setting list data')
+        setList(listData)
+        
+        // Load items
+        console.log('ListPage: About to fetch items for listId:', listId)
+        const { data: itemsData, error: itemsError } = await getListItems(listId)
+        console.log('ListPage: Items data result:', { count: itemsData?.length, error: itemsError })
+        
+        if (!itemsError && itemsData) {
+          console.log('ListPage: Setting items data')
+          setItems(itemsData)
+          const initialCategories = Array.from(new Set(itemsData.map(item => item.category || 'Other')))
+          setOrderedCategories(initialCategories)
+        } else if (itemsError) {
+          console.error('ListPage: Items error:', itemsError)
+        }
+      } else {
+        console.log('ListPage: In demo mode, using mock data')
+        // Use demo data
+        setList(mockList)
+        setItems(mockItems)
+        const initialCategories = Array.from(new Set(mockItems.map(item => item.category || 'Other')))
+        setOrderedCategories(initialCategories)
       }
+    } catch (error) {
+      console.error('ListPage: Error loading list:', error)
+      toast.error('Loading failed', 'Failed to load list data')
+    } finally {
+      console.log('ListPage: Setting loading to false')
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadData()
-  }, [listId, router, toast])
+  }, [listId])
 
   const handleToggleItem = async (itemId: string) => {
     const item = items.find(item => item.id === itemId)
     if (!item) return
 
     const newCheckedState = !item.is_checked
+
+
 
     // Optimistic update
     setItems(items.map(item => 
@@ -357,6 +362,13 @@ export default function ListPage() {
     const item = items.find(item => item.id === itemId)
     if (!item) return
 
+    // Create undo action
+    const undoActionData = createDeleteItemUndoAction(listId, item, itemId, () => {
+      // Refresh items after undo
+      loadData()
+    })
+    const undoAction = undoManager.addAction(undoActionData)
+
     // Optimistic update
     setItems(items.filter(item => item.id !== itemId))
 
@@ -370,7 +382,29 @@ export default function ListPage() {
       }
     }
 
-    toast.success('Item removed', `${item.name} removed from your list`)
+    // Show toast with undo button
+    toast.success(
+      'Item removed', 
+      `${item.name} removed from your list`,
+      {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            try {
+              const latestAction = undoManager.getLatestAction()
+              if (latestAction && latestAction.id === undoAction.id) {
+                await latestAction.execute()
+                undoManager.removeAction(latestAction.id)
+                toast.success('Undone', `${item.name} has been restored`)
+              }
+            } catch (error) {
+              console.error('Error undoing action:', error)
+              toast.error('Undo failed', 'Failed to restore the item')
+            }
+          }
+        }
+      }
+    )
   }
 
   const handleAiAdd = async () => {
@@ -483,6 +517,8 @@ export default function ListPage() {
         notes: editItemForm.notes || null,
         image_url: imageUrl
       }
+
+
 
       if (!isDemoMode) {
         const { data: updatedItem, error } = await updateItem(editingItem.id, updatedItemData)
@@ -975,6 +1011,7 @@ export default function ListPage() {
             
             {/* Action buttons */}
             <div className="flex items-center gap-2">
+              
               {!isShoppingMode && (
                 <div className="flex items-center gap-2">
                   <button 

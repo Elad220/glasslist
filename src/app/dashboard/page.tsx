@@ -30,6 +30,7 @@ import {
   Copy,
   HelpCircle
 } from 'lucide-react'
+
 import { getCurrentUser } from '@/lib/supabase/auth'
 import { useToast } from '@/lib/toast/context'
 import { 
@@ -40,6 +41,7 @@ import {
   getListItems,
   isDemoMode 
 } from '@/lib/supabase/client'
+import { undoManager, createDeleteListUndoAction } from '@/lib/undo-redo/simple'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
 
 const mockAnalytics = {
@@ -142,6 +144,7 @@ export default function DashboardPage() {
   const [importProgress, setImportProgress] = useState(false)
   const router = useRouter()
   const toast = useToast()
+
   
   // Edit form state
   const [editListForm, setEditListForm] = useState({
@@ -328,6 +331,15 @@ export default function DashboardPage() {
     if (!listToDelete) return
 
     try {
+      // Create undo action
+      const undoActionData = createDeleteListUndoAction(listToDelete, () => {
+        // Refresh the lists after undo
+        if (user) {
+          fetchShoppingLists(user.id)
+        }
+      })
+      const undoAction = undoManager.addAction(undoActionData)
+
       if (isDemoMode) {
         // Simulate deletion in demo mode
         await new Promise(resolve => setTimeout(resolve, 500))
@@ -342,7 +354,30 @@ export default function DashboardPage() {
         setShoppingLists(lists => lists.filter(list => list.id !== listToDelete.id))
       }
       
-      toast.success('List deleted', `${listToDelete.name} has been deleted`)
+      // Show toast with undo button
+      toast.success(
+        'List deleted', 
+        `${listToDelete.name} has been deleted`,
+        {
+          action: {
+            label: 'Undo',
+            onClick: async () => {
+              try {
+                const latestAction = undoManager.getLatestAction()
+                if (latestAction && latestAction.id === undoAction.id) {
+                  await latestAction.execute()
+                  undoManager.removeAction(latestAction.id)
+                  toast.success('Undone', `${listToDelete.name} has been restored`)
+                }
+              } catch (error) {
+                console.error('Error undoing action:', error)
+                toast.error('Undo failed', 'Failed to restore the list')
+              }
+            }
+          }
+        }
+      )
+      
       setShowDeleteConfirm(false)
       setListToDelete(null)
     } catch (error) {
