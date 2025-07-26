@@ -1259,7 +1259,7 @@ export default function ListPage() {
     return matchesSearch && matchesCategory
   })
 
-  // Group items by category
+  // Group items by category and sort them
   const groupedItems = filteredItems.reduce((groups: { [key: string]: any[] }, item) => {
     const category = item.category || 'Other'
     if (!groups[category]) {
@@ -1268,6 +1268,18 @@ export default function ListPage() {
     groups[category].push(item)
     return groups
   }, {})
+
+  // Sort items within each category: unchecked first, then alphabetically
+  Object.keys(groupedItems).forEach(category => {
+    groupedItems[category].sort((a, b) => {
+      // First sort by checked status (unchecked items first)
+      if (a.is_checked !== b.is_checked) {
+        return a.is_checked ? 1 : -1
+      }
+      // Then sort alphabetically by name
+      return a.name.localeCompare(b.name)
+    })
+  })
 
   const completedCount = items.filter(item => item.is_checked).length
   const completionPercentage = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0
