@@ -109,6 +109,13 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
     return <AlertCircle className="w-4 h-4" />
   }
 
+  // Debug: Log the API key status
+  console.log('AISuggestions: API Key status:', {
+    hasApiKey: !!apiKey,
+    apiKeyLength: apiKey?.length || 0,
+    apiKeyPreview: apiKey ? `${apiKey.substring(0, 10)}...` : 'none'
+  })
+
   if (!apiKey) {
     return (
       <div className="glass-card p-6">

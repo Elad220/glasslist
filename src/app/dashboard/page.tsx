@@ -31,7 +31,8 @@ import {
   HelpCircle
 } from 'lucide-react'
 
-import { getCurrentUser } from '@/lib/supabase/auth'
+import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
+import type { Profile } from '@/lib/supabase/types'
 import { useToast } from '@/lib/toast/context'
 import { 
   getShoppingLists, 
@@ -44,6 +45,16 @@ import {
 import { undoManager, createDeleteListUndoAction } from '@/lib/undo-redo/simple'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
 import AISuggestions from '@/components/AISuggestions'
+
+const mockProfile: Profile = {
+  id: 'demo-user-123',
+  email: 'demo@glasslist.com',
+  full_name: 'Demo User',
+  avatar_url: null,
+  gemini_api_key: null,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
+}
 
 const mockAnalytics = {
   total_lists: 3,
@@ -128,6 +139,7 @@ function isMockList(list: any): list is { itemCount: number; completedCount: num
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [analytics, setAnalytics] = useState(mockAnalytics)
   const [shoppingLists, setShoppingLists] = useState<ShoppingListWithCounts[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -219,11 +231,16 @@ export default function DashboardPage() {
       setUser(user)
       
       if (!isDemoMode) {
+        // Fetch profile to get the decrypted API key
+        const { profile: userProfile } = await getProfile(user.id)
+        setProfile(userProfile)
+        
         await Promise.all([
           fetchShoppingLists(user.id),
           fetchAnalytics(user.id)
         ])
       } else {
+        setProfile(mockProfile)
         setShoppingLists(mockShoppingLists as unknown as ShoppingListWithCounts[])
         setAnalytics(mockAnalytics)
       }
@@ -922,7 +939,7 @@ export default function DashboardPage() {
             {user && (
               <AISuggestions 
                 userId={user.id}
-                apiKey={user.gemini_api_key || ''}
+                apiKey={profile?.gemini_api_key || ''}
                 onItemAdded={() => {
                   // Refresh shopping lists when items are added
                   if (!isDemoMode) {
