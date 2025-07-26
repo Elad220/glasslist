@@ -286,6 +286,7 @@ export function SyncNotification() {
   const isClient = useIsClient()
   const [showNotification, setShowNotification] = useState(false)
   const [notificationType, setNotificationType] = useState<'success' | 'error' | null>(null)
+  const [syncCount, setSyncCount] = useState(0)
   const { syncing, lastSync, lastSyncCount, errors } = useSyncStatus()
   const lastSyncRef = useRef<string | null>(null)
 
@@ -306,6 +307,7 @@ export function SyncNotification() {
     // AND when there were actual items synced (lastSyncCount > 0)
     if (lastSync && lastSync !== lastSyncRef.current && !syncing && !showNotification && lastSyncCount > 0) {
       lastSyncRef.current = lastSync
+      setSyncCount(lastSyncCount)
       setNotificationType('success')
       setShowNotification(true)
       const timer = setTimeout(() => setShowNotification(false), 6000)
@@ -330,7 +332,7 @@ export function SyncNotification() {
             {isError ? 'Sync Error' : 'Sync Complete'}
           </div>
           <div className="text-xs text-gray-300">
-            {isError ? errors[0] : `${lastSyncCount} item${lastSyncCount !== 1 ? 's' : ''} synced successfully`}
+            {isError ? errors[0] : `${syncCount} item${syncCount !== 1 ? 's' : ''} synced successfully`}
           </div>
         </div>
         <button
