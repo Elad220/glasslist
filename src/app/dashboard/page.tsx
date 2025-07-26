@@ -530,35 +530,46 @@ export default function DashboardPage() {
 
     try {
       const fileContent = await importFile.text()
+      console.log('Raw file content:', fileContent)
+      
       const importData = JSON.parse(fileContent)
+      console.log('Parsed importData:', importData)
 
       let validLists: any[] = []
 
       // Check if it's a single list import (direct list object)
       if (importData.name && typeof importData.name === 'string') {
         // Single list format
+        console.log('Detected single list format')
         validLists = [importData]
       } 
       // Check if it's a multiple lists import (lists array)
       else if (importData.lists && Array.isArray(importData.lists)) {
+        console.log('Detected multiple lists format')
         validLists = importData.lists.filter((list: any) => 
           list.name && typeof list.name === 'string'
         )
       }
       // Check if it's a single list wrapped in a list object
       else if (importData.list && importData.list.name && typeof importData.list.name === 'string') {
+        console.log('Detected wrapped list format')
         validLists = [importData.list]
       }
       // Check if it's an array of lists directly
       else if (Array.isArray(importData) && importData.length > 0 && importData[0].name) {
+        console.log('Detected direct array format')
         validLists = importData.filter((list: any) => 
           list.name && typeof list.name === 'string'
         )
       }
       else {
+        console.log('No valid format detected')
         throw new Error('Invalid file format: File must contain a shopping list or lists array')
       }
 
+      console.log('Final validLists:', validLists)
+      console.log('validLists length:', validLists.length)
+      
       if (validLists.length === 0) {
         throw new Error('No valid lists found in the imported file')
       }
@@ -598,6 +609,12 @@ export default function DashboardPage() {
 
         for (const listData of validLists) {
           try {
+            console.log('Processing listData:', listData)
+            console.log('listData.items:', listData.items)
+            console.log('listData.items type:', typeof listData.items)
+            console.log('listData.items is array:', Array.isArray(listData.items))
+            console.log('listData.items length:', listData.items?.length)
+            
             // Create the shopping list
             const { data: newList, error: listError } = await createShoppingList({
               name: listData.name,
