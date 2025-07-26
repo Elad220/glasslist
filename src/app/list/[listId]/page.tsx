@@ -160,76 +160,76 @@ export default function ListPage() {
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importProgress, setImportProgress] = useState(false)
 
-  useEffect(() => {
-    const loadData = async () => {
-      console.log('ListPage: loadData called with listId:', listId)
-      try {
-        if (!isDemoMode) {
-          console.log('ListPage: Not in demo mode, loading real data')
-          
-          // Load real data from Supabase
-          console.log('ListPage: Getting current user...')
-          const { user: currentUser } = await getCurrentUser()
-          if (!currentUser) {
-            console.log('ListPage: No user found, redirecting to auth')
-            router.push('/auth')
-            return
-          }
-          console.log('ListPage: User found:', currentUser.id)
-          setUser(currentUser)
-          
-          // Load user profile (including decrypted API key)
-          console.log('ListPage: Getting user profile...')
-          const { profile: userProfile } = await getProfile(currentUser.id)
-          console.log('ListPage: Profile loaded:', userProfile?.id)
-          setProfile(userProfile)
-          
-          // Load list data
-          console.log('ListPage: About to fetch list data for listId:', listId)
-          const { data: listData, error: listError } = await getShoppingList(listId)
-          console.log('ListPage: List data result:', { data: listData?.id, error: listError })
-          
-          if (listError || !listData) {
-            console.error('ListPage: List error or no data:', listError)
-            toast.error('List not found', 'The requested list could not be found')
-            router.push('/dashboard')
-            return
-          }
-          console.log('ListPage: Setting list data')
-          setList(listData)
-          
-          // Load items
-          console.log('ListPage: About to fetch items for listId:', listId)
-          const { data: itemsData, error: itemsError } = await getListItems(listId)
-          console.log('ListPage: Items data result:', { count: itemsData?.length, error: itemsError })
-          
-          if (!itemsError && itemsData) {
-            console.log('ListPage: Setting items data')
-            setItems(itemsData)
-            const initialCategories = Array.from(new Set(itemsData.map(item => item.category || 'Other')))
-            setOrderedCategories(initialCategories)
-          } else if (itemsError) {
-            console.error('ListPage: Items error:', itemsError)
-          }
-        } else {
-          console.log('ListPage: In demo mode, using mock data')
-          // Use demo data
-          setList(mockList)
-          setItems(mockItems)
-          const initialCategories = Array.from(new Set(mockItems.map(item => item.category || 'Other')))
-          setOrderedCategories(initialCategories)
+  const loadData = async () => {
+    console.log('ListPage: loadData called with listId:', listId)
+    try {
+      if (!isDemoMode) {
+        console.log('ListPage: Not in demo mode, loading real data')
+        
+        // Load real data from Supabase
+        console.log('ListPage: Getting current user...')
+        const { user: currentUser } = await getCurrentUser()
+        if (!currentUser) {
+          console.log('ListPage: No user found, redirecting to auth')
+          router.push('/auth')
+          return
         }
-      } catch (error) {
-        console.error('ListPage: Error loading list:', error)
-        toast.error('Loading failed', 'Failed to load list data')
-      } finally {
-        console.log('ListPage: Setting loading to false')
-        setIsLoading(false)
+        console.log('ListPage: User found:', currentUser.id)
+        setUser(currentUser)
+        
+        // Load user profile (including decrypted API key)
+        console.log('ListPage: Getting user profile...')
+        const { profile: userProfile } = await getProfile(currentUser.id)
+        console.log('ListPage: Profile loaded:', userProfile?.id)
+        setProfile(userProfile)
+        
+        // Load list data
+        console.log('ListPage: About to fetch list data for listId:', listId)
+        const { data: listData, error: listError } = await getShoppingList(listId)
+        console.log('ListPage: List data result:', { data: listData?.id, error: listError })
+        
+        if (listError || !listData) {
+          console.error('ListPage: List error or no data:', listError)
+          toast.error('List not found', 'The requested list could not be found')
+          router.push('/dashboard')
+          return
+        }
+        console.log('ListPage: Setting list data')
+        setList(listData)
+        
+        // Load items
+        console.log('ListPage: About to fetch items for listId:', listId)
+        const { data: itemsData, error: itemsError } = await getListItems(listId)
+        console.log('ListPage: Items data result:', { count: itemsData?.length, error: itemsError })
+        
+        if (!itemsError && itemsData) {
+          console.log('ListPage: Setting items data')
+          setItems(itemsData)
+          const initialCategories = Array.from(new Set(itemsData.map(item => item.category || 'Other')))
+          setOrderedCategories(initialCategories)
+        } else if (itemsError) {
+          console.error('ListPage: Items error:', itemsError)
+        }
+      } else {
+        console.log('ListPage: In demo mode, using mock data')
+        // Use demo data
+        setList(mockList)
+        setItems(mockItems)
+        const initialCategories = Array.from(new Set(mockItems.map(item => item.category || 'Other')))
+        setOrderedCategories(initialCategories)
       }
+    } catch (error) {
+      console.error('ListPage: Error loading list:', error)
+      toast.error('Loading failed', 'Failed to load list data')
+    } finally {
+      console.log('ListPage: Setting loading to false')
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     loadData()
-  }, [listId, router, toast])
+  }, [listId])
 
   const handleToggleItem = async (itemId: string) => {
     const item = items.find(item => item.id === itemId)
@@ -363,7 +363,7 @@ export default function ListPage() {
     if (!item) return
 
     // Create undo action
-    const undoAction = await createDeleteItemUndoAction(listId, item, itemId, () => {
+    const undoAction = createDeleteItemUndoAction(listId, item, itemId, () => {
       // Refresh items after undo
       loadData()
     })

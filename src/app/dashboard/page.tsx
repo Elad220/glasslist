@@ -332,7 +332,7 @@ export default function DashboardPage() {
 
     try {
       // Create undo action
-      const undoAction = await createDeleteListUndoAction(listToDelete, () => {
+      const undoAction = createDeleteListUndoAction(listToDelete, () => {
         // Refresh the lists after undo
         if (user) {
           fetchShoppingLists(user.id)

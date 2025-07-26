@@ -50,19 +50,19 @@ class UndoManager {
 export const undoManager = new UndoManager()
 
 // Helper functions for common undo actions
-export async function createDeleteItemUndoAction(
+export function createDeleteItemUndoAction(
   listId: string, 
   item: any, 
   itemId: string,
   onSuccess?: () => void
-): Promise<UndoAction> {
-  const { createItem } = await import('@/lib/supabase/client')
-  
+): UndoAction {
   return {
     type: 'DELETE_ITEM',
     description: `Deleted "${item.name}"`,
     execute: async () => {
       try {
+        const { createItem } = await import('@/lib/supabase/client')
+        
         const itemData = {
           list_id: listId,
           name: item.name,
@@ -84,10 +84,10 @@ export async function createDeleteItemUndoAction(
   }
 }
 
-export async function createDeleteListUndoAction(
+export function createDeleteListUndoAction(
   list: any,
   onSuccess?: () => void
-): Promise<UndoAction> {
+): UndoAction {
   // Note: This is a simplified version - in a real implementation,
   // you'd need to restore the list and all its items
   return {
