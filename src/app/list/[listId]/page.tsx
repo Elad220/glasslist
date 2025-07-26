@@ -60,7 +60,7 @@ import {
   isDemoMode,
   createManyItems,
   updateCategoryOrder
-} from '@/lib/supabase/client'
+} from '@/lib/offline/client'
 import { undoManager, createDeleteItemUndoAction } from '@/lib/undo-redo/simple'
 
 // Category icons mapping

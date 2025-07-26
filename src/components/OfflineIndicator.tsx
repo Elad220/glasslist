@@ -287,7 +287,18 @@ export function SyncNotification() {
   const [showNotification, setShowNotification] = useState(false)
   const [notificationType, setNotificationType] = useState<'success' | 'error' | null>(null)
   const { syncing, lastSync, errors } = useSyncStatus()
+  const { pendingCount } = usePendingChanges()
   const lastSyncRef = useRef<string | null>(null)
+  const lastNotificationTimeRef = useRef<number>(0)
+  const hadPendingChangesRef = useRef(false)
+
+  // Track if there were pending changes before sync
+  useEffect(() => {
+    if (pendingCount > 0) {
+      hadPendingChangesRef.current = true
+    }
+    // If pendingCount drops to 0, don't reset immediately, let the notification logic handle it
+  }, [pendingCount])
 
   useEffect(() => {
     if (!isClient) return
@@ -301,14 +312,26 @@ export function SyncNotification() {
 
   useEffect(() => {
     if (!isClient) return
-    
     // Only show success notification when lastSync actually changes (new sync completes)
-    if (lastSync && lastSync !== lastSyncRef.current && !syncing && !showNotification) {
-      lastSyncRef.current = lastSync
-      setNotificationType('success')
-      setShowNotification(true)
-      const timer = setTimeout(() => setShowNotification(false), 3000)
-      return () => clearTimeout(timer)
+    // AND there were pending changes before the sync
+    // AND at least 1 minute has passed since the last notification
+    if (
+      lastSync &&
+      lastSync !== lastSyncRef.current &&
+      !syncing &&
+      !showNotification &&
+      hadPendingChangesRef.current
+    ) {
+      const now = Date.now()
+      if (now - lastNotificationTimeRef.current >= 60000) { // 1 minute throttle
+        lastSyncRef.current = lastSync
+        setNotificationType('success')
+        setShowNotification(true)
+        lastNotificationTimeRef.current = now
+        hadPendingChangesRef.current = false // Reset after showing notification
+        const timer = setTimeout(() => setShowNotification(false), 3000)
+        return () => clearTimeout(timer)
+      }
     }
   }, [lastSync, syncing, showNotification, isClient])
 

@@ -30,6 +30,7 @@ export const supabase = createSupabaseClient()
 // Re-export offline client functions for backward compatibility
 export const getShoppingLists = offlineClient.getShoppingLists
 export const getShoppingList = offlineClient.getShoppingList  
+export const createShoppingList = offlineClient.createShoppingList
 export const updateShoppingList = offlineClient.updateShoppingList
 export const deleteShoppingList = offlineClient.deleteShoppingList
 export const getListItems = offlineClient.getListItems
