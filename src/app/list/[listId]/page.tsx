@@ -1596,9 +1596,10 @@ export default function ListPage() {
                     {categoryItems.map((item: any) => (
                       isShoppingMode ? (
                         // Shopping Mode Layout - Large, touch-friendly
-                        <div 
+                        <button
                           key={item.id} 
-                          className={`p-4 rounded-xl transition-all duration-200 ${
+                          onClick={() => handleToggleItem(item.id)}
+                          className={`w-full p-4 rounded-xl transition-all duration-200 text-left ${
                             item.is_checked 
                               ? 'opacity-60 bg-green-50/50 border-2 border-green-200/50' 
                               : 'bg-glass-white-light hover:bg-white/40 border-2 border-transparent hover:border-primary/30'
@@ -1606,16 +1607,15 @@ export default function ListPage() {
                         >
                           <div className="flex items-center gap-6">
                             {/* Large Circular Checkbox */}
-                            <button
-                              onClick={() => handleToggleItem(item.id)}
+                            <div
                               className={`w-10 h-10 rounded-full border-4 flex items-center justify-center transition-all flex-shrink-0 shadow-lg ${
                                 item.is_checked 
                                   ? 'bg-green-500 border-green-500 transform scale-110' 
-                                  : 'border-gray-300 bg-white hover:border-primary hover:scale-105 active:scale-95'
+                                  : 'border-gray-300 bg-white'
                               }`}
                             >
                               {item.is_checked && <Check className="w-8 h-8 text-white stroke-[3]" />}
-                            </button>
+                            </div>
                             
                             {/* Item Image - Larger in shopping mode */}
                             {item.image_url && (
@@ -1643,7 +1643,7 @@ export default function ListPage() {
                               )}
                             </div>
                           </div>
-                        </div>
+                        </button>
                       ) : (
                         // Normal Mode Layout - Compact
                         <div 
