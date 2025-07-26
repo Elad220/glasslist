@@ -525,6 +525,10 @@ export async function getShoppingList(listId: string) {
   return offlineClient.getShoppingList(listId)
 }
 
+export async function createShoppingList(listData: NewShoppingList) {
+  return offlineClient.createShoppingList(listData)
+}
+
 export async function updateShoppingList(listId: string, updates: Partial<UpdateShoppingList>) {
   return offlineClient.updateShoppingList(listId, updates)
 }
