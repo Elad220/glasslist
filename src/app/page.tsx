@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ShoppingCart, Sparkles, Users, Zap, ArrowRight, CheckCircle } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function LandingPage() {
   const features = [
@@ -40,18 +41,28 @@ export default function LandingPage() {
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
         {/* Floating background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 glass-white rounded-full blur-3xl opacity-20"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-10"></div>
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] glass-white rounded-full blur-3xl opacity-5"></div>
-        </div>
+        <motion.div 
+          className="absolute inset-0 overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, ease: 'easeOut' }}
+        >
+          <motion.div className="absolute top-1/4 left-1/4 w-64 h-64 glass-white rounded-full blur-3xl opacity-20 animate-glass-float" />
+          <motion.div className="absolute bottom-1/4 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-10 animate-glass-float" />
+          <motion.div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] glass-white rounded-full blur-3xl opacity-5 animate-glass-float" />
+        </motion.div>
 
-        <div className="relative z-10 max-w-6xl mx-auto text-center">
+        <motion.div 
+          className="relative z-10 max-w-6xl mx-auto text-center"
+          initial={{ opacity: 0, y: 32 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+        >
           {/* Hero Card */}
-          <div className="glass-card p-12 md:p-16 mb-8">
+          <motion.div className="glass-card p-12 md:p-16 mb-8 animate-glass-fade-up" initial={{ scale: 0.98, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.7, ease: 'easeOut' }}>
             <div className="mb-6">
-              <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-primary" />
-              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+              <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-primary animate-glass-float" />
+              <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent animate-glass-fade-in">
                 GlassList
               </h1>
             </div>
@@ -77,10 +88,10 @@ export default function LandingPage() {
                 Learn More
               </Link>
             </div>
-          </div>
+          </motion.div>
 
           {/* Quick Demo */}
-          <div className="glass-card p-8 max-w-2xl mx-auto">
+          <motion.div className="glass-card p-8 max-w-2xl mx-auto animate-glass-fade-up" initial={{ y: 24, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.2, duration: 0.7, ease: 'easeOut' }}>
             <p className="text-text-secondary mb-4">✨ Try the AI Quick Add:</p>
             <div className="bg-glass-white-light rounded-lg p-4 text-left font-mono text-sm">
               <span className="text-text-secondary">"</span>
@@ -88,34 +99,41 @@ export default function LandingPage() {
               <span className="text-text-secondary">"</span>
             </div>
             <p className="text-xs text-text-secondary mt-2">→ Automatically organized into Dairy, Bakery categories</p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* Features Section */}
       <section id="features" className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-center">
+            <motion.h2 className="text-4xl md:text-5xl font-bold mb-6 text-center animate-glass-fade-in" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7, ease: 'easeOut' }}>
               Why Choose GlassList?
-            </h2>
-            <p className="text-xl text-text-secondary max-w-3xl mx-auto">
+            </motion.h2>
+            <motion.p className="text-xl text-text-secondary max-w-3xl mx-auto animate-glass-fade-in" initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1, duration: 0.7, ease: 'easeOut' }}>
               Experience shopping list management reimagined with modern design and intelligent features
-            </p>
+            </motion.p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
             {features.map((feature, index) => (
-              <div key={index} className="glass-card p-8 text-center group hover:scale-105 transition-all duration-300">
-                <feature.icon className="w-12 h-12 mx-auto mb-4 text-primary group-hover:scale-110 transition-transform" />
-                <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                <p className="text-text-secondary">{feature.description}</p>
-              </div>
+              <motion.div
+                key={index}
+                className="glass-card p-8 text-center group hover:scale-105 transition-all duration-300 animate-glass-fade-up"
+                initial={{ opacity: 0, y: 32 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 * index, duration: 0.7, ease: 'easeOut' }}
+              >
+                <feature.icon className="w-12 h-12 mx-auto mb-4 text-primary group-hover:scale-110 transition-transform animate-glass-float" />
+                <h3 className="text-xl font-semibold mb-3 animate-glass-fade-in">{feature.title}</h3>
+                <p className="text-text-secondary animate-glass-fade-in">{feature.description}</p>
+              </motion.div>
             ))}
           </div>
 
           {/* Benefits List */}
-          <div className="glass-card p-12 max-w-4xl mx-auto">
+          <motion.div className="glass-card p-12 max-w-4xl mx-auto animate-glass-fade-up" initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7, ease: 'easeOut' }}>
             <h3 className="text-2xl font-bold text-center mb-8">Everything you need for better shopping</h3>
             <div className="grid md:grid-cols-2 gap-4">
               {benefits.map((benefit, index) => (
@@ -125,14 +143,14 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* CTA Section */}
       <section className="py-24 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="glass-card p-16">
+          <motion.div className="glass-card p-16 animate-glass-fade-up" initial={{ opacity: 0, y: 32 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7, ease: 'easeOut' }}>
             <h2 className="text-4xl md:text-5xl font-bold mb-6">
               Ready to transform your shopping?
             </h2>
@@ -152,14 +170,14 @@ export default function LandingPage() {
             <p className="text-sm text-text-secondary mt-4">
               No credit card required • Free forever • Setup in 30 seconds
             </p>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="py-8 px-4 border-t border-glass-white-border">
         <div className="max-w-6xl mx-auto text-center">
-          <div className="glass-card p-6">
+          <motion.div className="glass-card p-6 animate-glass-fade-in" initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.7, ease: 'easeOut' }}>
             <div className="flex items-center justify-center gap-2 mb-4">
               <ShoppingCart className="w-6 h-6 text-primary" />
               <span className="font-bold text-lg">GlassList</span>
@@ -167,7 +185,7 @@ export default function LandingPage() {
             <p className="text-text-secondary text-sm">
               Making shopping lists beautiful, one item at a time.
             </p>
-          </div>
+          </motion.div>
         </div>
       </footer>
     </div>

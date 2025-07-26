@@ -6,6 +6,7 @@ import { LayoutDashboard, Settings, LogOut, ShoppingCart, WifiOff, RefreshCw, Up
 import { signOut } from '@/lib/supabase/auth'
 import { useSyncStatus, useOnlineStatus, usePendingChanges } from '@/lib/offline/hooks'
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 export default function Navbar() {
   const router = useRouter()
@@ -22,12 +23,17 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 p-4">
-      <div className="glass-card flex items-center justify-between p-2 px-4 rounded-full">
+    <motion.header 
+      className="sticky top-0 z-50 p-4 animate-glass-fade-down"
+      initial={{ opacity: 0, y: -24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: 'easeOut' }}
+    >
+      <div className="glass-card flex items-center justify-between p-2 px-4 rounded-full animate-glass-fade-in">
         {/* Logo */}
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="flex items-center gap-2 text-glass-heading font-semibold">
-            <ShoppingCart className="w-6 h-6 text-primary" />
+            <ShoppingCart className="w-6 h-6 text-primary animate-glass-float" />
             <span className="hidden sm:inline">GlassList</span>
           </Link>
           <SyncPopover />
@@ -86,7 +92,7 @@ export default function Navbar() {
           </div>
         </nav>
       </div>
-    </header>
+    </motion.header>
   )
 }
 
