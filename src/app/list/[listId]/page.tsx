@@ -37,12 +37,16 @@ import {
   GripVertical,
   Download,
   Upload,
-  CheckCircle
+  CheckCircle,
+  Mic,
+  MicOff,
+  Play,
+  Square
 } from 'lucide-react'
 
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
-import { parseShoppingListWithAI } from '@/lib/ai/gemini'
+import { parseShoppingListWithAI, analyzeVoiceRecording } from '@/lib/ai/gemini'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
 import { useToast } from '@/lib/toast/context'
 import { 
@@ -159,6 +163,18 @@ export default function ListPage() {
   const [showListExport, setShowListExport] = useState(false)
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importProgress, setImportProgress] = useState(false)
+
+  // Voice recording state
+  const [showVoiceAdd, setShowVoiceAdd] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false)
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null)
+  const [audioUrl, setAudioUrl] = useState<string | null>(null)
+  const [showVoiceResults, setShowVoiceResults] = useState(false)
+  const [voiceParsedItems, setVoiceParsedItems] = useState<any[]>([])
+  const [selectedVoiceItems, setSelectedVoiceItems] = useState<Set<string>>(new Set())
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([])
 
   const loadData = async () => {
     console.log('ListPage: loadData called with listId:', listId)
@@ -929,6 +945,150 @@ export default function ListPage() {
     setOrderedCategories(newOrderedCategories);
   };
 
+  // Voice recording functions
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      const chunks: Blob[] = [];
+      
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+      
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        setAudioUrl(URL.createObjectURL(blob));
+        setAudioChunks(chunks);
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+      setAudioChunks([]);
+      
+      toast.success('Recording started', 'Speak your shopping list items');
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      toast.error('Recording failed', 'Unable to access microphone. Please check permissions.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorder && isRecording) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const processVoiceRecording = async () => {
+    if (!audioBlob || !profile?.gemini_api_key) {
+      toast.error('Processing failed', 'Audio recording or API key not available');
+      return;
+    }
+
+    setIsProcessingVoice(true);
+    try {
+      // Convert audio to base64
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      // Send to Gemini for analysis
+      const result = await analyzeVoiceRecording(base64Audio, profile.gemini_api_key);
+      
+      if (result.success && result.items) {
+        setVoiceParsedItems(result.items);
+        setSelectedVoiceItems(new Set(result.items.map((item: any, index: number) => index.toString())));
+        setShowVoiceResults(true);
+        setShowVoiceAdd(false);
+      } else {
+        toast.error('Voice analysis failed', result.error || 'Unable to process your voice recording');
+      }
+    } catch (error) {
+      console.error('Voice processing error:', error);
+      toast.error('Voice processing error', 'Something went wrong. Please try again.');
+    } finally {
+      setIsProcessingVoice(false);
+    }
+  };
+
+  const handleVoiceItemToggle = (index: string) => {
+    const newSelected = new Set(selectedVoiceItems);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedVoiceItems(newSelected);
+  };
+
+  const handleAddVoiceItems = async () => {
+    const itemsToAdd = voiceParsedItems.filter((_, index) => 
+      selectedVoiceItems.has(index.toString())
+    );
+
+    if (itemsToAdd.length === 0) {
+      toast.warning('No items selected', 'Please select at least one item to add');
+      return;
+    }
+
+    try {
+      const itemsToCreate = itemsToAdd.map(item => ({
+        list_id: listId,
+        name: item.name,
+        amount: item.amount,
+        unit: item.unit,
+        category: item.category,
+        notes: item.notes || null,
+        is_checked: false
+      }));
+
+      const { data: createdItems, error } = await createManyItems(itemsToCreate);
+      if (error || !createdItems) {
+        toast.error('Failed to add items', 'Unable to add items to your list');
+        return;
+      }
+
+      setItems([...items, ...createdItems]);
+      toast.success('Items added', `Added ${createdItems.length} items to your list`);
+      
+      // Reset voice recording state
+      setShowVoiceResults(false);
+      setVoiceParsedItems([]);
+      setSelectedVoiceItems(new Set());
+      setAudioBlob(null);
+      setAudioUrl(null);
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+    } catch (error) {
+      console.error('Error adding voice items:', error);
+      toast.error('Failed to add items', 'Something went wrong. Please try again.');
+    }
+  };
+
+  const resetVoiceRecording = () => {
+    setIsRecording(false);
+    setAudioBlob(null);
+    setAudioUrl(null);
+    setAudioChunks([]);
+    if (mediaRecorder) {
+      mediaRecorder.stop();
+    }
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+    }
+  };
+
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
@@ -1189,6 +1349,14 @@ export default function ListPage() {
             >
               <Sparkles className="w-4 h-4" />
               AI Quick Add
+            </button>
+            
+            <button 
+              onClick={() => setShowVoiceAdd(true)}
+              className="glass-button px-4 py-3 flex items-center gap-2"
+            >
+              <Mic className="w-4 h-4" />
+              Voice Add
             </button>
           </div>
         )}
@@ -2033,6 +2201,238 @@ export default function ListPage() {
                   <li>• Bulk list exports (first list)</li>
                   <li>• Files with items array</li>
                 </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Voice Recording Modal */}
+        {showVoiceAdd && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            onClick={() => {
+              setShowVoiceAdd(false)
+              resetVoiceRecording()
+            }}
+          >
+            <div 
+              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
+                  <Mic className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-glass-heading">Voice Recording</h3>
+                  <p className="text-sm text-glass-muted">Record your shopping list items</p>
+                </div>
+              </div>
+              
+              <div className="space-y-6">
+                {!audioBlob ? (
+                  <div className="text-center">
+                    <div className="mb-4">
+                      <p className="text-sm text-glass-muted mb-4">
+                        Click the microphone button to start recording. Speak clearly and list your items naturally.
+                      </p>
+                      <p className="text-xs text-glass-muted">
+                        Example: "2 pounds of chicken breast, 1 gallon of milk, 3 apples, and a loaf of bread"
+                      </p>
+                    </div>
+                    
+                    <button
+                      onClick={isRecording ? stopRecording : startRecording}
+                      disabled={isRecording && !mediaRecorder}
+                      className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        isRecording 
+                          ? 'bg-red-500 animate-pulse' 
+                          : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600'
+                      }`}
+                    >
+                      {isRecording ? (
+                        <Square className="w-8 h-8 text-white" />
+                      ) : (
+                        <Mic className="w-8 h-8 text-white" />
+                      )}
+                    </button>
+                    
+                    {isRecording && (
+                      <p className="text-sm text-red-500 mt-2 animate-pulse">
+                        Recording... Click to stop
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <p className="text-sm text-glass-muted mb-4">
+                        Recording complete! Review your audio and process it.
+                      </p>
+                      
+                      {audioUrl && (
+                        <audio 
+                          controls 
+                          className="w-full mb-4"
+                          src={audioUrl}
+                        >
+                          Your browser does not support the audio element.
+                        </audio>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <button
+                        onClick={processVoiceRecording}
+                        disabled={isProcessingVoice || !profile?.gemini_api_key}
+                        className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 hover:from-blue-500/30 hover:to-indigo-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-blue-700 font-medium"
+                      >
+                        {isProcessingVoice ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-4 h-4" />
+                            Analyze Recording
+                          </>
+                        )}
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          resetVoiceRecording()
+                          setShowVoiceAdd(false)
+                        }}
+                        className="glass-button px-4 py-2"
+                        disabled={isProcessingVoice}
+                      >
+                        Record Again
+                      </button>
+                    </div>
+                    
+                    {!profile?.gemini_api_key && (
+                      <div className="bg-yellow-50/50 border border-yellow-200/50 rounded-lg p-3">
+                        <p className="text-sm text-yellow-700">
+                          <strong>API Key Required:</strong> Please add your Gemini API key in Settings to use voice analysis.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button 
+                  onClick={() => {
+                    setShowVoiceAdd(false)
+                    resetVoiceRecording()
+                  }}
+                  className="glass-button px-4 py-2"
+                  disabled={isRecording || isProcessingVoice}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Voice Results Modal */}
+        {showVoiceResults && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            onClick={() => setShowVoiceResults(false)}
+          >
+            <div 
+              className="glass-card p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-glass-heading">Voice Analysis Results</h3>
+                  <p className="text-sm text-glass-muted">Review and edit the items found in your recording</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                {voiceParsedItems.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Package className="w-12 h-12 text-glass-muted mx-auto mb-4" />
+                    <p className="text-glass-muted">No items were found in your recording.</p>
+                    <p className="text-sm text-glass-muted mt-2">Try recording again with clearer speech.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {voiceParsedItems.map((item, index) => (
+                      <div 
+                        key={index}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          selectedVoiceItems.has(index.toString())
+                            ? 'border-green-500 bg-green-50/20'
+                            : 'border-glass-white-border bg-glass-white-light'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <button
+                            onClick={() => handleVoiceItemToggle(index.toString())}
+                            className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                              selectedVoiceItems.has(index.toString())
+                                ? 'bg-green-500 border-green-500'
+                                : 'border-glass-white-border hover:border-green-500'
+                            }`}
+                          >
+                            {selectedVoiceItems.has(index.toString()) && (
+                              <Check className="w-4 h-4 text-white" />
+                            )}
+                          </button>
+                          
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-glass-heading">{item.name}</span>
+                              <span className="text-sm text-glass-muted">
+                                {item.amount} {item.unit}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">
+                                {item.category}
+                              </span>
+                              {item.notes && (
+                                <span className="text-xs text-glass-muted">{item.notes}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3 mt-6">
+                <button 
+                  onClick={handleAddVoiceItems}
+                  disabled={selectedVoiceItems.size === 0}
+                  className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-green-500/20 to-emerald-500/20 hover:from-green-500/30 hover:to-emerald-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-green-700 font-medium"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Selected Items ({selectedVoiceItems.size})
+                </button>
+                <button 
+                  onClick={() => {
+                    setShowVoiceResults(false)
+                    setVoiceParsedItems([])
+                    setSelectedVoiceItems(new Set())
+                  }}
+                  className="glass-button px-4 py-2"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>

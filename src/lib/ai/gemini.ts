@@ -149,4 +149,96 @@ export function fallbackParseShoppingList(userInput: string): ParsedItem[] {
       category
     }
   })
+}
+
+export async function analyzeVoiceRecording(
+  base64Audio: string,
+  apiKey: string
+): Promise<QuickAddResponse> {
+  if (!apiKey || !base64Audio) {
+    return {
+      items: [],
+      success: false,
+      error: 'API key and audio data are required'
+    }
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+
+    const prompt = `
+You are a voice-to-shopping-list analyzer. I will provide you with an audio recording of someone speaking their shopping list items. Your task is to:
+
+1. Transcribe the speech to text
+2. Parse the transcribed text into individual shopping items
+3. Return a JSON array of parsed items
+
+Return ONLY a valid JSON array with objects containing these exact fields:
+- name: string (item name, normalized)
+- amount: number (quantity, default to 1 if not specified)
+- unit: string (one of: ${VALID_UNITS.join(', ')})
+- category: string (one of: ${COMMON_CATEGORIES.join(', ')})
+- notes: string (optional, for any extra details)
+
+Rules:
+1. Normalize item names (e.g., "tomatos" → "tomatoes")
+2. Choose the most appropriate unit (default to "pcs" for countable items)
+3. Categorize items logically (e.g., "milk" → "Dairy", "apples" → "Produce")
+4. If amount/unit is unclear, use reasonable defaults
+5. Split combined items (e.g., "bread and butter" → separate items)
+6. Handle speech recognition errors gracefully
+7. Return ONLY the JSON array, no other text
+
+Example output: [
+  {"name": "milk", "amount": 2, "unit": "L", "category": "Dairy"},
+  {"name": "bread", "amount": 1, "unit": "pcs", "category": "Bakery"},
+  {"name": "eggs", "amount": 12, "unit": "pcs", "category": "Dairy"}
+]
+`
+
+    // Create the audio part for the model
+    const audioPart = {
+      inlineData: {
+        data: base64Audio,
+        mimeType: 'audio/webm'
+      }
+    }
+
+    const result = await model.generateContent([prompt, audioPart])
+    const response = result.response
+    const text = response.text()
+
+    // Clean the response to extract just the JSON
+    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) {
+      throw new Error('Invalid response format from AI')
+    }
+
+    const parsedItems: ParsedItem[] = JSON.parse(jsonMatch[0])
+
+    // Validate and clean the parsed items
+    const validatedItems = parsedItems
+      .filter(item => item.name && item.name.trim())
+      .map(item => ({
+        name: item.name.trim(),
+        amount: Math.max(Number(item.amount) || 1, 0.01),
+        unit: VALID_UNITS.includes(item.unit) ? item.unit : 'pcs',
+        category: COMMON_CATEGORIES.includes(item.category) ? item.category : 'General',
+        notes: item.notes?.trim() || undefined
+      }))
+
+    return {
+      items: validatedItems,
+      success: true
+    }
+
+  } catch (error) {
+    console.error('Voice analysis error:', error)
+    return {
+      items: [],
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to analyze voice recording'
+    }
+  }
 } 
