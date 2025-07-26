@@ -332,13 +332,13 @@ export default function DashboardPage() {
 
     try {
       // Create undo action
-      const undoAction = createDeleteListUndoAction(listToDelete, () => {
+      const undoActionData = createDeleteListUndoAction(listToDelete, () => {
         // Refresh the lists after undo
         if (user) {
           fetchShoppingLists(user.id)
         }
       })
-      undoManager.addAction(undoAction)
+      const undoAction = undoManager.addAction(undoActionData)
 
       if (isDemoMode) {
         // Simulate deletion in demo mode

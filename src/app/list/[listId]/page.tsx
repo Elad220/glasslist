@@ -363,11 +363,11 @@ export default function ListPage() {
     if (!item) return
 
     // Create undo action
-    const undoAction = createDeleteItemUndoAction(listId, item, itemId, () => {
+    const undoActionData = createDeleteItemUndoAction(listId, item, itemId, () => {
       // Refresh items after undo
       loadData()
     })
-    undoManager.addAction(undoAction)
+    const undoAction = undoManager.addAction(undoActionData)
 
     // Optimistic update
     setItems(items.filter(item => item.id !== itemId))
