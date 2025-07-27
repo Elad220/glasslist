@@ -363,13 +363,6 @@ export default function DashboardPage() {
         
         // Always remove from UI regardless of sync status
         setShoppingLists(lists => lists.filter(list => list.id !== listToDelete.id))
-        
-        // Force refresh after a short delay to ensure sync
-        setTimeout(async () => {
-          if (user) {
-            await fetchShoppingLists(user.id)
-          }
-        }, 1000)
       }
       
       // Show toast with undo button
@@ -684,6 +677,22 @@ export default function DashboardPage() {
     }
   }
 
+  const handleManualSync = async () => {
+    try {
+      const { forceSync } = await import('@/lib/offline/hooks')
+      await forceSync()
+      toast.success('Sync completed', 'Manual sync completed.')
+      
+      // Refresh lists after sync
+      if (user) {
+        await fetchShoppingLists(user.id)
+      }
+    } catch (error) {
+      console.error('Manual sync failed:', error)
+      toast.error('Sync failed', 'Manual sync failed.')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -768,6 +777,12 @@ export default function DashboardPage() {
                 className="glass-button px-3 py-2 text-sm text-blue-400 border-blue-400/20 hover:bg-blue-400/10"
               >
                 Force Refresh Lists
+              </button>
+              <button
+                onClick={handleManualSync}
+                className="glass-button px-3 py-2 text-sm text-green-400 border-green-400/20 hover:bg-green-400/10"
+              >
+                Manual Sync
               </button>
             </div>
           </div>

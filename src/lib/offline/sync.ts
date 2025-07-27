@@ -151,11 +151,11 @@ class SyncManager {
     this.updateSyncStatus({ syncing: true, errors: [] })
 
     try {
-      // First, pull latest data from server
-      await this.pullFromServer()
-
-      // Then, push local changes to server
+      // First, push local changes to server (including deletions)
       const result = await this.pushToServer()
+
+      // Then, pull latest data from server (but exclude locally deleted items)
+      await this.pullFromServer()
 
       this.updateSyncStatus({
         syncing: false,

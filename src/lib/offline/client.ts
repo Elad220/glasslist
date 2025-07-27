@@ -46,7 +46,8 @@ class OfflineClient {
       await offlineStorage.init()
       // Only start auto sync if we're in a browser environment
       if (typeof window !== 'undefined') {
-        syncManager.startAutoSync(30000)
+        // Disable auto-sync temporarily to prevent interference with deletions
+        // syncManager.startAutoSync(30000)
       }
       
       // Clean up any orphaned delete records on initialization
@@ -60,8 +61,12 @@ class OfflineClient {
 
   // Shopping Lists Operations
   async getShoppingLists(userId: string): Promise<OfflineClientMultiResponse<ShoppingListWithItems>> {
-    if (syncManager.getStatus().isOnline) {
-      // Try Supabase first
+    // Check if there are any pending deletions first
+    const allLocalRecords = await offlineStorage.getAllShoppingLists(userId)
+    const hasPendingDeletions = allLocalRecords.some(record => record.pendingOperation === 'delete')
+    
+    if (syncManager.getStatus().isOnline && !hasPendingDeletions) {
+      // Only try Supabase if there are no pending deletions
       const { data, error } = await getShoppingListsOriginal(userId)
       if (data) {
         // Transform data to ensure it matches ShoppingListWithItems type
@@ -79,7 +84,8 @@ class OfflineClient {
       }
       // If Supabase fails, fallback to IndexedDB
     }
-    // Offline or Supabase failed
+    
+    // Use local storage if offline, Supabase failed, or there are pending deletions
     try {
       const listRecords = await offlineStorage.getShoppingLists(userId)
       const listsWithItems: ShoppingListWithItems[] = []
@@ -175,16 +181,12 @@ class OfflineClient {
 
   async deleteShoppingList(listId: string): Promise<OfflineClientResponse<null>> {
     try {
-      // First, mark for deletion
+      // Delete the list (mark for sync and remove locally)
       await offlineStorage.deleteShoppingList(listId, true)
       
-      // Also immediately delete locally to ensure it's gone
-      await offlineStorage.deleteShoppingList(listId, false)
-      
-      // Trigger immediate sync if online (non-blocking)
-      if (syncManager.getStatus().isOnline) {
-        syncManager.forceSync().catch(console.error)
-      }
+      // Don't trigger immediate sync to prevent pulling back the deleted list
+      // The sync will happen automatically later
+      console.log(`List ${listId} marked for deletion, sync will happen later`)
 
       return {
         data: null,
@@ -192,13 +194,6 @@ class OfflineClient {
       }
     } catch (error) {
       console.error('Failed to delete shopping list:', error)
-      
-      // Even if marking for deletion fails, try to delete locally
-      try {
-        await offlineStorage.deleteShoppingList(listId, false)
-      } catch (localDeleteError) {
-        console.error('Failed to delete locally as fallback:', localDeleteError)
-      }
       
       return {
         data: null,
