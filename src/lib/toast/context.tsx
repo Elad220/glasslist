@@ -25,6 +25,12 @@ interface ToastContextType {
   error: (title: string, message?: string) => void
   warning: (title: string, message?: string) => void
   info: (title: string, message?: string) => void
+  toast: {
+    success: (title: string, message?: string, options?: { action?: ToastAction }) => void
+    error: (title: string, message?: string) => void
+    warning: (title: string, message?: string) => void
+    info: (title: string, message?: string) => void
+  }
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
@@ -74,7 +80,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, [showToast])
 
   return (
-    <ToastContext.Provider value={{ toasts, showToast, hideToast, success, error, warning, info }}>
+    <ToastContext.Provider value={{ 
+      toasts, 
+      showToast, 
+      hideToast, 
+      success, 
+      error, 
+      warning, 
+      info,
+      toast: { success, error, warning, info }
+    }}>
       {children}
       <ToastContainer toasts={toasts} onHide={hideToast} />
     </ToastContext.Provider>

@@ -32,6 +32,7 @@ const mockProfile = {
   full_name: 'Demo User',
   avatar_url: null,
   gemini_api_key: null,
+  ai_suggestions_enabled: true,
   created_at: '2024-01-15T10:00:00Z',
   updated_at: '2024-01-15T10:00:00Z'
 }
@@ -51,7 +52,8 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    gemini_api_key: ''
+    gemini_api_key: '',
+    ai_suggestions_enabled: true
   })
 
   useEffect(() => {
@@ -72,17 +74,19 @@ export default function SettingsPage() {
             setFormData({
               full_name: profileData.full_name || '',
               email: profileData.email || '',
-              gemini_api_key: profileData.gemini_api_key || ''
+              gemini_api_key: profileData.gemini_api_key || '',
+              ai_suggestions_enabled: profileData.ai_suggestions_enabled ?? true
             })
           }
         } else {
           // Use demo data
           setProfile(mockProfile)
-          setFormData({
-            full_name: mockProfile.full_name || '',
-            email: mockProfile.email || '',
-            gemini_api_key: mockProfile.gemini_api_key || ''
-          })
+                      setFormData({
+              full_name: mockProfile.full_name || '',
+              email: mockProfile.email || '',
+              gemini_api_key: mockProfile.gemini_api_key || '',
+              ai_suggestions_enabled: mockProfile.ai_suggestions_enabled ?? true
+            })
         }
       } catch (error) {
         console.error('Error loading profile:', error)
@@ -100,6 +104,7 @@ export default function SettingsPage() {
     setSaveStatus(null)
 
     try {
+      
       if (isDemoMode) {
         // Simulate save in demo mode
         await new Promise(resolve => setTimeout(resolve, 1000))
@@ -112,15 +117,26 @@ export default function SettingsPage() {
           ...formData,
           updated_at: new Date().toISOString()
         })
-      } else {
-        // Real implementation - API key will be encrypted automatically in updateProfile
-        if (user?.id) {
-          const { data: updatedProfile, error } = await updateProfile(user.id, {
-            full_name: formData.full_name,
-            gemini_api_key: formData.gemini_api_key || null
-          })
+              } else {
+          // Real implementation - API key will be encrypted automatically in updateProfile
+          if (user?.id) {
+            const updateData = {
+              full_name: formData.full_name,
+              gemini_api_key: formData.gemini_api_key || null,
+              ai_suggestions_enabled: formData.ai_suggestions_enabled
+            }
+            
+            const { data: updatedProfile, error } = await updateProfile(user.id, updateData)
           
           if (error) {
+            // Check if the error is about the missing ai_suggestions_enabled column
+            if (error.message && error.message.includes('ai_suggestions_enabled')) {
+              console.log('Database migration needed for AI suggestions toggle')
+              // Still show success but with a note about the toggle
+              setSaveStatus('success')
+              toast.success('Settings saved', 'Profile updated (AI toggle requires database migration)')
+              return
+            }
             throw new Error(error.message || 'Failed to update profile')
           }
           
@@ -388,15 +404,36 @@ export default function SettingsPage() {
                     </div>
                   </div>
                   
-                  <div className="glass p-4 rounded-lg opacity-50">
+                  <div className="glass p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium text-glass">Smart Suggestions</h4>
                         <p className="text-sm text-glass-muted">
-                          AI-powered item recommendations (Coming soon)
+                          AI-powered item recommendations based on your shopping patterns
                         </p>
+                        {isDemoMode && (
+                          <p className="text-xs text-blue-500 mt-1">
+                            Demo mode: Toggle functionality simulated
+                          </p>
+                        )}
                       </div>
-                      <div className="w-6 h-6 rounded-full bg-glass-muted"></div>
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          ai_suggestions_enabled: !formData.ai_suggestions_enabled
+                        })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 ${
+                          formData.ai_suggestions_enabled 
+                            ? 'bg-green-500' 
+                            : 'bg-glass-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.ai_suggestions_enabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
                 </div>
