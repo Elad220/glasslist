@@ -49,6 +49,8 @@ CREATE TABLE items (
 -- Indexes for better performance
 CREATE INDEX idx_shopping_lists_user_id ON shopping_lists(user_id);
 CREATE INDEX idx_shopping_lists_created_at ON shopping_lists(created_at DESC);
+CREATE INDEX idx_shopping_lists_updated_at ON shopping_lists(updated_at DESC);
+CREATE INDEX idx_shopping_lists_user_updated ON shopping_lists(user_id, updated_at DESC);
 CREATE INDEX idx_items_list_id ON items(list_id);
 CREATE INDEX idx_items_category ON items(category);
 CREATE INDEX idx_items_is_checked ON items(is_checked);
