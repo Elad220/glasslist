@@ -1733,7 +1733,7 @@ export default function ListPage() {
                         <div 
                           key={item.id} 
                           className={`category-list-item flex items-center gap-3 p-3 transition-all duration-300 text-sm border-b border-glass-white-border last:border-b-0 bg-white/30 hover:bg-glass-white-light hover:shadow-lg animate-list-item hover-lift ${item.is_checked ? 'opacity-60' : ''}`}
-                          style={{ animationDelay: `${index * 0.05}s` }}
+                          style={{ animationDelay: `${categoryItems.indexOf(item) * 0.05}s` }}
                         >
                           <button
                             onClick={() => handleToggleItem(item.id)}
