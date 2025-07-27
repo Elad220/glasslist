@@ -297,6 +297,12 @@ class SyncManager {
         // New from server, save locally
         await offlineStorage.saveShoppingList(serverList, 'update', false)
       } else if (localRecord.pendingSync) {
+        // Check if local record is marked for deletion
+        if (localRecord.pendingOperation === 'delete') {
+          // Don't overwrite local deletion with server data
+          // The deletion will be synced to server in the push phase
+          continue
+        }
         // Conflict: both local and server have changes
         const resolution = await this.resolveListConflict(localRecord, serverList)
         await this.applyListConflictResolution(localRecord, serverList, resolution)
@@ -314,6 +320,12 @@ class SyncManager {
         // New from server, save locally
         await offlineStorage.saveItem(serverItem, 'update', false)
       } else if (localRecord.pendingSync) {
+        // Check if local record is marked for deletion
+        if (localRecord.pendingOperation === 'delete') {
+          // Don't overwrite local deletion with server data
+          // The deletion will be synced to server in the push phase
+          continue
+        }
         // Conflict: both local and server have changes
         const resolution = await this.resolveItemConflict(localRecord, serverItem)
         await this.applyItemConflictResolution(localRecord, serverItem, resolution)
