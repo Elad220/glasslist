@@ -54,7 +54,7 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
         .select('id, name')
         .eq('user_id', userId)
         .eq('is_archived', false)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
 
       if (error) throw error
       setLists(data || [])

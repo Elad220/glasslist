@@ -854,7 +854,7 @@ export default function DashboardPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-glass-heading truncate">{list.name}</p>
                         <p className="text-xs text-glass-muted">
-                          {list.itemCount} items • {formatDate(list.created_at)}
+                          {list.itemCount} items • {formatDate(list.updated_at)}
                         </p>
                       </div>
                       {list.is_shared && (

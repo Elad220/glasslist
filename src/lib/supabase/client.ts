@@ -81,7 +81,7 @@ export async function getShoppingListsOriginal(userId: string) {
       `)
       .eq('user_id', userId)
       .eq('is_archived', false)
-      .order('created_at', { ascending: false })
+      .order('updated_at', { ascending: false })
 
     if (error) {
       console.error('getShoppingLists Supabase error:', error)
