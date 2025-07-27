@@ -415,6 +415,7 @@ Example output:
           <div>
             <h3 className="text-lg font-bold text-glass-heading">AI-Powered Insights</h3>
             <p className="text-sm text-glass-muted">Intelligent analysis of your shopping patterns</p>
+            <div className="text-xs text-green-500 mt-1">✅ Component Loaded Successfully</div>
           </div>
         </div>
         
