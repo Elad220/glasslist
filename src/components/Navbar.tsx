@@ -31,13 +31,13 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 p-4">
-      <div className="glass-card flex items-center justify-between p-2 px-4 rounded-full">
+    <header className="sticky top-0 z-50 p-4 animate-slide-down">
+      <div className="glass-premium flex items-center justify-between p-2 px-4 rounded-full hover-lift animate-scale-in">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex items-center gap-2 text-glass-heading font-semibold">
-            <ShoppingCart className="w-6 h-6 text-primary" />
-            <span className="hidden sm:inline">GlassList</span>
+          <Link href="/dashboard" className="flex items-center gap-2 text-glass-heading font-semibold group">
+            <ShoppingCart className="w-6 h-6 text-primary group-hover:animate-wave" />
+            <span className="hidden sm:inline bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">GlassList</span>
           </Link>
           <SyncPopover />
         </div>

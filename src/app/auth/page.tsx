@@ -124,15 +124,16 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12">
       {/* Floating background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/3 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-10"></div>
+        <div className="absolute top-1/3 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15 animate-float"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-10 animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 right-1/3 w-48 h-48 bg-gradient-to-r from-primary to-secondary rounded-full blur-2xl opacity-20 animate-pulse-glow"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-md animate-scale-in">
         {/* Back to home link */}
         <Link 
           href="/" 
-          className="glass-button mb-8 px-4 py-2 inline-flex items-center gap-2 text-sm"
+          className="glass-premium mb-8 px-4 py-2 inline-flex items-center gap-2 text-sm hover-lift micro-interaction animate-slide-down"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Home
@@ -158,14 +159,14 @@ export default function AuthPage() {
         )}
 
         {/* Auth Card */}
-        <div className="glass-card p-8">
+        <div className="glass-premium p-8 animate-slide-up stagger-1 hover-lift">
           {/* Header */}
           <div className="text-center mb-8">
-            <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-primary" />
-            <h1 className="text-3xl font-bold mb-2">
+            <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-primary animate-bounce-in" />
+            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent animate-text-shimmer">
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h1>
-            <p className="text-text-secondary">
+            <p className="text-text-secondary animate-slide-up stagger-2">
               {isLogin 
                 ? 'Sign in to your GlassList account' 
                 : 'Join GlassList and start organizing'
@@ -204,7 +205,7 @@ export default function AuthPage() {
                     required={!isLogin}
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className="glass w-full pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-text-secondary/50"
+                    className="glass-premium w-full pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-text-secondary/50 focus-ring transition-all duration-300"
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -284,9 +285,19 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full glass-button py-3 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full glass-premium py-3 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover-glow micro-interaction animate-slide-up stagger-3 transition-all duration-300"
             >
-              {isLoading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+                  Please wait...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  {isLogin ? 'Sign In' : 'Create Account'}
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </span>
+              )}
             </button>
           </form>
 

@@ -139,20 +139,21 @@ export default function NewListPage() {
     <div className="min-h-screen p-4 md:p-8">
       {/* Floating background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-10"></div>
-        <div className="absolute bottom-1/4 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15"></div>
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-10 animate-float"></div>
+        <div className="absolute bottom-1/4 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15 animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-primary to-secondary rounded-full blur-2xl opacity-20 animate-pulse-glow"></div>
       </div>
 
       <div className="relative z-10 max-w-2xl mx-auto">
         {/* Header */}
-        <div className="glass-card p-6 mb-6">
+        <div className="glass-premium p-6 mb-6 animate-slide-down hover-lift">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="glass-button p-2">
+            <Link href="/dashboard" className="glass-premium p-2 hover-glow micro-interaction">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-glass-heading flex items-center gap-2">
-                <Plus className="w-6 h-6" />
+              <h1 className="text-2xl font-bold text-glass-heading flex items-center gap-2 animate-scale-in">
+                <Plus className="w-6 h-6 animate-bounce-in" />
                 Create New List
               </h1>
               <p className="text-glass-muted">Set up your new shopping list</p>
