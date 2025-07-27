@@ -42,6 +42,7 @@ import {
   getListItems,
   isDemoMode 
 } from '@/lib/supabase/client'
+import { cleanupOrphanedDeletes } from '@/lib/offline/client'
 import { undoManager, createDeleteListUndoAction } from '@/lib/undo-redo/simple'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
 import AISuggestions from '@/components/AISuggestions'
@@ -344,10 +345,13 @@ export default function DashboardPage() {
       } else {
         const { error } = await deleteShoppingList(listToDelete.id)
         if (error) {
-          toast.error('Delete failed', 'Failed to delete list. Please try again.')
-          return
+          console.warn('Delete operation had an error:', error)
+          // Even if there's an error, we should still remove from UI
+          // since the user confirmed the deletion
+          toast.warning('Delete completed with warning', 'List was deleted locally but may not have synced to server.')
         }
         
+        // Always remove from UI regardless of sync status
         setShoppingLists(lists => lists.filter(list => list.id !== listToDelete.id))
       }
       
@@ -633,6 +637,21 @@ export default function DashboardPage() {
         toast.error('Invalid file type', 'Please select a JSON file')
         event.target.value = ''
       }
+    }
+  }
+
+  const handleCleanupOrphanedDeletes = async () => {
+    try {
+      await cleanupOrphanedDeletes()
+      toast.success('Cleanup completed', 'Orphaned delete records have been cleaned up.')
+      
+      // Refresh the lists to ensure any stuck records are gone
+      if (user) {
+        await fetchShoppingLists(user.id)
+      }
+    } catch (error) {
+      console.error('Cleanup failed:', error)
+      toast.error('Cleanup failed', 'Failed to cleanup orphaned records.')
     }
   }
 

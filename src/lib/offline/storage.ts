@@ -547,6 +547,44 @@ class OfflineStorage {
       transaction.onerror = () => reject(transaction.error)
     })
   }
+
+  // Clean up orphaned delete records that might be stuck
+  async cleanupOrphanedDeletes(): Promise<void> {
+    if (DISABLE_INDEXEDDB) return;
+    if (!this.isInitialized) return;
+    const db = this.ensureDB()
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['shopping_lists', 'items'], 'readwrite')
+      const listsStore = transaction.objectStore('shopping_lists')
+      const itemsStore = transaction.objectStore('items')
+      
+      // Clean up lists marked for deletion
+      const listsRequest = listsStore.getAll()
+      listsRequest.onsuccess = () => {
+        const lists = listsRequest.result as OfflineRecord<ShoppingList>[]
+        lists.forEach(record => {
+          if (record.pendingOperation === 'delete') {
+            listsStore.delete(record.id)
+          }
+        })
+      }
+      
+      // Clean up items marked for deletion
+      const itemsRequest = itemsStore.getAll()
+      itemsRequest.onsuccess = () => {
+        const items = itemsRequest.result as OfflineRecord<Item>[]
+        items.forEach(record => {
+          if (record.pendingOperation === 'delete') {
+            itemsStore.delete(record.id)
+          }
+        })
+      }
+      
+      transaction.oncomplete = () => resolve()
+      transaction.onerror = () => reject(transaction.error)
+    })
+  }
 }
 
 // Export a singleton instance

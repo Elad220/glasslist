@@ -354,8 +354,15 @@ class SyncManager {
           .delete()
           .eq('id', list.id)
 
-        if (error) throw error
-        await offlineStorage.deleteShoppingList(list.id, false) // Actually delete locally
+        if (error) {
+          // Even if server deletion fails, we should still delete locally
+          // to maintain consistency with user's action
+          console.warn('Server deletion failed for list:', list.id, error)
+          await offlineStorage.deleteShoppingList(list.id, false) // Actually delete locally
+          // Don't throw error to prevent sync failure
+        } else {
+          await offlineStorage.deleteShoppingList(list.id, false) // Actually delete locally
+        }
       }
     } catch (error) {
       console.error('Failed to sync list to server:', error)
@@ -393,8 +400,15 @@ class SyncManager {
           .delete()
           .eq('id', item.id)
 
-        if (error) throw error
-        await offlineStorage.deleteItem(item.id, false) // Actually delete locally
+        if (error) {
+          // Even if server deletion fails, we should still delete locally
+          // to maintain consistency with user's action
+          console.warn('Server deletion failed for item:', item.id, error)
+          await offlineStorage.deleteItem(item.id, false) // Actually delete locally
+          // Don't throw error to prevent sync failure
+        } else {
+          await offlineStorage.deleteItem(item.id, false) // Actually delete locally
+        }
       }
     } catch (error) {
       console.error('Failed to sync item to server:', error)

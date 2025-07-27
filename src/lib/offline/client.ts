@@ -48,6 +48,10 @@ class OfflineClient {
       if (typeof window !== 'undefined') {
         syncManager.startAutoSync(30000)
       }
+      
+      // Clean up any orphaned delete records on initialization
+      await offlineStorage.cleanupOrphanedDeletes()
+      
       this.initialized = true
     } catch (error) {
       console.error('Failed to initialize offline client:', error)
@@ -465,6 +469,15 @@ class OfflineClient {
     }
   }
 
+  // Clean up orphaned delete records
+  async cleanupOrphanedDeletes(): Promise<void> {
+    try {
+      await offlineStorage.cleanupOrphanedDeletes()
+    } catch (error) {
+      console.error('Failed to cleanup orphaned deletes:', error)
+    }
+  }
+
   // Analytics placeholder (could be implemented to work with cached data)
   async getUserAnalytics(userId: string): Promise<OfflineClientResponse<any>> {
     if (syncManager.getStatus().isOnline) {
@@ -563,6 +576,10 @@ export async function updateCategoryOrder(listId: string, categoryOrder: string[
 
 export async function getUserAnalytics(userId: string) {
   return offlineClient.getUserAnalytics(userId)
+}
+
+export async function cleanupOrphanedDeletes() {
+  return offlineClient.cleanupOrphanedDeletes()
 }
 
 // Re-export types for convenience
