@@ -1551,26 +1551,53 @@ export default function ListPage() {
         {/* Items List - Grouped by Category */}
         <div className={isShoppingMode ? "space-y-6" : "space-y-4"}>
           {filteredItems.length === 0 ? (
-            <div className="glass-card p-8 text-center">
-              <Package className="w-12 h-12 text-glass-muted mx-auto mb-4" />
-              <h3 className="text-lg font-bold text-glass-heading mb-2">
-                {isShoppingMode ? "Ready to shop!" : "No items yet"}
-              </h3>
-              <p className="text-glass-muted mb-4">
-                {isShoppingMode 
-                  ? "Exit shopping mode to add items to your list." 
-                  : "Start building your shopping list!"
-                }
-              </p>
-              {!isShoppingMode && (
+            // Check if there are items in the list but filtering returned no results
+            items.length > 0 && (searchQuery.trim() || categoryFilter !== 'all') ? (
+              <div className="glass-card p-8 text-center">
+                <Search className="w-12 h-12 text-glass-muted mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-glass-heading mb-2">
+                  No items found
+                </h3>
+                <p className="text-glass-muted mb-4">
+                  {searchQuery.trim() && categoryFilter !== 'all' 
+                    ? `No items match "${searchQuery}" in the "${categoryFilter}" category.`
+                    : searchQuery.trim()
+                    ? `No items match "${searchQuery}".`
+                    : `No items found in the "${categoryFilter}" category.`
+                  }
+                </p>
                 <button 
-                  onClick={() => setShowAddItem(true)}
+                  onClick={() => {
+                    setSearchQuery('')
+                    setCategoryFilter('all')
+                  }}
                   className="glass-button px-6 py-3"
                 >
-                  Add Your First Item
+                  Clear Filters
                 </button>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="glass-card p-8 text-center">
+                <Package className="w-12 h-12 text-glass-muted mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-glass-heading mb-2">
+                  {isShoppingMode ? "Ready to shop!" : "No items yet"}
+                </h3>
+                <p className="text-glass-muted mb-4">
+                  {isShoppingMode 
+                    ? "Exit shopping mode to add items to your list." 
+                    : "Start building your shopping list!"
+                  }
+                </p>
+                {!isShoppingMode && (
+                  <button 
+                    onClick={() => setShowAddItem(true)}
+                    className="glass-button px-6 py-3"
+                  >
+                    Add Your First Item
+                  </button>
+                )}
+              </div>
+            )
           ) : (
             orderedCategories.map((category) => {
               const categoryItems = groupedItems[category]
