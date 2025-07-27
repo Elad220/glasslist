@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Mail, Lock, User, Eye, EyeOff, ArrowLeft, AlertCircle } from 'lucide-react'
+import { ShoppingCart, Mail, Lock, User, Eye, EyeOff, ArrowLeft, AlertCircle, ArrowRight } from 'lucide-react'
 import { signIn, signUp } from '@/lib/supabase/auth'
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
