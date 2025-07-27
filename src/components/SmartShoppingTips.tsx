@@ -62,6 +62,10 @@ export default function SmartShoppingTips({
     setLoading(true)
     try {
       // Get shopping history for analysis
+      if (!supabase) {
+        throw new Error('Supabase client not available')
+      }
+      
       const { data: historyData, error: historyError } = await supabase
         .from('items')
         .select(`
@@ -111,10 +115,10 @@ export default function SmartShoppingTips({
       const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
       // Analyze shopping patterns
-      const itemFrequency = new Map<string, number>()
-      const categorySpending = new Map<string, number>()
-      const shoppingDays = new Set<string>()
-      const completionRates = new Map<string, number>()
+                   const itemFrequency = new Map<string, number>()
+             const categorySpending = new Map<string, number>()
+             const shoppingDays = new Set<string>()
+             const completionRates = new Map<string, { total: number, completed: number }>()
 
       historyData.forEach(item => {
         const itemKey = item.name.toLowerCase().trim()
