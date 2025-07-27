@@ -633,6 +633,59 @@ class OfflineStorage {
       transaction.onerror = () => reject(transaction.error)
     })
   }
+
+  // Clean up stuck pending deletions that have been marked for too long
+  async cleanupStuckPendingDeletions(): Promise<void> {
+    if (DISABLE_INDEXEDDB) return;
+    if (!this.isInitialized) return;
+    const db = this.ensureDB()
+    
+    console.log('Starting cleanup of stuck pending deletions...')
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['shopping_lists', 'items'], 'readwrite')
+      const listsStore = transaction.objectStore('shopping_lists')
+      const itemsStore = transaction.objectStore('items')
+      
+      let cleanedListsCount = 0
+      let cleanedItemsCount = 0
+      
+      // Find shopping lists that have been marked for deletion for more than 1 hour
+      const oneHourAgo = Date.now() - 60 * 60 * 1000
+      
+      // Clean up lists marked for deletion for too long
+      const listsRequest = listsStore.getAll()
+      listsRequest.onsuccess = () => {
+        const lists = listsRequest.result as OfflineRecord<ShoppingList>[]
+        lists.forEach(record => {
+          if (record.pendingOperation === 'delete' && record.lastModified < oneHourAgo) {
+            console.log(`Cleaning up stuck pending deletion for list: ${record.id} (lastModified: ${new Date(record.lastModified)})`)
+            listsStore.delete(record.id)
+            cleanedListsCount++
+          }
+        })
+      }
+      
+      // Clean up items marked for deletion for too long
+      const itemsRequest = itemsStore.getAll()
+      itemsRequest.onsuccess = () => {
+        const items = itemsRequest.result as OfflineRecord<Item>[]
+        items.forEach(record => {
+          if (record.pendingOperation === 'delete' && record.lastModified < oneHourAgo) {
+            console.log(`Cleaning up stuck pending deletion for item: ${record.id} (lastModified: ${new Date(record.lastModified)})`)
+            itemsStore.delete(record.id)
+            cleanedItemsCount++
+          }
+        })
+      }
+      
+      transaction.oncomplete = () => {
+        console.log(`Stuck pending deletions cleanup completed: ${cleanedListsCount} lists and ${cleanedItemsCount} items removed`)
+        resolve()
+      }
+      transaction.onerror = () => reject(transaction.error)
+    })
+  }
 }
 
 // Export a singleton instance

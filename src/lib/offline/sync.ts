@@ -377,18 +377,28 @@ class SyncManager {
         await offlineStorage.markListSynced(list.id)
 
       } else if (pendingOperation === 'delete') {
-        const { error } = await supabase
+        console.log(`Syncing deletion for list ${list.id} to server...`)
+        const { error, count } = await supabase
           .from('shopping_lists')
           .delete()
           .eq('id', list.id)
+          .select('count')
+
+        console.log(`Server deletion result for list ${list.id}:`, { error, count })
 
         if (error) {
-          // Even if server deletion fails, we should still delete locally
-          // to maintain consistency with user's action
+          // If server deletion fails, keep the pending deletion flag
+          // so the list stays "deleted" locally
           console.warn('Server deletion failed for list:', list.id, error)
-          await offlineStorage.deleteShoppingList(list.id, false) // Actually delete locally
+          // Don't remove the pending deletion flag - keep it marked for deletion
           // Don't throw error to prevent sync failure
+        } else if (count && count > 0) {
+          // Only remove the pending deletion flag if server deletion was successful
+          console.log(`Successfully deleted list ${list.id} from server (count: ${count}), now deleting locally`)
+          await offlineStorage.deleteShoppingList(list.id, false) // Actually delete locally
         } else {
+          // Server deletion returned 0 rows - list might not exist on server
+          console.log(`List ${list.id} not found on server (count: ${count}), deleting locally`)
           await offlineStorage.deleteShoppingList(list.id, false) // Actually delete locally
         }
       }
