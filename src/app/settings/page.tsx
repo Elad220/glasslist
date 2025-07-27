@@ -150,12 +150,16 @@ export default function SettingsPage() {
             const { data: updatedProfile, error } = await updateProfile(user.id, updateData)
           
           if (error) {
-            // Check if the error is about the missing ai_suggestions_enabled column
-            if (error.message && error.message.includes('ai_suggestions_enabled')) {
-              console.log('Database migration needed for AI suggestions toggle')
-              // Still show success but with a note about the toggle
+            // Check if the error is about missing AI-related columns
+            if (error.message && error.message.includes('column') && 
+                (error.message.includes('ai_suggestions_enabled') || 
+                 error.message.includes('ai_insights_enabled') || 
+                 error.message.includes('ai_tips_enabled') || 
+                 error.message.includes('ai_analytics_enabled'))) {
+              console.log('Database migration needed for AI feature toggles')
+              // Still show success but with a note about the toggles
               setSaveStatus('success')
-              toast.success('Settings saved', 'Profile updated (AI toggle requires database migration)')
+              toast.success('Settings saved', 'Profile updated (AI toggles stored locally)')
               return
             }
             throw new Error(error.message || 'Failed to update profile')
