@@ -18,10 +18,15 @@ import {
   Settings as SettingsIcon,
   Sparkles,
   HelpCircle,
-  ExternalLink
+  ExternalLink,
+  Palette,
+  Sun,
+  Moon,
+  Monitor
 } from 'lucide-react'
 import { getCurrentUser, updateProfile, deleteAccount, signOut, getProfile } from '@/lib/supabase/auth'
 import { useToast } from '@/lib/toast/context'
+import { useTheme } from '@/lib/theme/context'
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
@@ -40,6 +45,7 @@ const mockProfile = {
 export default function SettingsPage() {
   const router = useRouter()
   const toast = useToast()
+  const { theme, setTheme, resolvedTheme } = useTheme()
   
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
@@ -47,7 +53,7 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [showApiKey, setShowApiKey] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'success' | 'error' | null>(null)
-  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'account'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'appearance' | 'account'>('profile')
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -249,6 +255,18 @@ export default function SettingsPage() {
             </button>
             
             <button
+              onClick={() => setActiveTab('appearance')}
+              className={`flex-1 px-4 py-3 rounded-lg transition-all ${
+                activeTab === 'appearance' 
+                  ? 'bg-primary/20 text-primary' 
+                  : 'text-glass-muted hover:text-glass'
+              }`}
+            >
+              <Palette className="w-4 h-4 mx-auto mb-1" />
+              <span className="text-sm">Appearance</span>
+            </button>
+            
+            <button
               onClick={() => setActiveTab('account')}
               className={`flex-1 px-4 py-3 rounded-lg transition-all ${
                 activeTab === 'account' 
@@ -436,6 +454,117 @@ export default function SettingsPage() {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'appearance' && (
+          <div className="glass-card p-6">
+            <h2 className="text-xl font-bold text-glass-heading mb-6 flex items-center gap-2">
+              <Palette className="w-5 h-5" />
+              Appearance Settings
+            </h2>
+            
+            <div className="space-y-6">
+              {/* Theme Selection */}
+              <div>
+                <label className="block text-sm font-medium text-glass-muted mb-4">
+                  Theme Mode
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <button
+                    onClick={() => setTheme('light')}
+                    className={`glass p-4 rounded-lg transition-all ${
+                      theme === 'light' 
+                        ? 'ring-2 ring-primary/50 bg-primary/10' 
+                        : 'hover:bg-glass-white-light'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                        <Sun className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium text-glass">Light</div>
+                        <div className="text-xs text-glass-muted">Bright and vibrant</div>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setTheme('dark')}
+                    className={`glass p-4 rounded-lg transition-all ${
+                      theme === 'dark' 
+                        ? 'ring-2 ring-primary/50 bg-primary/10' 
+                        : 'hover:bg-glass-white-light'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                        <Moon className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium text-glass">Dark</div>
+                        <div className="text-xs text-glass-muted">Easy on the eyes</div>
+                      </div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => setTheme('system')}
+                    className={`glass p-4 rounded-lg transition-all ${
+                      theme === 'system' 
+                        ? 'ring-2 ring-primary/50 bg-primary/10' 
+                        : 'hover:bg-glass-white-light'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-500 to-gray-700 flex items-center justify-center">
+                        <Monitor className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium text-glass">System</div>
+                        <div className="text-xs text-glass-muted">Follows your device</div>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+                
+                {theme === 'system' && (
+                  <div className="glass p-3 rounded-lg mt-3">
+                    <div className="flex items-center gap-2 text-sm text-glass-muted">
+                      <Monitor className="w-4 h-4" />
+                      <span>Currently using: {resolvedTheme === 'dark' ? 'Dark' : 'Light'} mode</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Theme Preview */}
+              <div>
+                <label className="block text-sm font-medium text-glass-muted mb-3">
+                  Preview
+                </label>
+                <div className="glass p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-glass">Current Theme</h4>
+                    <div className="flex items-center gap-2">
+                      {theme === 'light' && <Sun className="w-4 h-4 text-yellow-500" />}
+                      {theme === 'dark' && <Moon className="w-4 h-4 text-blue-400" />}
+                      {theme === 'system' && <Monitor className="w-4 h-4 text-gray-500" />}
+                      <span className="text-sm text-glass-muted">
+                        {theme === 'system' 
+                          ? `System (${resolvedTheme === 'dark' ? 'Dark' : 'Light'})` 
+                          : theme.charAt(0).toUpperCase() + theme.slice(1)
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-glass-muted">
+                    The theme will be applied immediately and saved for future visits.
+                  </p>
                 </div>
               </div>
             </div>
