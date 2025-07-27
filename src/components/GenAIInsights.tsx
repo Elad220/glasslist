@@ -58,7 +58,7 @@ export default function GenAIInsights({
     if (userId && analytics && shoppingLists.length > 0) {
       generateInsights()
     }
-  }, [userId, apiKey, analytics, shoppingLists])
+  }, [userId, analytics, shoppingLists])
 
   const generateInsights = async () => {
     if (!userId) return

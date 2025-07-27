@@ -61,7 +61,7 @@ export default function AIShoppingAnalytics({
     if (userId && analytics && shoppingLists.length > 0) {
       generateAnalytics()
     }
-  }, [userId, apiKey, analytics, shoppingLists])
+  }, [userId, analytics, shoppingLists])
 
   const generateAnalytics = async () => {
     if (!userId) return

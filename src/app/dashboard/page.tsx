@@ -814,7 +814,7 @@ export default function DashboardPage() {
           {/* Insights Sidebar */}
           <div className="space-y-6">
             {/* AI-Powered Insights */}
-            {user && profile?.ai_insights_enabled && profile?.gemini_api_key ? (
+            {user && profile?.ai_insights_enabled ? (
               <GenAIInsights 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
@@ -865,7 +865,7 @@ export default function DashboardPage() {
             )}
 
             {/* Smart Shopping Tips */}
-            {user && profile?.ai_tips_enabled && profile?.gemini_api_key && (
+            {user && profile?.ai_tips_enabled && (
               <SmartShoppingTips 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
@@ -875,7 +875,7 @@ export default function DashboardPage() {
             )}
 
             {/* AI Shopping Analytics */}
-            {user && profile?.ai_analytics_enabled && profile?.gemini_api_key && (
+            {user && profile?.ai_analytics_enabled && (
               <AIShoppingAnalytics 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}

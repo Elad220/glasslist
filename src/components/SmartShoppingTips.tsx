@@ -54,7 +54,7 @@ export default function SmartShoppingTips({
     if (userId && analytics && shoppingLists.length > 0) {
       generateTips()
     }
-  }, [userId, apiKey, analytics, shoppingLists])
+  }, [userId, analytics, shoppingLists])
 
   const generateTips = async () => {
     if (!userId) return
