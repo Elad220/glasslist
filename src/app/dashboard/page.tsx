@@ -48,6 +48,7 @@ import AISuggestions from '@/components/AISuggestions'
 import GenAIInsights from '@/components/GenAIInsights'
 import SmartShoppingTips from '@/components/SmartShoppingTips'
 import AIShoppingAnalytics from '@/components/AIShoppingAnalytics'
+import TestAIComponent from '@/components/TestAIComponent'
 
 const mockProfile: Profile = {
   id: 'demo-user-123',
@@ -813,20 +814,39 @@ export default function DashboardPage() {
 
           {/* Insights Sidebar */}
           <div className="space-y-6">
-            {/* AI-Powered Insights */}
-            {user && profile?.ai_insights_enabled ? (
-              <GenAIInsights 
+            {/* TEST AI Component */}
+            {user && (
+              <TestAIComponent 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
                 analytics={analytics}
                 shoppingLists={shoppingLists}
-                onRefresh={() => {
-                  if (!isDemoMode) {
-                    fetchAnalytics(user.id)
-                  }
-                }}
               />
-            ) : (
+            )}
+
+            {/* AI-Powered Insights */}
+            {(() => {
+              console.log('Dashboard AI Insights condition check:', {
+                user: !!user,
+                profile: !!profile,
+                ai_insights_enabled: profile?.ai_insights_enabled,
+                userId: user?.id,
+                analytics: !!analytics,
+                shoppingLists: shoppingLists?.length
+              })
+              return user && profile?.ai_insights_enabled ? (
+                <GenAIInsights 
+                  userId={user.id}
+                  apiKey={profile?.gemini_api_key || ''}
+                  analytics={analytics}
+                  shoppingLists={shoppingLists}
+                  onRefresh={() => {
+                    if (!isDemoMode) {
+                      fetchAnalytics(user.id)
+                    }
+                  }}
+                />
+              ) : (
               /* Basic Insights Fallback */
               <div className="glass-card p-6">
                 <h3 className="font-bold mb-4 flex items-center gap-2 text-glass-heading">
@@ -862,7 +882,8 @@ export default function DashboardPage() {
                   )}
                 </div>
               </div>
-            )}
+            )
+            })()}
 
             {/* Smart Shopping Tips */}
             {user && profile?.ai_tips_enabled && (
