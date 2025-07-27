@@ -854,7 +854,7 @@ export default function DashboardPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-glass-heading truncate">{list.name}</p>
                         <p className="text-xs text-glass-muted">
-                          {isDemoMode && isMockList(list) ? list.itemCount : 0} items • {formatDate(list.created_at)}
+                          {list.itemCount} items • {formatDate(list.created_at)}
                         </p>
                       </div>
                       {list.is_shared && (
@@ -1132,7 +1132,7 @@ export default function DashboardPage() {
                   <h4 className="font-medium text-glass-heading">{list.name}</h4>
                   <p className="text-sm text-glass-muted">{list.description}</p>
                   <p className="text-xs text-glass-muted mt-1">
-                    {isDemoMode && isMockList(list) ? list.itemCount : 0} items
+                    {list.itemCount} items
                   </p>
                 </Link>
               ))}
