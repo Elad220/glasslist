@@ -43,6 +43,7 @@ import {
   isDemoMode 
 } from '@/lib/supabase/client'
 import { cleanupOrphanedDeletes } from '@/lib/offline/client'
+import { syncManager } from '@/lib/offline/sync'
 import { undoManager, createDeleteListUndoAction } from '@/lib/undo-redo/simple'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
 import AISuggestions from '@/components/AISuggestions'
@@ -679,8 +680,7 @@ export default function DashboardPage() {
 
   const handleManualSync = async () => {
     try {
-      const { forceSync } = await import('@/lib/offline/hooks')
-      await forceSync()
+      await syncManager.forceSync()
       toast.success('Sync completed', 'Manual sync completed.')
       
       // Refresh lists after sync
