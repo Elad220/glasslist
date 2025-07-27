@@ -2075,118 +2075,158 @@ export default function ListPage() {
               </div>
               
               {/* Input Mode Tabs */}
-              <div className="flex gap-1 mb-6 p-1 bg-glass-white-light rounded-lg">
-                <button
-                  onClick={() => setAiInputMode('text')}
-                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    aiInputMode === 'text'
-                      ? 'bg-white text-purple-700 shadow-sm'
-                      : 'text-glass-muted hover:text-glass'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 justify-center">
-                    <Type className="w-4 h-4" />
-                    Text Input
-                  </div>
-                </button>
-                <button
-                  onClick={() => setAiInputMode('voice')}
-                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    aiInputMode === 'voice'
-                      ? 'bg-white text-purple-700 shadow-sm'
-                      : 'text-glass-muted hover:text-glass'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 justify-center">
-                    <Mic className="w-4 h-4" />
-                    Voice Recording
-                  </div>
-                </button>
+              <div className="glass p-1 mb-6">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setAiInputMode('text')}
+                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      aiInputMode === 'text'
+                        ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-700 shadow-lg backdrop-blur-sm'
+                        : 'text-glass-muted hover:text-glass hover:bg-glass-white-light/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 justify-center">
+                      <Type className={`w-4 h-4 ${aiInputMode === 'text' ? 'text-purple-600' : 'text-glass-muted'}`} />
+                      Text Input
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setAiInputMode('voice')}
+                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
+                      aiInputMode === 'voice'
+                        ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-700 shadow-lg backdrop-blur-sm'
+                        : 'text-glass-muted hover:text-glass hover:bg-glass-white-light/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 justify-center">
+                      <Mic className={`w-4 h-4 ${aiInputMode === 'voice' ? 'text-purple-600' : 'text-glass-muted'}`} />
+                      Voice Recording
+                    </div>
+                  </button>
+                </div>
               </div>
               
               <div className="space-y-4">
                 {aiInputMode === 'text' ? (
-                  <div>
-                    <label className="block text-sm font-medium text-glass-muted mb-2">
-                      Natural Language Input
-                    </label>
-                    <p className="text-sm text-glass-muted mb-3">
-                      Enter items naturally like: <span className="font-medium">"2 lbs chicken breast, 1 gallon milk, 3 apples"</span>
-                    </p>
-                    <textarea
-                      placeholder="Type your shopping list items..."
-                      value={aiInput}
-                      onChange={(e) => setAiInput(e.target.value)}
-                      className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted resize-none focus:ring-2 focus:ring-purple-500/50"
-                      rows={4}
-                      autoFocus
-                    />
+                  <div className="space-y-4">
+                    <div className="glass p-4 glass-card-hover">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                          <Type className="w-4 h-4 text-purple-600" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-semibold text-glass-heading">Natural Language Input</h4>
+                          <p className="text-xs text-glass-muted">Enter items naturally as you would say them</p>
+                        </div>
+                      </div>
+                      
+                      <div className="glass p-3 mb-4 bg-gradient-to-r from-purple-500/5 to-pink-500/5 border border-purple-500/10 rounded-lg">
+                        <p className="text-xs text-glass-muted">
+                          <span className="font-medium text-purple-600">Example:</span> "2 lbs chicken breast, 1 gallon milk, 3 apples"
+                        </p>
+                      </div>
+                      
+                      <textarea
+                        placeholder="Type your shopping list items..."
+                        value={aiInput}
+                        onChange={(e) => setAiInput(e.target.value)}
+                        className="w-full glass-input px-4 py-4 text-glass placeholder-glass-muted resize-none"
+                        rows={4}
+                        autoFocus
+                      />
+                    </div>
                     
                     {isDemoMode && (
-                      <div className="bg-blue-50/50 border border-blue-200/50 rounded-lg p-3 mt-3">
-                        <p className="text-sm text-blue-700">
-                          <strong>Demo Mode:</strong> AI will simulate parsing by splitting your input into individual items.
-                        </p>
+                      <div className="glass p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                          </div>
+                          <p className="text-sm text-blue-700 font-medium">
+                            Demo Mode: AI will simulate parsing by splitting your input into individual items.
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div>
-                    <label className="block text-sm font-medium text-glass-muted mb-2">
-                      Voice Recording
-                    </label>
-                    <p className="text-sm text-glass-muted mb-3">
-                      Speak your shopping list items clearly and naturally.
-                    </p>
-                    
-                    {!audioBlob ? (
-                      <div className="text-center py-6">
-                        <div className="mb-4">
-                          <p className="text-sm text-glass-muted mb-4">
-                            Click the microphone button to start recording. Speak clearly and list your items naturally.
-                          </p>
-                          <p className="text-xs text-glass-muted">
-                            Example: "2 pounds of chicken breast, 1 gallon of milk, 3 apples, and a loaf of bread"
-                          </p>
+                  <div className="space-y-4">
+                    <div className="glass p-4 glass-card-hover">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                          <Mic className="w-4 h-4 text-purple-600" />
                         </div>
-                        
-                        <button
-                          onClick={isRecording ? stopRecording : startRecording}
-                          disabled={isRecording && !mediaRecorder}
-                          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
-                            isRecording 
-                              ? 'bg-red-500 animate-pulse' 
-                              : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
-                          }`}
-                        >
-                          {isRecording ? (
-                            <Square className="w-8 h-8 text-white" />
-                          ) : (
-                            <Mic className="w-8 h-8 text-white" />
-                          )}
-                        </button>
-                        
-                        {isRecording && (
-                          <p className="text-sm text-red-500 mt-2 animate-pulse">
-                            Recording... Click to stop
-                          </p>
-                        )}
+                        <div>
+                          <h4 className="text-sm font-semibold text-glass-heading">Voice Recording</h4>
+                          <p className="text-xs text-glass-muted">Speak your shopping list items clearly and naturally</p>
+                        </div>
                       </div>
+                      
+                      {!audioBlob ? (
+                        <div className="text-center py-6">
+                          <div className="glass p-4 mb-6 bg-gradient-to-r from-purple-500/5 to-pink-500/5 border border-purple-500/10 rounded-lg">
+                            <p className="text-sm text-glass-muted mb-3">
+                              Click the microphone button to start recording. Speak clearly and list your items naturally.
+                            </p>
+                            <p className="text-xs text-glass-muted">
+                              <span className="font-medium text-purple-600">Example:</span> "2 pounds of chicken breast, 1 gallon of milk, 3 apples, and a loaf of bread"
+                            </p>
+                          </div>
+                          
+                          <div className="relative">
+                            <button
+                              onClick={isRecording ? stopRecording : startRecording}
+                              disabled={isRecording && !mediaRecorder}
+                              className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+                                isRecording 
+                                  ? 'bg-gradient-to-r from-red-500 to-pink-500 animate-pulse shadow-red-500/50' 
+                                  : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:scale-105 shadow-purple-500/30'
+                              }`}
+                            >
+                              {isRecording ? (
+                                <Square className="w-10 h-10 text-white" />
+                              ) : (
+                                <Mic className="w-10 h-10 text-white" />
+                              )}
+                            </button>
+                            
+                            {isRecording && (
+                              <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full animate-pulse flex items-center justify-center">
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {isRecording && (
+                            <div className="mt-4 glass p-3 bg-gradient-to-r from-red-500/10 to-pink-500/10 border border-red-500/20 rounded-lg">
+                              <p className="text-sm text-red-600 font-medium animate-pulse">
+                                Recording... Click to stop
+                              </p>
+                            </div>
+                          )}
+                        </div>
                     ) : (
                       <div className="space-y-4">
-                        <div className="text-center">
-                          <p className="text-sm text-glass-muted mb-4">
-                            Recording complete! Review your audio and process it.
-                          </p>
+                        <div className="glass p-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 border border-green-500/20 rounded-lg">
+                          <div className="flex items-center gap-2 mb-3">
+                            <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center">
+                              <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                            </div>
+                            <p className="text-sm text-green-700 font-medium">
+                              Recording complete! Review your audio and process it.
+                            </p>
+                          </div>
                           
                           {audioUrl && (
-                            <audio 
-                              controls 
-                              className="w-full mb-4"
-                              src={audioUrl}
-                            >
-                              Your browser does not support the audio element.
-                            </audio>
+                            <div className="glass p-3 bg-gradient-to-r from-purple-500/5 to-pink-500/5 border border-purple-500/10 rounded-lg">
+                              <audio 
+                                controls 
+                                className="w-full"
+                                src={audioUrl}
+                              >
+                                Your browser does not support the audio element.
+                              </audio>
+                            </div>
                           )}
                         </div>
                         
@@ -2194,7 +2234,7 @@ export default function ListPage() {
                           <button
                             onClick={processVoiceRecording}
                             disabled={isProcessingVoice || !profile?.gemini_api_key}
-                            className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium"
+                            className="flex-1 glass px-4 py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium transition-all duration-300 hover:scale-105"
                           >
                             {isProcessingVoice ? (
                               <>
@@ -2211,7 +2251,7 @@ export default function ListPage() {
                           
                           <button
                             onClick={resetVoiceRecording}
-                            className="glass-button px-4 py-2"
+                            className="glass px-4 py-3 hover:bg-glass-white-light/50 transition-all duration-300"
                             disabled={isProcessingVoice}
                           >
                             Record Again
@@ -2219,10 +2259,15 @@ export default function ListPage() {
                         </div>
                         
                         {!profile?.gemini_api_key && (
-                          <div className="bg-yellow-50/50 border border-yellow-200/50 rounded-lg p-3">
-                            <p className="text-sm text-yellow-700">
-                              <strong>API Key Required:</strong> Please add your Gemini API key in Settings to use voice analysis.
-                            </p>
+                          <div className="glass p-4 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                                <div className="w-3 h-3 bg-yellow-600 rounded-full"></div>
+                              </div>
+                              <p className="text-sm text-yellow-700 font-medium">
+                                <strong>API Key Required:</strong> Please add your Gemini API key in Settings to use voice analysis.
+                              </p>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2236,7 +2281,7 @@ export default function ListPage() {
                   <button 
                     onClick={handleAiAdd}
                     disabled={isAiProcessing || !aiInput.trim()}
-                    className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium"
+                    className="flex-1 glass px-4 py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium transition-all duration-300 hover:scale-105"
                   >
                     {isAiProcessing ? (
                       <>
@@ -2259,7 +2304,7 @@ export default function ListPage() {
                     setAiInput('')
                     resetVoiceRecording()
                   }}
-                  className="glass-button px-4 py-2"
+                  className="glass px-4 py-3 hover:bg-glass-white-light/50 transition-all duration-300"
                   disabled={isAiProcessing || isProcessingVoice}
                 >
                   Cancel
