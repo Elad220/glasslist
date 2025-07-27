@@ -113,6 +113,11 @@ export async function getProfile(userId: string): Promise<{ profile: Profile | n
     }
   }
 
+  // Ensure ai_suggestions_enabled field exists (for backward compatibility)
+  if (profile && profile.ai_suggestions_enabled === undefined) {
+    profile.ai_suggestions_enabled = true
+  }
+
   return { profile, error }
 }
 
@@ -154,7 +159,10 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
       return { data: null, error: fallbackError }
     }
     
-    return { data: fallbackData, error: null }
+    // Add the ai_suggestions_enabled field to the returned data for UI consistency
+    const dataWithToggle = fallbackData ? { ...fallbackData, ai_suggestions_enabled } : null
+    
+    return { data: dataWithToggle, error: null }
   }
 
   // Decrypt the API key in the returned data for immediate use

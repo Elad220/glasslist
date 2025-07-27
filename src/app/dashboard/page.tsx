@@ -937,7 +937,7 @@ export default function DashboardPage() {
             </div>
 
             {/* AI Suggestions */}
-            {user && profile?.ai_suggestions_enabled && (
+            {user && (profile?.ai_suggestions_enabled !== false) && (
               <AISuggestions 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
