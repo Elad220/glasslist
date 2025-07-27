@@ -287,30 +287,84 @@ export function SyncNotification() {
   const [showNotification, setShowNotification] = useState(false)
   const [notificationType, setNotificationType] = useState<'success' | 'error' | null>(null)
   const { syncing, lastSync, errors } = useSyncStatus()
+  const { pendingCount } = usePendingChanges()
   const lastSyncRef = useRef<string | null>(null)
+  const prevSyncingRef = useRef<boolean | undefined>(undefined)
+  const prevPendingCountRef = useRef<number | undefined>(undefined)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!isClient) return
     if (errors.length > 0 && !showNotification) {
       setNotificationType('error')
       setShowNotification(true)
-      const timer = setTimeout(() => setShowNotification(false), 5000)
-      return () => clearTimeout(timer)
+      
+      // Clear existing timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+      
+      timerRef.current = setTimeout(() => setShowNotification(false), 5000)
+      return () => {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current)
+        }
+      }
     }
   }, [errors, showNotification, isClient])
 
   useEffect(() => {
     if (!isClient) return
     
-    // Only show success notification when lastSync actually changes (new sync completes)
-    if (lastSync && lastSync !== lastSyncRef.current && !syncing && !showNotification) {
-      lastSyncRef.current = lastSync
+    // Initialize refs on first render
+    if (prevSyncingRef.current === undefined) {
+      prevSyncingRef.current = syncing
+      prevPendingCountRef.current = pendingCount
+      return
+    }
+
+    // Detect sync completion with resolved changes
+    const wasSyncing = prevSyncingRef.current
+    const previousPending = prevPendingCountRef.current || 0
+    const hadPendingChanges = previousPending > 0
+    const changesWereResolved = pendingCount < previousPending
+
+    if (wasSyncing && !syncing && hadPendingChanges && changesWereResolved && !showNotification) {
+      console.log('Sync completed with changes - showing notification:', { 
+        wasSyncing, 
+        hadPendingChanges, 
+        prevCount: previousPending, 
+        newCount: pendingCount 
+      })
+      
       setNotificationType('success')
       setShowNotification(true)
-      const timer = setTimeout(() => setShowNotification(false), 3000)
-      return () => clearTimeout(timer)
+      
+      // Clear existing timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+      
+      // Dismiss after 6 seconds
+      timerRef.current = setTimeout(() => {
+        setShowNotification(false)
+        console.log('Hiding sync complete notification')
+      }, 6000)
     }
-  }, [lastSync, syncing, showNotification, isClient])
+
+    // Update refs for next comparison
+    prevSyncingRef.current = syncing
+    prevPendingCountRef.current = pendingCount
+  }, [syncing, pendingCount, showNotification, isClient])
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+    }
+  }, [])
 
   if (!isClient || !showNotification) return null
 
