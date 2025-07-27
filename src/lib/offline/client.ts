@@ -56,30 +56,39 @@ class OfflineClient {
 
   // Shopping Lists Operations
   async getShoppingLists(userId: string): Promise<OfflineClientMultiResponse<ShoppingListWithItems>> {
+    // Always get local pending deletions to filter them out
+    const localListRecords = await offlineStorage.getShoppingLists(userId)
+    const pendingDeletions = new Set(
+      localListRecords
+        .filter(record => record.pendingOperation === 'delete')
+        .map(record => record.id)
+    )
+
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first
       const { data, error } = await getShoppingListsOriginal(userId)
       if (data) {
-        // Transform data to ensure it matches ShoppingListWithItems type
-        const transformedData: ShoppingListWithItems[] = data.map(list => ({
-          ...list,
-          category_order: (list as any).category_order || null,
-          share_code: (list as any).share_code || null,
-          created_by: (list as any).created_by || null,
-          items: (list.items || []).map(item => ({
-            ...item,
-            list_id: list.id // Add missing list_id to items
+        // Transform data and filter out pending deletions
+        const transformedData: ShoppingListWithItems[] = data
+          .filter(list => !pendingDeletions.has(list.id)) // Filter out pending deletions
+          .map(list => ({
+            ...list,
+            category_order: (list as any).category_order || null,
+            share_code: (list as any).share_code || null,
+            created_by: (list as any).created_by || null,
+            items: (list.items || []).map(item => ({
+              ...item,
+              list_id: list.id // Add missing list_id to items
+            }))
           }))
-        }))
         return { data: transformedData, error: null }
       }
       // If Supabase fails, fallback to IndexedDB
     }
     // Offline or Supabase failed
     try {
-      const listRecords = await offlineStorage.getShoppingLists(userId)
       const listsWithItems: ShoppingListWithItems[] = []
-      for (const listRecord of listRecords) {
+      for (const listRecord of localListRecords) {
         const itemRecords = await offlineStorage.getListItems(listRecord.id)
         const items = itemRecords.map(record => record.data)
         listsWithItems.push({ ...listRecord.data, items })
@@ -91,14 +100,19 @@ class OfflineClient {
   }
 
   async getShoppingList(listId: string): Promise<OfflineClientResponse<ShoppingList>> {
+    // Check if the list is marked for deletion locally
+    const localRecord = await offlineStorage.getShoppingList(listId)
+    if (localRecord && localRecord.pendingOperation === 'delete') {
+      return { data: null, error: 'Shopping list not found' }
+    }
+
     if (syncManager.getStatus().isOnline) {
       const { data, error } = await getShoppingListOriginal(listId)
       if (data) return { data, error: null }
     }
     try {
-      const record = await offlineStorage.getShoppingList(listId)
-      if (!record) return { data: null, error: 'Shopping list not found' }
-      return { data: record.data, error: null }
+      if (!localRecord) return { data: null, error: 'Shopping list not found' }
+      return { data: localRecord.data, error: null }
     } catch (error) {
       return { data: null, error: error instanceof Error ? error.message : 'Failed to get shopping list' }
     }
@@ -230,13 +244,24 @@ class OfflineClient {
 
   // Items Operations
   async getListItems(listId: string): Promise<OfflineClientMultiResponse<Item>> {
+    // Always get local pending deletions to filter them out
+    const localItemRecords = await offlineStorage.getListItems(listId)
+    const pendingDeletions = new Set(
+      localItemRecords
+        .filter(record => record.pendingOperation === 'delete')
+        .map(record => record.id)
+    )
+
     if (syncManager.getStatus().isOnline) {
       const { data, error } = await getListItemsOriginal(listId)
-      if (data) return { data, error: null }
+      if (data) {
+        // Filter out pending deletions from server data
+        const filteredData = data.filter(item => !pendingDeletions.has(item.id))
+        return { data: filteredData, error: null }
+      }
     }
     try {
-      const itemRecords = await offlineStorage.getListItems(listId)
-      const items = itemRecords.map(record => record.data)
+      const items = localItemRecords.map(record => record.data)
       
       // Sort by position and creation date
       items.sort((a, b) => {
