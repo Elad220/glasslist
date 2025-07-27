@@ -115,7 +115,18 @@ export async function getProfile(userId: string): Promise<{ profile: Profile | n
 
   // Ensure ai_suggestions_enabled field exists (for backward compatibility)
   if (profile && profile.ai_suggestions_enabled === undefined) {
-    profile.ai_suggestions_enabled = true
+    // Try to get the toggle state from localStorage as fallback
+    try {
+      const storedToggle = localStorage.getItem(`ai_suggestions_enabled_${userId}`)
+      if (storedToggle !== null) {
+        profile.ai_suggestions_enabled = JSON.parse(storedToggle)
+      } else {
+        profile.ai_suggestions_enabled = true // Default to enabled
+      }
+    } catch (e) {
+      console.warn('Failed to read AI suggestions toggle from localStorage:', e)
+      profile.ai_suggestions_enabled = true // Default to enabled
+    }
   }
 
   return { profile, error }
@@ -148,6 +159,16 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
   // If the error is about a missing column, try updating without the new field
   if (error && error.message && error.message.includes('column') && error.message.includes('ai_suggestions_enabled')) {
     const { ai_suggestions_enabled, ...otherUpdates } = updateData
+    
+    // Store the toggle state in localStorage as fallback
+    if (ai_suggestions_enabled !== undefined) {
+      try {
+        localStorage.setItem(`ai_suggestions_enabled_${userId}`, JSON.stringify(ai_suggestions_enabled))
+      } catch (e) {
+        console.warn('Failed to store AI suggestions toggle in localStorage:', e)
+      }
+    }
+    
     const { data: fallbackData, error: fallbackError } = await supabase
       .from('profiles')
       .update(otherUpdates)
