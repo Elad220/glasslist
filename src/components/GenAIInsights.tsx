@@ -49,12 +49,9 @@ export default function GenAIInsights({
   shoppingLists, 
   onRefresh 
 }: GenAIInsightsProps) {
-  console.log('GenAIInsights component rendered with:', { userId, apiKey: !!apiKey, analytics: !!analytics, shoppingLists: shoppingLists?.length })
-  
   const [insights, setInsights] = useState<Insight[]>([])
   const [loading, setLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const toast = useToast()
 
   useEffect(() => {
@@ -64,20 +61,16 @@ export default function GenAIInsights({
   }, [userId, analytics, shoppingLists])
 
   const generateInsights = async () => {
-    console.log('generateInsights called with userId:', userId)
     if (!userId) return
 
     setLoading(true)
-    setError(null)
     try {
       // Check if we're in demo mode (no API key or no Supabase)
       const isDemoMode = !apiKey || !supabase
       
       if (isDemoMode) {
-        console.log('Running in demo mode, generating demo insights')
         // Generate demo insights
         const demoInsights = generateDemoInsights(analytics, shoppingLists)
-        console.log('Demo insights generated:', demoInsights.length)
         setInsights(demoInsights)
         setLastUpdated(new Date())
         return
@@ -118,7 +111,6 @@ export default function GenAIInsights({
       setLastUpdated(new Date())
     } catch (error) {
       console.error('Error generating insights:', error)
-      setError(error instanceof Error ? error.message : 'Unknown error')
       toast.error('Failed to generate insights', 'Please try again later')
       // Fallback to basic insights
       setInsights(generateFallbackInsights(analytics, shoppingLists))
@@ -423,8 +415,6 @@ Example output:
           <div>
             <h3 className="text-lg font-bold text-glass-heading">AI-Powered Insights</h3>
             <p className="text-sm text-glass-muted">Intelligent analysis of your shopping patterns</p>
-            <div className="text-xs text-green-500 mt-1">✅ Component Loaded Successfully</div>
-            {error && <div className="text-xs text-red-500 mt-1">❌ Error: {error}</div>}
           </div>
         </div>
         
