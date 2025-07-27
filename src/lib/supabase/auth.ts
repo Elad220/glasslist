@@ -20,6 +20,9 @@ const mockProfile: Profile = {
   avatar_url: null,
   gemini_api_key: null,
   ai_suggestions_enabled: true,
+  ai_insights_enabled: true,
+  ai_tips_enabled: true,
+  ai_analytics_enabled: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 }
@@ -113,19 +116,31 @@ export async function getProfile(userId: string): Promise<{ profile: Profile | n
     }
   }
 
-  // Ensure ai_suggestions_enabled field exists (for backward compatibility)
-  if (profile && profile.ai_suggestions_enabled === undefined) {
-    // Try to get the toggle state from localStorage as fallback
+  // Ensure AI settings fields exist (for backward compatibility)
+  if (profile) {
+    // Try to get all AI settings from localStorage as fallback
     try {
-      const storedToggle = localStorage.getItem(`ai_suggestions_enabled_${userId}`)
-      if (storedToggle !== null) {
-        profile.ai_suggestions_enabled = JSON.parse(storedToggle)
+      const storedSettings = localStorage.getItem(`ai_settings_${userId}`)
+      if (storedSettings !== null) {
+        const aiSettings = JSON.parse(storedSettings)
+        profile.ai_suggestions_enabled = aiSettings.ai_suggestions_enabled ?? true
+        profile.ai_insights_enabled = aiSettings.ai_insights_enabled ?? true
+        profile.ai_tips_enabled = aiSettings.ai_tips_enabled ?? true
+        profile.ai_analytics_enabled = aiSettings.ai_analytics_enabled ?? true
       } else {
-        profile.ai_suggestions_enabled = true // Default to enabled
+        // Set defaults if no stored settings
+        profile.ai_suggestions_enabled = profile.ai_suggestions_enabled ?? true
+        profile.ai_insights_enabled = profile.ai_insights_enabled ?? true
+        profile.ai_tips_enabled = profile.ai_tips_enabled ?? true
+        profile.ai_analytics_enabled = profile.ai_analytics_enabled ?? true
       }
     } catch (e) {
-      console.warn('Failed to read AI suggestions toggle from localStorage:', e)
-      profile.ai_suggestions_enabled = true // Default to enabled
+      console.warn('Failed to read AI settings from localStorage:', e)
+      // Set defaults on error
+      profile.ai_suggestions_enabled = profile.ai_suggestions_enabled ?? true
+      profile.ai_insights_enabled = profile.ai_insights_enabled ?? true
+      profile.ai_tips_enabled = profile.ai_tips_enabled ?? true
+      profile.ai_analytics_enabled = profile.ai_analytics_enabled ?? true
     }
   }
 
@@ -156,17 +171,29 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
     .select()
     .single()
 
-  // If the error is about a missing column, try updating without the new field
-  if (error && error.message && error.message.includes('column') && error.message.includes('ai_suggestions_enabled')) {
-    const { ai_suggestions_enabled, ...otherUpdates } = updateData
+  // If the error is about a missing column, try updating without the new AI fields
+  if (error && error.message && error.message.includes('column')) {
+    // Extract all AI-related fields that might not exist in the database
+    const { 
+      ai_suggestions_enabled, 
+      ai_insights_enabled, 
+      ai_tips_enabled, 
+      ai_analytics_enabled, 
+      ...otherUpdates 
+    } = updateData
     
-    // Store the toggle state in localStorage as fallback
-    if (ai_suggestions_enabled !== undefined) {
-      try {
-        localStorage.setItem(`ai_suggestions_enabled_${userId}`, JSON.stringify(ai_suggestions_enabled))
-      } catch (e) {
-        console.warn('Failed to store AI suggestions toggle in localStorage:', e)
-      }
+    // Store the toggle states in localStorage as fallback
+    const aiSettings = {
+      ai_suggestions_enabled,
+      ai_insights_enabled,
+      ai_tips_enabled,
+      ai_analytics_enabled
+    }
+    
+    try {
+      localStorage.setItem(`ai_settings_${userId}`, JSON.stringify(aiSettings))
+    } catch (e) {
+      console.warn('Failed to store AI settings in localStorage:', e)
     }
     
     const { data: fallbackData, error: fallbackError } = await supabase
@@ -180,10 +207,10 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
       return { data: null, error: fallbackError }
     }
     
-    // Add the ai_suggestions_enabled field to the returned data for UI consistency
-    const dataWithToggle = fallbackData ? { ...fallbackData, ai_suggestions_enabled } : null
+    // Add the AI fields to the returned data for UI consistency
+    const dataWithAiSettings = fallbackData ? { ...fallbackData, ...aiSettings } : null
     
-    return { data: dataWithToggle, error: null }
+    return { data: dataWithAiSettings, error: null }
   }
 
   // Decrypt the API key in the returned data for immediate use

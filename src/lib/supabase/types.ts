@@ -17,6 +17,9 @@ export type Database = {
           avatar_url: string | null
           gemini_api_key: string | null
           ai_suggestions_enabled: boolean
+          ai_insights_enabled: boolean
+          ai_tips_enabled: boolean
+          ai_analytics_enabled: boolean
           created_at: string
           updated_at: string
         }
@@ -27,6 +30,9 @@ export type Database = {
           avatar_url?: string | null
           gemini_api_key?: string | null
           ai_suggestions_enabled?: boolean
+          ai_insights_enabled?: boolean
+          ai_tips_enabled?: boolean
+          ai_analytics_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -37,6 +43,9 @@ export type Database = {
           avatar_url?: string | null
           gemini_api_key?: string | null
           ai_suggestions_enabled?: boolean
+          ai_insights_enabled?: boolean
+          ai_tips_enabled?: boolean
+          ai_analytics_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
