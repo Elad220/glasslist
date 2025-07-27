@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/lib/toast/context";
+import { ThemeProvider } from "@/lib/theme/context";
 import LayoutWrapper from "@/components/LayoutWrapper";
 import { SyncNotification } from "@/components/OfflineIndicator";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
@@ -26,12 +27,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-gradient-to-br from-purple-400 via-pink-500 to-red-500">
-        <ToastProvider>
-          <LayoutWrapper>{children}</LayoutWrapper>
-          <SyncNotification />
-          <ServiceWorkerRegistration />
-        </ToastProvider>
+      <body>
+        <ThemeProvider>
+          <ToastProvider>
+            <LayoutWrapper>{children}</LayoutWrapper>
+            <SyncNotification />
+            <ServiceWorkerRegistration />
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

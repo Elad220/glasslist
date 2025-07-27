@@ -2,18 +2,27 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { LayoutDashboard, Settings, LogOut, ShoppingCart, WifiOff, RefreshCw, Upload, CheckCircle, X } from 'lucide-react'
+import { LayoutDashboard, Settings, LogOut, ShoppingCart, WifiOff, RefreshCw, Upload, CheckCircle, X, Sun, Moon, Monitor } from 'lucide-react'
 import { signOut } from '@/lib/supabase/auth'
 import { useSyncStatus, useOnlineStatus, usePendingChanges } from '@/lib/offline/hooks'
+import { useTheme } from '@/lib/theme/context'
 import { useState } from 'react'
 
 export default function Navbar() {
   const router = useRouter()
   const pathname = usePathname()
+  const { theme, setTheme, resolvedTheme } = useTheme()
 
   const handleSignOut = async () => {
     await signOut()
     router.push('/')
+  }
+
+  const cycleTheme = () => {
+    const themes: ('light' | 'dark' | 'system')[] = ['light', 'dark', 'system']
+    const currentIndex = themes.indexOf(theme)
+    const nextIndex = (currentIndex + 1) % themes.length
+    setTheme(themes[nextIndex])
   }
 
   const navItems = [
@@ -52,6 +61,16 @@ export default function Navbar() {
               </Link>
             ))}
             <button
+              onClick={cycleTheme}
+              className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-glass-heading hover:bg-primary/10 hover:text-primary transition-all duration-200"
+              title={`Theme: ${theme === 'system' ? `System (${resolvedTheme})` : theme}`}
+            >
+              {theme === 'light' && <Sun className="w-4 h-4" />}
+              {theme === 'dark' && <Moon className="w-4 h-4" />}
+              {theme === 'system' && <Monitor className="w-4 h-4" />}
+              <span className="hidden lg:inline">Theme</span>
+            </button>
+            <button
               onClick={handleSignOut}
               className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-glass-heading hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
             >
@@ -76,6 +95,15 @@ export default function Navbar() {
                 <item.icon className="w-5 h-5" />
               </Link>
             ))}
+            <button
+              onClick={cycleTheme}
+              className="p-2 rounded-full text-glass-heading hover:bg-primary/10 hover:text-primary transition-all duration-200"
+              title={`Theme: ${theme === 'system' ? `System (${resolvedTheme})` : theme}`}
+            >
+              {theme === 'light' && <Sun className="w-5 h-5" />}
+              {theme === 'dark' && <Moon className="w-5 h-5" />}
+              {theme === 'system' && <Monitor className="w-5 h-5" />}
+            </button>
             <button
               onClick={handleSignOut}
               className="p-2 rounded-full text-glass-heading hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
