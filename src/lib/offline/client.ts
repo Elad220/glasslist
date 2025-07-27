@@ -175,7 +175,11 @@ class OfflineClient {
 
   async deleteShoppingList(listId: string): Promise<OfflineClientResponse<null>> {
     try {
+      // First, mark for deletion
       await offlineStorage.deleteShoppingList(listId, true)
+      
+      // Also immediately delete locally to ensure it's gone
+      await offlineStorage.deleteShoppingList(listId, false)
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
@@ -188,6 +192,14 @@ class OfflineClient {
       }
     } catch (error) {
       console.error('Failed to delete shopping list:', error)
+      
+      // Even if marking for deletion fails, try to delete locally
+      try {
+        await offlineStorage.deleteShoppingList(listId, false)
+      } catch (localDeleteError) {
+        console.error('Failed to delete locally as fallback:', localDeleteError)
+      }
+      
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Failed to delete shopping list'

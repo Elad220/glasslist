@@ -186,7 +186,31 @@ class OfflineStorage {
         const records = request.result as OfflineRecord<ShoppingList>[]
         // Filter out deleted items (for local deletions)
         const activeRecords = records.filter(record => record.pendingOperation !== 'delete')
+        
+        // Debug logging
+        if (records.length !== activeRecords.length) {
+          console.log(`Filtered out ${records.length - activeRecords.length} deleted records for user ${userId}`)
+        }
+        
         resolve(activeRecords)
+      }
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  async getAllShoppingLists(userId: string): Promise<OfflineRecord<ShoppingList>[]> {
+    if (DISABLE_INDEXEDDB) return [];
+    if (!this.isInitialized) return [];
+    const db = this.ensureDB()
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['shopping_lists'], 'readonly')
+      const store = transaction.objectStore('shopping_lists')
+      const index = store.index('userId')
+      const request = index.getAll(userId)
+
+      request.onsuccess = () => {
+        const records = request.result as OfflineRecord<ShoppingList>[]
+        resolve(records) // Return all records including deleted ones
       }
       request.onerror = () => reject(request.error)
     })
@@ -259,10 +283,13 @@ class OfflineStorage {
     if (!this.isInitialized) return;
     const db = this.ensureDB()
     
+    console.log(`Deleting shopping list ${listId}, needsSync: ${needsSync}`)
+    
     if (needsSync) {
       // Mark for deletion instead of actually deleting
       const existingRecord = await this.getShoppingList(listId)
       if (existingRecord) {
+        console.log(`Marking list ${listId} for deletion`)
         const record: OfflineRecord<ShoppingList> = {
           ...existingRecord,
           lastModified: Date.now(),
@@ -275,18 +302,27 @@ class OfflineStorage {
           const store = transaction.objectStore('shopping_lists')
           const request = store.put(record)
 
-          request.onsuccess = () => resolve()
+          request.onsuccess = () => {
+            console.log(`Successfully marked list ${listId} for deletion`)
+            resolve()
+          }
           request.onerror = () => reject(request.error)
         })
+      } else {
+        console.log(`List ${listId} not found for deletion`)
       }
     } else {
       // Actually delete from local storage
+      console.log(`Actually deleting list ${listId} from local storage`)
       return new Promise((resolve, reject) => {
         const transaction = db.transaction(['shopping_lists'], 'readwrite')
         const store = transaction.objectStore('shopping_lists')
         const request = store.delete(listId)
 
-        request.onsuccess = () => resolve()
+        request.onsuccess = () => {
+          console.log(`Successfully deleted list ${listId} from local storage`)
+          resolve()
+        }
         request.onerror = () => reject(request.error)
       })
     }
@@ -554,10 +590,15 @@ class OfflineStorage {
     if (!this.isInitialized) return;
     const db = this.ensureDB()
     
+    console.log('Starting cleanup of orphaned delete records...')
+    
     return new Promise((resolve, reject) => {
       const transaction = db.transaction(['shopping_lists', 'items'], 'readwrite')
       const listsStore = transaction.objectStore('shopping_lists')
       const itemsStore = transaction.objectStore('items')
+      
+      let deletedListsCount = 0
+      let deletedItemsCount = 0
       
       // Clean up lists marked for deletion
       const listsRequest = listsStore.getAll()
@@ -565,7 +606,9 @@ class OfflineStorage {
         const lists = listsRequest.result as OfflineRecord<ShoppingList>[]
         lists.forEach(record => {
           if (record.pendingOperation === 'delete') {
+            console.log(`Cleaning up orphaned list: ${record.id}`)
             listsStore.delete(record.id)
+            deletedListsCount++
           }
         })
       }
@@ -576,12 +619,17 @@ class OfflineStorage {
         const items = itemsRequest.result as OfflineRecord<Item>[]
         items.forEach(record => {
           if (record.pendingOperation === 'delete') {
+            console.log(`Cleaning up orphaned item: ${record.id}`)
             itemsStore.delete(record.id)
+            deletedItemsCount++
           }
         })
       }
       
-      transaction.oncomplete = () => resolve()
+      transaction.oncomplete = () => {
+        console.log(`Cleanup completed: ${deletedListsCount} lists and ${deletedItemsCount} items removed`)
+        resolve()
+      }
       transaction.onerror = () => reject(transaction.error)
     })
   }

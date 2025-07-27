@@ -349,10 +349,27 @@ export default function DashboardPage() {
           // Even if there's an error, we should still remove from UI
           // since the user confirmed the deletion
           toast.warning('Delete completed with warning', 'List was deleted locally but may not have synced to server.')
+          
+          // Force cleanup and refresh to ensure the list is gone
+          try {
+            await cleanupOrphanedDeletes()
+            if (user) {
+              await fetchShoppingLists(user.id)
+            }
+          } catch (cleanupError) {
+            console.error('Cleanup failed:', cleanupError)
+          }
         }
         
         // Always remove from UI regardless of sync status
         setShoppingLists(lists => lists.filter(list => list.id !== listToDelete.id))
+        
+        // Force refresh after a short delay to ensure sync
+        setTimeout(async () => {
+          if (user) {
+            await fetchShoppingLists(user.id)
+          }
+        }, 1000)
       }
       
       // Show toast with undo button
@@ -655,6 +672,18 @@ export default function DashboardPage() {
     }
   }
 
+  const handleForceRefresh = async () => {
+    try {
+      if (user) {
+        await fetchShoppingLists(user.id)
+        toast.success('Refresh completed', 'Lists have been refreshed from storage.')
+      }
+    } catch (error) {
+      console.error('Refresh failed:', error)
+      toast.error('Refresh failed', 'Failed to refresh lists.')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -722,6 +751,27 @@ export default function DashboardPage() {
             <p className="text-glass-muted text-sm">This Month</p>
           </div>
         </div>
+
+        {/* Debug Section - Only show in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="glass-card p-4 mb-8 border-orange-400/20">
+            <h3 className="text-lg font-semibold text-orange-400 mb-3">Debug Tools</h3>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCleanupOrphanedDeletes}
+                className="glass-button px-3 py-2 text-sm text-orange-400 border-orange-400/20 hover:bg-orange-400/10"
+              >
+                Cleanup Orphaned Deletes
+              </button>
+              <button
+                onClick={handleForceRefresh}
+                className="glass-button px-3 py-2 text-sm text-blue-400 border-blue-400/20 hover:bg-blue-400/10"
+              >
+                Force Refresh Lists
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-8">
