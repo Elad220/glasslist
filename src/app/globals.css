@@ -88,8 +88,13 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--color-glass-white-border);
-  border-radius: var(--radius-glass);
-  box-shadow: var(--shadow-glass);
+  /* Increase radius from 16 px to 24 px and add subtle stroke + soft glow */
+  border-radius: var(--radius-glass-lg);
+  /* Inner 1 px stroke and 4 px soft outer glow */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.18),       /* inner stroke */
+    0 0 0 4px rgba(255, 255, 255, 0.06),       /* outer glow */
+    var(--shadow-glass);                       /* existing depth */
   transition: all 0.3s var(--ease-glass);
   
   &:hover {

@@ -2075,13 +2075,13 @@ export default function ListPage() {
               </div>
               
               {/* Input Mode Tabs */}
-              <div className="flex gap-1 mb-6 p-1 bg-glass-white-light rounded-lg">
+              <div className="flex gap-1 mb-6 p-1 bg-white/15 rounded-full shadow-inner backdrop-blur-sm">
                 <button
                   onClick={() => setAiInputMode('text')}
-                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  className={`flex-1 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     aiInputMode === 'text'
-                      ? 'bg-white text-purple-700 shadow-sm'
-                      : 'text-glass-muted hover:text-glass'
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg'
+                      : 'text-white/70 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2 justify-center">
@@ -2091,10 +2091,10 @@ export default function ListPage() {
                 </button>
                 <button
                   onClick={() => setAiInputMode('voice')}
-                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  className={`flex-1 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     aiInputMode === 'voice'
-                      ? 'bg-white text-purple-700 shadow-sm'
-                      : 'text-glass-muted hover:text-glass'
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-lg'
+                      : 'text-white/70 hover:text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2 justify-center">
@@ -2153,10 +2153,10 @@ export default function ListPage() {
                         <button
                           onClick={isRecording ? stopRecording : startRecording}
                           disabled={isRecording && !mediaRecorder}
-                          className={`w-20 h-20 rounded-full flex items-center justify-center transition-all duration-300 ${
+                          className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
                             isRecording 
                               ? 'bg-red-500 animate-pulse' 
-                              : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                              : 'bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600'
                           }`}
                         >
                           {isRecording ? (
@@ -2194,7 +2194,7 @@ export default function ListPage() {
                           <button
                             onClick={processVoiceRecording}
                             disabled={isProcessingVoice || !profile?.gemini_api_key}
-                            className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium"
+                            className="flex-1 glass-button px-4 py-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold shadow-lg hover:from-purple-600 hover:to-indigo-600 focus:ring-2 focus:ring-purple-300 disabled:opacity-50 flex items-center justify-center gap-2"
                           >
                             {isProcessingVoice ? (
                               <>
@@ -2236,7 +2236,7 @@ export default function ListPage() {
                   <button 
                     onClick={handleAiAdd}
                     disabled={isAiProcessing || !aiInput.trim()}
-                    className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium"
+                    className="flex-1 glass-button px-4 py-3 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold shadow-lg hover:from-purple-600 hover:to-indigo-600 focus:ring-2 focus:ring-purple-300 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isAiProcessing ? (
                       <>
