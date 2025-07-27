@@ -42,7 +42,12 @@ import {
   MicOff,
   Play,
   Square,
-  Type
+  Type,
+  Leaf,
+  Receipt,
+  PackageCheck,
+  Trash,
+  ThermometerSnowflake
 } from 'lucide-react'
 
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
@@ -76,7 +81,12 @@ const categoryIcons: { [key: string]: any } = {
   'Other': Package2,
   'Snacks': Cookie,
   'Beverages': Milk,
-  'Party': Sparkles
+  'Party': Sparkles,
+  'Organics': Leaf,
+  'Registers': Receipt,
+  'Canned Goods': PackageCheck,
+  'Disposable': Trash,
+  'Freezer': ThermometerSnowflake
 }
 
 // Mock data for demo mode
