@@ -1801,6 +1801,11 @@ export default function ListPage() {
                     <option value="Household">Household</option>
                     <option value="Snacks">Snacks</option>
                     <option value="Beverages">Beverages</option>
+                    <option value="Organics">Organics</option>
+                    <option value="Registers">Registers</option>
+                    <option value="Canned Goods">Canned Goods</option>
+                    <option value="Disposable">Disposable</option>
+                    <option value="Freezer">Freezer</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>
@@ -2282,6 +2287,13 @@ export default function ListPage() {
                     <option value="Pantry">Pantry</option>
                     <option value="Frozen">Frozen</option>
                     <option value="Household">Household</option>
+                    <option value="Snacks">Snacks</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Organics">Organics</option>
+                    <option value="Registers">Registers</option>
+                    <option value="Canned Goods">Canned Goods</option>
+                    <option value="Disposable">Disposable</option>
+                    <option value="Freezer">Freezer</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>
