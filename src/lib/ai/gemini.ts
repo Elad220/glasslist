@@ -22,7 +22,8 @@ const VALID_UNITS: UnitType[] = [
 
 const COMMON_CATEGORIES = [
   'Produce', 'Dairy', 'Meat & Seafood', 'Bakery', 'Pantry', 'Frozen', 
-  'Beverages', 'Snacks', 'Health & Beauty', 'Household', 'Baby', 'Pet', 'General'
+  'Beverages', 'Snacks', 'Health & Beauty', 'Household', 'Baby', 'Pet', 'General',
+  'Organics', 'Registers', 'Canned Goods', 'Disposable', 'Freezer'
 ]
 
 export async function parseShoppingListWithAI(

@@ -42,7 +42,12 @@ import {
   MicOff,
   Play,
   Square,
-  Type
+  Type,
+  Leaf,
+  Receipt,
+  PackageCheck,
+  Trash,
+  ThermometerSnowflake
 } from 'lucide-react'
 
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
@@ -76,7 +81,12 @@ const categoryIcons: { [key: string]: any } = {
   'Other': Package2,
   'Snacks': Cookie,
   'Beverages': Milk,
-  'Party': Sparkles
+  'Party': Sparkles,
+  'Organics': Leaf,
+  'Registers': Receipt,
+  'Canned Goods': PackageCheck,
+  'Disposable': Trash,
+  'Freezer': ThermometerSnowflake
 }
 
 // Mock data for demo mode
@@ -1791,6 +1801,11 @@ export default function ListPage() {
                     <option value="Household">Household</option>
                     <option value="Snacks">Snacks</option>
                     <option value="Beverages">Beverages</option>
+                    <option value="Organics">Organics</option>
+                    <option value="Registers">Registers</option>
+                    <option value="Canned Goods">Canned Goods</option>
+                    <option value="Disposable">Disposable</option>
+                    <option value="Freezer">Freezer</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>
@@ -2272,6 +2287,13 @@ export default function ListPage() {
                     <option value="Pantry">Pantry</option>
                     <option value="Frozen">Frozen</option>
                     <option value="Household">Household</option>
+                    <option value="Snacks">Snacks</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Organics">Organics</option>
+                    <option value="Registers">Registers</option>
+                    <option value="Canned Goods">Canned Goods</option>
+                    <option value="Disposable">Disposable</option>
+                    <option value="Freezer">Freezer</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>
