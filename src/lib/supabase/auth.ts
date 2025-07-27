@@ -20,6 +20,9 @@ const mockProfile: Profile = {
   avatar_url: null,
   gemini_api_key: null,
   ai_suggestions_enabled: true,
+  ai_insights_enabled: true,
+  ai_tips_enabled: true,
+  ai_analytics_enabled: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 }

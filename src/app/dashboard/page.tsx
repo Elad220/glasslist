@@ -56,6 +56,9 @@ const mockProfile: Profile = {
   avatar_url: null,
   gemini_api_key: null,
   ai_suggestions_enabled: true,
+  ai_insights_enabled: true,
+  ai_tips_enabled: true,
+  ai_analytics_enabled: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 }
@@ -811,7 +814,7 @@ export default function DashboardPage() {
           {/* Insights Sidebar */}
           <div className="space-y-6">
             {/* AI-Powered Insights */}
-            {user && profile?.ai_suggestions_enabled && profile?.gemini_api_key ? (
+            {user && profile?.ai_insights_enabled && profile?.gemini_api_key ? (
               <GenAIInsights 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
@@ -849,7 +852,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   
-                  {!profile?.ai_suggestions_enabled && (
+                  {!profile?.ai_insights_enabled && (
                     <div className="mt-4 p-3 glass rounded-lg border border-blue-200/30">
                       <div className="flex items-center gap-2 text-sm text-blue-600">
                         <Sparkles className="w-4 h-4" />
@@ -862,7 +865,7 @@ export default function DashboardPage() {
             )}
 
             {/* Smart Shopping Tips */}
-            {user && profile?.ai_suggestions_enabled && profile?.gemini_api_key && (
+            {user && profile?.ai_tips_enabled && profile?.gemini_api_key && (
               <SmartShoppingTips 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
@@ -872,7 +875,7 @@ export default function DashboardPage() {
             )}
 
             {/* AI Shopping Analytics */}
-            {user && profile?.ai_suggestions_enabled && profile?.gemini_api_key && (
+            {user && profile?.ai_analytics_enabled && profile?.gemini_api_key && (
               <AIShoppingAnalytics 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
