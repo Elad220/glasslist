@@ -1480,8 +1480,17 @@ export default function ListPage() {
                   placeholder="Search items..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 glass border-0 rounded-lg text-glass placeholder-glass-muted"
+                  className="w-full pl-10 pr-10 py-2 glass border-0 rounded-lg text-glass placeholder-glass-muted"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted hover:text-glass transition-colors"
+                    title="Clear search"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               
               {/* Category Pills */}
