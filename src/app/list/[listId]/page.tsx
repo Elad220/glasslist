@@ -1321,9 +1321,9 @@ export default function ListPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="glass-card p-8 text-center">
+        <div className="glass-premium p-8 text-center animate-scale-in">
           <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-glass">Loading your list...</p>
+          <p className="text-glass animate-pulse">Loading your list...</p>
         </div>
       </div>
     )
@@ -1332,10 +1332,10 @@ export default function ListPage() {
   if (!list) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="glass-card p-8 text-center">
-          <h2 className="text-xl font-bold text-glass-heading mb-4">List Not Found</h2>
-          <p className="text-glass-muted mb-6">The list you're looking for doesn't exist or you don't have access to it.</p>
-          <Link href="/dashboard" className="glass-button px-6 py-3">
+        <div className="glass-premium p-8 text-center animate-scale-in hover-lift">
+          <h2 className="text-xl font-bold text-glass-heading mb-4 animate-slide-down">List Not Found</h2>
+          <p className="text-glass-muted mb-6 animate-slide-up">The list you're looking for doesn't exist or you don't have access to it.</p>
+          <Link href="/dashboard" className="glass-premium px-6 py-3 hover-glow micro-interaction animate-bounce-in inline-block">
             Back to Dashboard
           </Link>
         </div>
@@ -1347,21 +1347,22 @@ export default function ListPage() {
     <div className="min-h-screen p-4 md:p-8">
       {/* Floating background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/3 right-1/3 w-96 h-96 glass-white rounded-full blur-3xl opacity-10"></div>
-        <div className="absolute bottom-1/3 left-1/3 w-72 h-72 glass-white rounded-full blur-3xl opacity-15"></div>
+        <div className="absolute top-1/3 right-1/3 w-96 h-96 glass-white rounded-full blur-3xl opacity-10 animate-float"></div>
+        <div className="absolute bottom-1/3 left-1/3 w-72 h-72 glass-white rounded-full blur-3xl opacity-15 animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-primary to-secondary rounded-full blur-2xl opacity-20 animate-pulse-glow"></div>
       </div>
 
       <div className="relative z-10 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="glass-card p-6 mb-6">
+        <div className="glass-premium p-6 mb-6 animate-slide-down hover-lift">
           <div className="flex items-center gap-4 mb-4">
-            <Link href="/dashboard" className="glass-button p-2">
+            <Link href="/dashboard" className="glass-premium p-2 hover-glow micro-interaction">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-glass-heading">{list.name}</h1>
+              <h1 className="text-2xl font-bold text-glass-heading animate-scale-in bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{list.name}</h1>
               {list.description && (
-                <p className="text-glass-muted">{list.description}</p>
+                <p className="text-glass-muted animate-slide-up stagger-1">{list.description}</p>
               )}
             </div>
             
@@ -1552,33 +1553,33 @@ export default function ListPage() {
 
         {/* Add Item Actions */}
         {!isShoppingMode && (
-          <div className="flex gap-3 mb-6">
+          <div className="flex gap-3 mb-6 animate-slide-up">
             <button 
               onClick={() => setShowAddItem(true)}
-              className="glass-button px-4 py-3 flex items-center gap-2"
+              className="glass-premium px-4 py-3 flex items-center gap-2 hover-glow micro-interaction animate-scale-in"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
               Add Item
             </button>
             
             <button 
               onClick={() => setShowAiAdd(true)}
-              className="glass-button px-4 py-3 flex items-center gap-2"
+              className="glass-premium px-4 py-3 flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 hover-lift micro-interaction animate-scale-in stagger-1"
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles className="w-4 h-4 animate-pulse" />
               AI Quick Add
             </button>
 
             <button 
               onClick={() => setHideCheckedItems(!hideCheckedItems)}
-              className={`glass-button px-4 py-3 flex items-center gap-2 transition-all duration-200 ${
+              className={`glass-premium px-4 py-3 flex items-center gap-2 transition-all duration-300 micro-interaction animate-scale-in stagger-2 ${
                 hideCheckedItems 
-                  ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg' 
+                  ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg animate-pulse-glow' 
                   : 'hover:bg-primary/10'
               }`}
               title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
             >
-              <CheckCircle className="w-4 h-4" />
+              <CheckCircle className={`w-4 h-4 transition-transform ${hideCheckedItems ? 'scale-110' : ''}`} />
               {hideCheckedItems ? 'Show Checked' : 'Hide Checked'}
             </button>
           </div>
@@ -1731,7 +1732,8 @@ export default function ListPage() {
                         // Normal Mode Layout - Compact
                         <div 
                           key={item.id} 
-                          className={`category-list-item flex items-center gap-3 p-2 transition-all duration-200 text-sm border-b border-glass-white-border last:border-b-0 bg-white/30 hover:bg-glass-white-light ${item.is_checked ? 'opacity-60' : ''}`}
+                          className={`category-list-item flex items-center gap-3 p-3 transition-all duration-300 text-sm border-b border-glass-white-border last:border-b-0 bg-white/30 hover:bg-glass-white-light hover:shadow-lg animate-list-item hover-lift ${item.is_checked ? 'opacity-60' : ''}`}
+                          style={{ animationDelay: `${categoryItems.indexOf(item) * 0.05}s` }}
                         >
                           <button
                             onClick={() => handleToggleItem(item.id)}
@@ -1791,34 +1793,36 @@ export default function ListPage() {
         {/* Edit Item Modal */}
         {showEditItem && editingItem && (
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-fade-in"
             onClick={() => {
               setShowEditItem(false)
               setEditingItem(null)
             }}
           >
             <div 
-              className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              className="glass-premium p-8 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-scale-in hover-lift custom-scrollbar"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
-                <Edit className="w-5 h-5" />
-                Edit Item
-              </h3>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500/20 to-cyan-500/20 flex items-center justify-center animate-bounce-in">
+                  <Edit className="w-6 h-6 text-blue-600 animate-pulse" />
+                </div>
+                <h3 className="text-2xl font-bold text-glass-heading bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">Edit Item</h3>
+              </div>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-glass-muted mb-2">Item Name</label>
+              <div className="space-y-5">
+                <div className="animate-slide-up">
+                  <label className="block text-sm font-medium text-glass-muted mb-2 animate-fade-in">Item Name</label>
                   <input
                     type="text"
                     value={editItemForm.name}
                     onChange={(e) => setEditItemForm({ ...editItemForm, name: e.target.value })}
-                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass placeholder-glass-muted"
+                    className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted focus-ring transition-all duration-300 hover:shadow-lg"
                     placeholder="Enter item name"
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 animate-slide-up stagger-1">
                   <div>
                     <label className="block text-sm font-medium text-glass-muted mb-2">Amount</label>
                     <input
@@ -1827,7 +1831,7 @@ export default function ListPage() {
                       step="0.1"
                       value={editItemForm.amount}
                       onChange={(e) => setEditItemForm({ ...editItemForm, amount: parseFloat(e.target.value) || 1 })}
-                      className="w-full glass border-0 rounded-lg px-4 py-2 text-glass"
+                      className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass focus-ring transition-all duration-300 hover:shadow-lg"
                     />
                   </div>
                   
@@ -1836,7 +1840,7 @@ export default function ListPage() {
                     <select
                       value={editItemForm.unit}
                       onChange={(e) => setEditItemForm({ ...editItemForm, unit: e.target.value })}
-                      className="w-full glass border-0 rounded-lg px-4 py-2 text-glass"
+                      className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass focus-ring transition-all duration-300 hover:shadow-lg"
                     >
                       <option value="pcs">Piece</option>
                       <option value="lb">Pound</option>
@@ -1857,12 +1861,12 @@ export default function ListPage() {
                   </div>
                 </div>
                 
-                <div>
+                <div className="animate-slide-up stagger-2">
                   <label className="block text-sm font-medium text-glass-muted mb-2">Category</label>
                   <select
                     value={editItemForm.category}
                     onChange={(e) => setEditItemForm({ ...editItemForm, category: e.target.value })}
-                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass"
+                    className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass focus-ring transition-all duration-300 hover:shadow-lg"
                   >
                     <option value="Produce">Produce</option>
                     <option value="Dairy">Dairy</option>
@@ -1883,13 +1887,13 @@ export default function ListPage() {
                   </select>
                 </div>
                 
-                <div>
+                <div className="animate-slide-up stagger-3">
                   <label className="block text-sm font-medium text-glass-muted mb-2">Notes</label>
                   <input
                     type="text"
                     value={editItemForm.notes}
                     onChange={(e) => setEditItemForm({ ...editItemForm, notes: e.target.value })}
-                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass placeholder-glass-muted"
+                    className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted focus-ring transition-all duration-300 hover:shadow-lg"
                     placeholder="Optional notes"
                   />
                 </div>
@@ -1941,15 +1945,15 @@ export default function ListPage() {
                 </div>
               </div>
               
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-3 mt-8 animate-slide-up stagger-5">
                 <button 
                   onClick={handleSaveItem}
                   disabled={!editItemForm.name.trim() || isUploading}
-                  className="glass-button px-4 py-2 bg-primary/20 disabled:opacity-50 flex items-center gap-2"
+                  className="glass-premium px-6 py-3 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 hover:from-blue-500/30 hover:to-cyan-500/30 disabled:opacity-50 flex items-center gap-2 hover-lift micro-interaction transition-all duration-300"
                 >
                   {isUploading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
                       Saving...
                     </>
                   ) : (
@@ -1969,7 +1973,7 @@ export default function ListPage() {
                     setSelectedImage(null)
                     setImagePreview(null)
                   }}
-                  className="glass-button px-4 py-2"
+                  className="glass-premium px-6 py-3 hover-lift micro-interaction"
                   disabled={isUploading}
                 >
                   Cancel
@@ -2053,7 +2057,7 @@ export default function ListPage() {
         {/* AI Quick Add Modal */}
         {showAiAdd && (
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-fade-in"
             onClick={() => {
               setShowAiAdd(false)
               setAiInput('')
@@ -2061,27 +2065,27 @@ export default function ListPage() {
             }}
           >
             <div 
-              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              className="glass-premium p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-scale-in hover-lift"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-purple-600" />
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 flex items-center justify-center animate-bounce-in">
+                  <Sparkles className="w-7 h-7 text-purple-600 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-glass-heading">AI Quick Add</h3>
-                  <p className="text-sm text-glass-muted">Parse your shopping list with AI</p>
+                  <h3 className="text-2xl font-bold text-glass-heading bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">AI Quick Add</h3>
+                  <p className="text-sm text-glass-muted animate-slide-up">Parse your shopping list with AI magic</p>
                 </div>
               </div>
               
               {/* Input Mode Tabs */}
-              <div className="flex gap-1 mb-6 p-1 bg-glass-white-light rounded-lg">
+              <div className="flex gap-2 mb-6 p-1 bg-glass-white-light rounded-xl animate-slide-up">
                 <button
                   onClick={() => setAiInputMode('text')}
-                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                     aiInputMode === 'text'
-                      ? 'bg-white text-purple-700 shadow-sm'
-                      : 'text-glass-muted hover:text-glass'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg animate-pulse-glow'
+                      : 'text-glass-muted hover:text-glass hover:bg-white/50'
                   }`}
                 >
                   <div className="flex items-center gap-2 justify-center">
@@ -2091,10 +2095,10 @@ export default function ListPage() {
                 </button>
                 <button
                   onClick={() => setAiInputMode('voice')}
-                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                     aiInputMode === 'voice'
-                      ? 'bg-white text-purple-700 shadow-sm'
-                      : 'text-glass-muted hover:text-glass'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg animate-pulse-glow'
+                      : 'text-glass-muted hover:text-glass hover:bg-white/50'
                   }`}
                 >
                   <div className="flex items-center gap-2 justify-center">
@@ -2106,18 +2110,18 @@ export default function ListPage() {
               
               <div className="space-y-4">
                 {aiInputMode === 'text' ? (
-                  <div>
-                    <label className="block text-sm font-medium text-glass-muted mb-2">
+                  <div className="animate-slide-up">
+                    <label className="block text-sm font-medium text-glass-muted mb-2 animate-fade-in">
                       Natural Language Input
                     </label>
-                    <p className="text-sm text-glass-muted mb-3">
-                      Enter items naturally like: <span className="font-medium">"2 lbs chicken breast, 1 gallon milk, 3 apples"</span>
+                    <p className="text-sm text-glass-muted mb-3 animate-slide-up stagger-1">
+                      Enter items naturally like: <span className="font-medium bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">"2 lbs chicken breast, 1 gallon milk, 3 apples"</span>
                     </p>
                     <textarea
                       placeholder="Type your shopping list items..."
                       value={aiInput}
                       onChange={(e) => setAiInput(e.target.value)}
-                      className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted resize-none focus:ring-2 focus:ring-purple-500/50"
+                      className="w-full glass-premium border-0 rounded-xl px-5 py-4 text-glass placeholder-glass-muted resize-none focus-ring transition-all duration-300 hover:shadow-lg animate-scale-in"
                       rows={4}
                       autoFocus
                     />
@@ -2231,12 +2235,12 @@ export default function ListPage() {
                 )}
               </div>
               
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-3 mt-8 animate-slide-up stagger-2">
                 {aiInputMode === 'text' ? (
                   <button 
                     onClick={handleAiAdd}
                     disabled={isAiProcessing || !aiInput.trim()}
-                    className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium"
+                    className="flex-1 glass-premium px-6 py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium hover-lift micro-interaction transition-all duration-300 animate-pulse-glow"
                   >
                     {isAiProcessing ? (
                       <>
@@ -2245,7 +2249,7 @@ export default function ListPage() {
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-4 h-4" />
+                        <Sparkles className="w-4 h-4 animate-pulse" />
                         Add Items
                       </>
                     )}
@@ -2259,7 +2263,7 @@ export default function ListPage() {
                     setAiInput('')
                     resetVoiceRecording()
                   }}
-                  className="glass-button px-4 py-2"
+                  className="glass-premium px-6 py-3 hover-lift micro-interaction"
                   disabled={isAiProcessing || isProcessingVoice}
                 >
                   Cancel
@@ -2272,40 +2276,40 @@ export default function ListPage() {
         {/* Add Item Modal */}
         {showAddItem && (
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-fade-in"
             onClick={() => {
               setShowAddItem(false)
               handleRemoveImage()
             }}
           >
             <div 
-              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
+              className="glass-premium p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-scale-in hover-lift custom-scrollbar"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-r from-green-500/20 to-blue-500/20 flex items-center justify-center">
-                  <Plus className="w-6 h-6 text-green-600" />
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-green-500/20 to-blue-500/20 flex items-center justify-center animate-bounce-in">
+                  <Plus className="w-7 h-7 text-green-600 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-glass-heading">Add New Item</h3>
-                  <p className="text-sm text-glass-muted">Add an item to your shopping list</p>
+                  <h3 className="text-2xl font-bold text-glass-heading bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Add New Item</h3>
+                  <p className="text-sm text-glass-muted animate-slide-up">Add an item to your shopping list</p>
                 </div>
               </div>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-glass-muted mb-2">Item Name</label>
+              <div className="space-y-5">
+                <div className="animate-slide-up">
+                  <label className="block text-sm font-medium text-glass-muted mb-2 animate-fade-in">Item Name</label>
                   <input
                     type="text"
                     placeholder="Enter item name"
                     value={newItem.name}
                     onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                    className="w-full glass border-0 rounded-lg px-4 py-2 text-glass placeholder-glass-muted focus:ring-2 focus:ring-green-500/50"
+                    className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted focus-ring transition-all duration-300 hover:shadow-lg"
                     autoFocus
                   />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 animate-slide-up stagger-1">
                   <div>
                     <label className="block text-sm font-medium text-glass-muted mb-2">Amount</label>
                     <input
@@ -2315,7 +2319,7 @@ export default function ListPage() {
                       placeholder="1"
                       value={newItem.amount}
                       onChange={(e) => setNewItem({ ...newItem, amount: parseFloat(e.target.value) || 1 })}
-                      className="w-full glass border-0 rounded-lg px-4 py-2 text-glass focus:ring-2 focus:ring-green-500/50"
+                      className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass focus-ring transition-all duration-300 hover:shadow-lg"
                     />
                   </div>
                   
@@ -2324,7 +2328,7 @@ export default function ListPage() {
                     <select
                       value={newItem.unit}
                       onChange={(e) => setNewItem({ ...newItem, unit: e.target.value })}
-                      className="w-full glass border-0 rounded-lg px-4 py-2 text-glass focus:ring-2 focus:ring-green-500/50"
+                      className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass focus-ring transition-all duration-300 hover:shadow-lg"
                     >
                       <option value="pcs">Piece</option>
                       <option value="lb">Pound</option>

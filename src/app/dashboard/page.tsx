@@ -645,9 +645,9 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="glass-card p-8 text-center">
+        <div className="glass-premium p-8 text-center animate-scale-in">
           <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-glass">Loading your dashboard...</p>
+          <p className="text-glass animate-pulse">Loading your dashboard...</p>
         </div>
       </div>
     )
@@ -657,16 +657,18 @@ export default function DashboardPage() {
     <div className="min-h-screen p-4 md:p-8">
       {/* Floating background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-10"></div>
-        <div className="absolute bottom-1/4 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15"></div>
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-10 animate-float"></div>
+        <div className="absolute bottom-1/4 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15 animate-float" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/2 right-1/2 w-64 h-64 bg-gradient-to-r from-primary to-accent rounded-full blur-2xl opacity-15 animate-morph"></div>
+        <div className="absolute bottom-1/3 left-1/3 w-48 h-48 bg-gradient-to-r from-secondary to-primary rounded-full blur-2xl opacity-10 animate-pulse-glow"></div>
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="glass-card p-6 mb-8">
+        <div className="glass-premium p-6 mb-8 animate-slide-down hover-lift">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <ShoppingCart className="w-8 h-8 text-primary" />
+              <ShoppingCart className="w-8 h-8 text-primary animate-bounce-in" />
               <div>
                 <h1 className="text-2xl md:text-3xl font-bold text-glass-heading">
                   Welcome back{isDemoMode ? ', Demo User' : (user?.user_metadata?.full_name ? `, ${user.user_metadata.full_name}` : '')}!

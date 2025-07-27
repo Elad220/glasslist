@@ -127,13 +127,14 @@ function ToastContainer({ toasts, onHide }: { toasts: Toast[], onHide: (id: stri
 
   return (
     <div className="fixed top-4 right-4 z-[10000] space-y-2 max-w-sm w-full">
-      {toasts.map((toast) => (
+      {toasts.map((toast, index) => (
         <div
           key={toast.id}
-          className={`glass-card p-4 border-2 ${getColors(toast.type)} shadow-xl animate-in slide-in-from-right-full duration-300`}
+          className={`glass-premium p-4 border-2 ${getColors(toast.type)} shadow-xl animate-slide-up hover-lift`}
+          style={{ animationDelay: `${index * 0.1}s` }}
         >
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 pt-0.5">
+            <div className="flex-shrink-0 pt-0.5 animate-bounce-in">
               {getIcon(toast.type)}
             </div>
             <div className="flex-1 min-w-0">
