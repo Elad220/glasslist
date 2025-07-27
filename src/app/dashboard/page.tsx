@@ -45,6 +45,9 @@ import {
 import { undoManager, createDeleteListUndoAction } from '@/lib/undo-redo/simple'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
 import AISuggestions from '@/components/AISuggestions'
+import GenAIInsights from '@/components/GenAIInsights'
+import SmartShoppingTips from '@/components/SmartShoppingTips'
+import AIShoppingAnalytics from '@/components/AIShoppingAnalytics'
 
 const mockProfile: Profile = {
   id: 'demo-user-123',
@@ -807,32 +810,76 @@ export default function DashboardPage() {
 
           {/* Insights Sidebar */}
           <div className="space-y-6">
-            {/* Quick Stats */}
-            <div className="glass-card p-6">
-              <h3 className="font-bold mb-4 flex items-center gap-2 text-glass-heading">
-                <BarChart3 className="w-5 h-5" />
-                Quick Insights
-              </h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-glass-muted">Most shopped category</p>
-                  <p className="font-semibold text-primary">{analytics.most_frequent_category}</p>
-                </div>
+            {/* AI-Powered Insights */}
+            {user && profile?.ai_suggestions_enabled && profile?.gemini_api_key ? (
+              <GenAIInsights 
+                userId={user.id}
+                apiKey={profile?.gemini_api_key || ''}
+                analytics={analytics}
+                shoppingLists={shoppingLists}
+                onRefresh={() => {
+                  if (!isDemoMode) {
+                    fetchAnalytics(user.id)
+                  }
+                }}
+              />
+            ) : (
+              /* Basic Insights Fallback */
+              <div className="glass-card p-6">
+                <h3 className="font-bold mb-4 flex items-center gap-2 text-glass-heading">
+                  <BarChart3 className="w-5 h-5" />
+                  Quick Insights
+                </h3>
                 
-                <div>
-                  <p className="text-sm text-glass-muted mb-2">Top items</p>
-                  <div className="space-y-1">
-                    {analytics.most_frequent_items?.slice(0, 3).map((item, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span className="text-glass">{item.name}</span>
-                        <span className="text-glass-muted">{item.count}x</span>
-                      </div>
-                    ))}
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-glass-muted">Most shopped category</p>
+                    <p className="font-semibold text-primary">{analytics.most_frequent_category}</p>
                   </div>
+                  
+                  <div>
+                    <p className="text-sm text-glass-muted mb-2">Top items</p>
+                    <div className="space-y-1">
+                      {analytics.most_frequent_items?.slice(0, 3).map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm">
+                          <span className="text-glass">{item.name}</span>
+                          <span className="text-glass-muted">{item.count}x</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {!profile?.ai_suggestions_enabled && (
+                    <div className="mt-4 p-3 glass rounded-lg border border-blue-200/30">
+                      <div className="flex items-center gap-2 text-sm text-blue-600">
+                        <Sparkles className="w-4 h-4" />
+                        <span>Enable AI insights in settings for personalized recommendations</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Smart Shopping Tips */}
+            {user && profile?.ai_suggestions_enabled && profile?.gemini_api_key && (
+              <SmartShoppingTips 
+                userId={user.id}
+                apiKey={profile?.gemini_api_key || ''}
+                analytics={analytics}
+                shoppingLists={shoppingLists}
+              />
+            )}
+
+            {/* AI Shopping Analytics */}
+            {user && profile?.ai_suggestions_enabled && profile?.gemini_api_key && (
+              <AIShoppingAnalytics 
+                userId={user.id}
+                apiKey={profile?.gemini_api_key || ''}
+                analytics={analytics}
+                shoppingLists={shoppingLists}
+              />
+            )}
 
             {/* Recent Lists */}
             {shoppingLists.length > 0 && (
