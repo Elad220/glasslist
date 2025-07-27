@@ -17,7 +17,7 @@ import {
   Check
 } from 'lucide-react'
 import { getCurrentUser } from '@/lib/supabase/auth'
-import { supabase, createManyItems, isDemoMode } from '@/lib/supabase/client'
+import { createShoppingList, createManyItems, isDemoMode } from '@/lib/offline/client'
 
 export default function NewListPage() {
   const router = useRouter()
@@ -84,12 +84,11 @@ export default function NewListPage() {
         toast.success('List created!', `${formData.name} is ready to use`)
         router.push(`/list/${demoListId}`)
       } else {
-        // Real implementation: create a new list in Supabase
+        // Real implementation: create a new list using offline client
         const { user, error: userError } = await getCurrentUser()
         if (userError || !user) throw new Error('User not found')
-        if (!supabase) throw new Error('Supabase not initialized')
         
-        const insertData = {
+        const listData = {
           user_id: user.id,
           name: formData.name,
           description: formData.description,
@@ -97,13 +96,9 @@ export default function NewListPage() {
           share_code: formData.is_shared ? Math.random().toString(36).substring(2, 10).toUpperCase() : null
         }
         
-        const { data, error } = await supabase
-          .from('shopping_lists')
-          .insert(insertData)
-          .select()
-          .single()
+        const { data, error } = await createShoppingList(listData)
         
-        if (error || !data) throw error || new Error('Failed to create list')
+        if (error || !data) throw new Error(error || 'Failed to create list')
         
         // Create template items if a template was selected
         const selectedTemplate = templates.find(t => t.id === formData.template)
