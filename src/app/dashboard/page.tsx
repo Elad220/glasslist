@@ -31,7 +31,8 @@ import {
   HelpCircle
 } from 'lucide-react'
 
-import { getCurrentUser } from '@/lib/supabase/auth'
+import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
+import type { Profile } from '@/lib/supabase/types'
 import { useToast } from '@/lib/toast/context'
 import { 
   getShoppingLists, 
@@ -43,6 +44,18 @@ import {
 } from '@/lib/supabase/client'
 import { undoManager, createDeleteListUndoAction } from '@/lib/undo-redo/simple'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
+import AISuggestions from '@/components/AISuggestions'
+
+const mockProfile: Profile = {
+  id: 'demo-user-123',
+  email: 'demo@glasslist.com',
+  full_name: 'Demo User',
+  avatar_url: null,
+  gemini_api_key: null,
+  ai_suggestions_enabled: true,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString()
+}
 
 const mockAnalytics = {
   total_lists: 3,
@@ -127,6 +140,7 @@ function isMockList(list: any): list is { itemCount: number; completedCount: num
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [analytics, setAnalytics] = useState(mockAnalytics)
   const [shoppingLists, setShoppingLists] = useState<ShoppingListWithCounts[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -218,11 +232,16 @@ export default function DashboardPage() {
       setUser(user)
       
       if (!isDemoMode) {
+        // Fetch profile to get the decrypted API key
+        const { profile: userProfile } = await getProfile(user.id)
+        setProfile(userProfile)
+        
         await Promise.all([
           fetchShoppingLists(user.id),
           fetchAnalytics(user.id)
         ])
       } else {
+        setProfile(mockProfile)
         setShoppingLists(mockShoppingLists as unknown as ShoppingListWithCounts[])
         setAnalytics(mockAnalytics)
       }
@@ -910,16 +929,26 @@ export default function DashboardPage() {
                 </button>
 
                 <div className="pt-2 border-t border-glass-white-light/30">
-                  <button 
-                    onClick={() => toast.info('AI Assistant', 'Ask AI to help create smart shopping lists based on your preferences!')}
-                    className="glass-button w-full p-3 flex items-center gap-2 justify-center bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-200/30"
-                  >
-                    <Sparkles className="w-4 h-4 text-purple-500" />
-                    <span className="text-purple-600">AI Suggestions</span>
-                  </button>
+                  <div className="text-xs text-glass-muted text-center mb-2">
+                    AI suggestions are now available in the sidebar →
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* AI Suggestions */}
+            {user && profile?.ai_suggestions_enabled && (
+              <AISuggestions 
+                userId={user.id}
+                apiKey={profile?.gemini_api_key || ''}
+                onItemAdded={() => {
+                  // Refresh shopping lists when items are added
+                  if (!isDemoMode) {
+                    fetchShoppingLists(user.id)
+                  }
+                }}
+              />
+            )}
           </div>
         </div>
       </div>

@@ -19,6 +19,7 @@ const mockProfile: Profile = {
   full_name: 'Demo User',
   avatar_url: null,
   gemini_api_key: null,
+  ai_suggestions_enabled: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 }
@@ -112,6 +113,22 @@ export async function getProfile(userId: string): Promise<{ profile: Profile | n
     }
   }
 
+  // Ensure ai_suggestions_enabled field exists (for backward compatibility)
+  if (profile && profile.ai_suggestions_enabled === undefined) {
+    // Try to get the toggle state from localStorage as fallback
+    try {
+      const storedToggle = localStorage.getItem(`ai_suggestions_enabled_${userId}`)
+      if (storedToggle !== null) {
+        profile.ai_suggestions_enabled = JSON.parse(storedToggle)
+      } else {
+        profile.ai_suggestions_enabled = true // Default to enabled
+      }
+    } catch (e) {
+      console.warn('Failed to read AI suggestions toggle from localStorage:', e)
+      profile.ai_suggestions_enabled = true // Default to enabled
+    }
+  }
+
   return { profile, error }
 }
 
@@ -138,6 +155,36 @@ export async function updateProfile(userId: string, updates: Partial<Profile>) {
     .eq('id', userId)
     .select()
     .single()
+
+  // If the error is about a missing column, try updating without the new field
+  if (error && error.message && error.message.includes('column') && error.message.includes('ai_suggestions_enabled')) {
+    const { ai_suggestions_enabled, ...otherUpdates } = updateData
+    
+    // Store the toggle state in localStorage as fallback
+    if (ai_suggestions_enabled !== undefined) {
+      try {
+        localStorage.setItem(`ai_suggestions_enabled_${userId}`, JSON.stringify(ai_suggestions_enabled))
+      } catch (e) {
+        console.warn('Failed to store AI suggestions toggle in localStorage:', e)
+      }
+    }
+    
+    const { data: fallbackData, error: fallbackError } = await supabase
+      .from('profiles')
+      .update(otherUpdates)
+      .eq('id', userId)
+      .select()
+      .single()
+    
+    if (fallbackError) {
+      return { data: null, error: fallbackError }
+    }
+    
+    // Add the ai_suggestions_enabled field to the returned data for UI consistency
+    const dataWithToggle = fallbackData ? { ...fallbackData, ai_suggestions_enabled } : null
+    
+    return { data: dataWithToggle, error: null }
+  }
 
   // Decrypt the API key in the returned data for immediate use
   if (data && data.gemini_api_key) {
