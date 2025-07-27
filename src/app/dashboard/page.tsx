@@ -42,6 +42,8 @@ import {
   getListItems,
   isDemoMode 
 } from '@/lib/supabase/client'
+import { cleanupOrphanedDeletes, cleanupStuckPendingDeletions } from '@/lib/offline/client'
+import { syncManager } from '@/lib/offline/sync'
 import { undoManager, createDeleteListUndoAction } from '@/lib/undo-redo/simple'
 import type { ShoppingList, ShoppingListWithCounts } from '@/lib/supabase/types'
 import AISuggestions from '@/components/AISuggestions'
@@ -344,10 +346,23 @@ export default function DashboardPage() {
       } else {
         const { error } = await deleteShoppingList(listToDelete.id)
         if (error) {
-          toast.error('Delete failed', 'Failed to delete list. Please try again.')
-          return
+          console.warn('Delete operation had an error:', error)
+          // Even if there's an error, we should still remove from UI
+          // since the user confirmed the deletion
+          toast.warning('Delete completed with warning', 'List was deleted locally but may not have synced to server.')
+          
+          // Force cleanup and refresh to ensure the list is gone
+          try {
+            await cleanupOrphanedDeletes()
+            if (user) {
+              await fetchShoppingLists(user.id)
+            }
+          } catch (cleanupError) {
+            console.error('Cleanup failed:', cleanupError)
+          }
         }
         
+        // Always remove from UI regardless of sync status
         setShoppingLists(lists => lists.filter(list => list.id !== listToDelete.id))
       }
       
@@ -636,6 +651,63 @@ export default function DashboardPage() {
     }
   }
 
+  const handleCleanupOrphanedDeletes = async () => {
+    try {
+      await cleanupOrphanedDeletes()
+      toast.success('Cleanup completed', 'Orphaned delete records have been cleaned up.')
+      
+      // Refresh the lists to ensure any stuck records are gone
+      if (user) {
+        await fetchShoppingLists(user.id)
+      }
+    } catch (error) {
+      console.error('Cleanup failed:', error)
+      toast.error('Cleanup failed', 'Failed to cleanup orphaned records.')
+    }
+  }
+
+  const handleCleanupStuckPendingDeletions = async () => {
+    try {
+      await cleanupStuckPendingDeletions()
+      toast.success('Cleanup completed', 'Stuck pending deletions have been cleaned up.')
+      
+      // Refresh lists after cleanup
+      if (user) {
+        await fetchShoppingLists(user.id)
+      }
+    } catch (error) {
+      console.error('Cleanup failed:', error)
+      toast.error('Cleanup failed', 'Failed to cleanup stuck pending deletions.')
+    }
+  }
+
+  const handleForceRefresh = async () => {
+    try {
+      if (user) {
+        await fetchShoppingLists(user.id)
+        toast.success('Refresh completed', 'Lists have been refreshed from storage.')
+      }
+    } catch (error) {
+      console.error('Refresh failed:', error)
+      toast.error('Refresh failed', 'Failed to refresh lists.')
+    }
+  }
+
+  const handleManualSync = async () => {
+    try {
+      await syncManager.forceSync()
+      toast.success('Sync completed', 'Manual sync completed.')
+      
+      // Refresh lists after sync
+      if (user) {
+        await fetchShoppingLists(user.id)
+      }
+    } catch (error) {
+      console.error('Manual sync failed:', error)
+      toast.error('Sync failed', 'Manual sync failed.')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -703,6 +775,39 @@ export default function DashboardPage() {
             <p className="text-glass-muted text-sm">This Month</p>
           </div>
         </div>
+
+        {/* Debug Section - Only show in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="glass-card p-4 mb-8 border-orange-400/20">
+            <h3 className="text-lg font-semibold text-orange-400 mb-3">Debug Tools</h3>
+            <div className="flex gap-3">
+              <button
+                onClick={handleCleanupOrphanedDeletes}
+                className="glass-button px-3 py-2 text-sm text-orange-400 border-orange-400/20 hover:bg-orange-400/10"
+              >
+                Cleanup Orphaned Deletes
+              </button>
+              <button
+                onClick={handleCleanupStuckPendingDeletions}
+                className="glass-button px-3 py-2 text-sm text-red-400 border-red-400/20 hover:bg-red-400/10"
+              >
+                Cleanup Stuck Deletions
+              </button>
+              <button
+                onClick={handleForceRefresh}
+                className="glass-button px-3 py-2 text-sm text-blue-400 border-blue-400/20 hover:bg-blue-400/10"
+              >
+                Force Refresh Lists
+              </button>
+              <button
+                onClick={handleManualSync}
+                className="glass-button px-3 py-2 text-sm text-green-400 border-green-400/20 hover:bg-green-400/10"
+              >
+                Manual Sync
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid lg:grid-cols-3 gap-8">

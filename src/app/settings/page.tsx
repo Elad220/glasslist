@@ -27,6 +27,7 @@ import {
 import { getCurrentUser, updateProfile, deleteAccount, signOut, getProfile } from '@/lib/supabase/auth'
 import { useToast } from '@/lib/toast/context'
 import { useTheme } from '@/lib/theme/context'
+import { cleanupOrphanedDeletes } from '@/lib/offline/client'
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
@@ -53,7 +54,7 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [showApiKey, setShowApiKey] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'success' | 'error' | null>(null)
-  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'appearance' | 'account'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'ai' | 'appearance' | 'data' | 'account'>('profile')
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -191,6 +192,16 @@ export default function SettingsPage() {
     return key.length === 0 || (key.startsWith('AIza') && key.length > 30)
   }
 
+  const handleCleanupOrphanedDeletes = async () => {
+    try {
+      await cleanupOrphanedDeletes()
+      toast.success('Cleanup completed', 'Orphaned delete records have been cleaned up.')
+    } catch (error) {
+      console.error('Cleanup failed:', error)
+      toast.error('Cleanup failed', 'Failed to cleanup orphaned records.')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -264,6 +275,18 @@ export default function SettingsPage() {
             >
               <Palette className="w-4 h-4 mx-auto mb-1" />
               <span className="text-sm">Appearance</span>
+            </button>
+            
+            <button
+              onClick={() => setActiveTab('data')}
+              className={`flex-1 px-4 py-3 rounded-lg transition-all ${
+                activeTab === 'data' 
+                  ? 'bg-primary/20 text-primary' 
+                  : 'text-glass-muted hover:text-glass'
+              }`}
+            >
+              <Trash2 className="w-4 h-4 mx-auto mb-1" />
+              <span className="text-sm">Data</span>
             </button>
             
             <button
@@ -565,6 +588,32 @@ export default function SettingsPage() {
                   <p className="text-sm text-glass-muted">
                     The theme will be applied immediately and saved for future visits.
                   </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'data' && (
+          <div className="space-y-6">
+            {/* Data Management */}
+            <div className="glass-card p-6">
+              <h2 className="text-xl font-bold text-glass-heading mb-6">Data Management</h2>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 glass rounded-lg">
+                  <div>
+                    <h4 className="font-medium text-glass">Cleanup Orphaned Records</h4>
+                    <p className="text-sm text-glass-muted">
+                      Remove any stuck delete records that might be causing issues with list deletion
+                    </p>
+                  </div>
+                  <button 
+                    onClick={handleCleanupOrphanedDeletes}
+                    className="glass-button px-4 py-2 text-orange-400 border-orange-400/20 hover:bg-orange-400/10"
+                  >
+                    Cleanup
+                  </button>
                 </div>
               </div>
             </div>

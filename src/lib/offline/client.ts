@@ -46,8 +46,13 @@ class OfflineClient {
       await offlineStorage.init()
       // Only start auto sync if we're in a browser environment
       if (typeof window !== 'undefined') {
-        syncManager.startAutoSync(30000)
+        // Disable auto-sync temporarily to prevent interference with deletions
+        // syncManager.startAutoSync(30000)
       }
+      
+      // Clean up any orphaned delete records on initialization
+      await offlineStorage.cleanupOrphanedDeletes()
+      
       this.initialized = true
     } catch (error) {
       console.error('Failed to initialize offline client:', error)
@@ -56,10 +61,37 @@ class OfflineClient {
 
   // Shopping Lists Operations
   async getShoppingLists(userId: string): Promise<OfflineClientMultiResponse<ShoppingListWithItems>> {
+    // Check if there are any pending deletions first
+    const allLocalRecords = await offlineStorage.getAllShoppingLists(userId)
+    const hasPendingDeletions = allLocalRecords.some(record => record.pendingOperation === 'delete')
+    
+    console.log(`getShoppingLists: userId=${userId}, hasPendingDeletions=${hasPendingDeletions}, isOnline=${syncManager.getStatus().isOnline}`)
+    console.log(`All local records:`, allLocalRecords.map(r => ({ id: r.id, pendingOperation: r.pendingOperation })))
+    
+    // ALWAYS use local storage if there are pending deletions
+    if (hasPendingDeletions) {
+      console.log('Using local storage due to pending deletions...')
+      try {
+        const listRecords = await offlineStorage.getShoppingLists(userId)
+        console.log(`Got ${listRecords.length} lists from local storage`)
+        const listsWithItems: ShoppingListWithItems[] = []
+        for (const listRecord of listRecords) {
+          const itemRecords = await offlineStorage.getListItems(listRecord.id)
+          const items = itemRecords.map(record => record.data)
+          listsWithItems.push({ ...listRecord.data, items })
+        }
+        return { data: listsWithItems, error: null }
+      } catch (error) {
+        return { data: null, error: error instanceof Error ? error.message : 'Failed to get shopping lists' }
+      }
+    }
+    
+    // Only try Supabase if there are no pending deletions
     if (syncManager.getStatus().isOnline) {
-      // Try Supabase first
+      console.log('Fetching from Supabase...')
       const { data, error } = await getShoppingListsOriginal(userId)
       if (data) {
+        console.log(`Got ${data.length} lists from Supabase`)
         // Transform data to ensure it matches ShoppingListWithItems type
         const transformedData: ShoppingListWithItems[] = data.map(list => ({
           ...list,
@@ -75,9 +107,12 @@ class OfflineClient {
       }
       // If Supabase fails, fallback to IndexedDB
     }
-    // Offline or Supabase failed
+    
+    // Use local storage if offline or Supabase failed
+    console.log('Using local storage...')
     try {
       const listRecords = await offlineStorage.getShoppingLists(userId)
+      console.log(`Got ${listRecords.length} lists from local storage`)
       const listsWithItems: ShoppingListWithItems[] = []
       for (const listRecord of listRecords) {
         const itemRecords = await offlineStorage.getListItems(listRecord.id)
@@ -171,12 +206,12 @@ class OfflineClient {
 
   async deleteShoppingList(listId: string): Promise<OfflineClientResponse<null>> {
     try {
+      // Delete the list (mark for sync and remove locally)
       await offlineStorage.deleteShoppingList(listId, true)
       
-      // Trigger immediate sync if online (non-blocking)
-      if (syncManager.getStatus().isOnline) {
-        syncManager.forceSync().catch(console.error)
-      }
+      // Don't trigger immediate sync to prevent pulling back the deleted list
+      // The sync will happen automatically later
+      console.log(`List ${listId} marked for deletion, sync will happen later`)
 
       return {
         data: null,
@@ -184,6 +219,7 @@ class OfflineClient {
       }
     } catch (error) {
       console.error('Failed to delete shopping list:', error)
+      
       return {
         data: null,
         error: error instanceof Error ? error.message : 'Failed to delete shopping list'
@@ -465,6 +501,24 @@ class OfflineClient {
     }
   }
 
+  // Clean up orphaned delete records
+  async cleanupOrphanedDeletes(): Promise<void> {
+    try {
+      await offlineStorage.cleanupOrphanedDeletes()
+    } catch (error) {
+      console.error('Failed to cleanup orphaned deletes:', error)
+    }
+  }
+
+  // Clean up stuck pending deletions
+  async cleanupStuckPendingDeletions(): Promise<void> {
+    try {
+      await offlineStorage.cleanupStuckPendingDeletions()
+    } catch (error) {
+      console.error('Failed to cleanup stuck pending deletions:', error)
+    }
+  }
+
   // Analytics placeholder (could be implemented to work with cached data)
   async getUserAnalytics(userId: string): Promise<OfflineClientResponse<any>> {
     if (syncManager.getStatus().isOnline) {
@@ -563,6 +617,14 @@ export async function updateCategoryOrder(listId: string, categoryOrder: string[
 
 export async function getUserAnalytics(userId: string) {
   return offlineClient.getUserAnalytics(userId)
+}
+
+export async function cleanupOrphanedDeletes() {
+  return offlineClient.cleanupOrphanedDeletes()
+}
+
+export async function cleanupStuckPendingDeletions() {
+  return offlineClient.cleanupStuckPendingDeletions()
 }
 
 // Re-export types for convenience

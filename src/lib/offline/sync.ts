@@ -151,11 +151,11 @@ class SyncManager {
     this.updateSyncStatus({ syncing: true, errors: [] })
 
     try {
-      // First, pull latest data from server
-      await this.pullFromServer()
-
-      // Then, push local changes to server
+      // First, push local changes to server (including deletions)
       const result = await this.pushToServer()
+
+      // Then, pull latest data from server (but exclude locally deleted items)
+      await this.pullFromServer()
 
       this.updateSyncStatus({
         syncing: false,
@@ -198,17 +198,31 @@ class SyncManager {
       const syncMetadata = await offlineStorage.getSyncMetadata(user.id)
       const lastSync = syncMetadata?.lastSyncTimestamp || 0
 
-      // Fetch lists updated since last sync
-      const { data: lists, error: listsError } = await supabase
+      // Get locally deleted list IDs to exclude from server pull
+      const allLocalRecords = await offlineStorage.getAllShoppingLists(user.id)
+      const locallyDeletedIds = allLocalRecords
+        .filter(record => record.pendingOperation === 'delete')
+        .map(record => record.id)
+
+      console.log(`Excluding ${locallyDeletedIds.length} locally deleted lists from server pull:`, locallyDeletedIds)
+
+      // Fetch lists updated since last sync, excluding locally deleted ones
+      let listsQuery = supabase
         .from('shopping_lists')
         .select('*')
         .eq('user_id', user.id)
         .gte('updated_at', new Date(lastSync).toISOString())
 
+      if (locallyDeletedIds.length > 0) {
+        listsQuery = listsQuery.not('id', 'in', `(${locallyDeletedIds.join(',')})`)
+      }
+
+      const { data: lists, error: listsError } = await listsQuery
+
       if (listsError) throw listsError
 
-      // Fetch items updated since last sync
-      const { data: items, error: itemsError } = await supabase
+      // Fetch items updated since last sync, excluding items from locally deleted lists
+      let itemsQuery = supabase
         .from('items')
         .select(`
           *,
@@ -216,6 +230,12 @@ class SyncManager {
         `)
         .eq('shopping_lists.user_id', user.id)
         .gte('updated_at', new Date(lastSync).toISOString())
+
+      if (locallyDeletedIds.length > 0) {
+        itemsQuery = itemsQuery.not('shopping_lists.id', 'in', `(${locallyDeletedIds.join(',')})`)
+      }
+
+      const { data: items, error: itemsError } = await itemsQuery
 
       if (itemsError) throw itemsError
 
@@ -291,16 +311,24 @@ class SyncManager {
   private async mergeServerData(serverLists: ShoppingList[], serverItems: Item[]): Promise<void> {
     // Merge lists
     for (const serverList of serverLists) {
+      // Check if we have a local record (including deleted ones)
       const localRecord = await offlineStorage.getShoppingList(serverList.id)
       
-      if (!localRecord) {
+      // Also check if there's a record marked for deletion
+      const allLocalRecords = await offlineStorage.getAllShoppingLists(serverList.user_id)
+      const deletedRecord = allLocalRecords.find(record => record.id === serverList.id && record.pendingOperation === 'delete')
+      
+      if (!localRecord && !deletedRecord) {
         // New from server, save locally
         await offlineStorage.saveShoppingList(serverList, 'update', false)
-      } else if (localRecord.pendingSync) {
+      } else if (deletedRecord) {
+        // Local record is marked for deletion, ignore server data
+        console.log(`Ignoring server data for list ${serverList.id} as it's marked for deletion locally`)
+      } else if (localRecord && localRecord.pendingSync) {
         // Conflict: both local and server have changes
         const resolution = await this.resolveListConflict(localRecord, serverList)
         await this.applyListConflictResolution(localRecord, serverList, resolution)
-      } else {
+      } else if (localRecord) {
         // Server is newer, update local
         await offlineStorage.saveShoppingList(serverList, 'update', false)
       }
@@ -349,13 +377,30 @@ class SyncManager {
         await offlineStorage.markListSynced(list.id)
 
       } else if (pendingOperation === 'delete') {
-        const { error } = await supabase
+        console.log(`Syncing deletion for list ${list.id} to server...`)
+        const { error, count } = await supabase
           .from('shopping_lists')
           .delete()
           .eq('id', list.id)
+          .select('count')
 
-        if (error) throw error
-        await offlineStorage.deleteShoppingList(list.id, false) // Actually delete locally
+        console.log(`Server deletion result for list ${list.id}:`, { error, count })
+
+        if (error) {
+          // If server deletion fails, keep the pending deletion flag
+          // so the list stays "deleted" locally
+          console.warn('Server deletion failed for list:', list.id, error)
+          // Don't remove the pending deletion flag - keep it marked for deletion
+          // Don't throw error to prevent sync failure
+        } else if (count && count > 0) {
+          // Only remove the pending deletion flag if server deletion was successful
+          console.log(`Successfully deleted list ${list.id} from server (count: ${count}), now deleting locally`)
+          await offlineStorage.deleteShoppingList(list.id, false) // Actually delete locally
+        } else {
+          // Server deletion returned 0 rows - list might not exist on server
+          console.log(`List ${list.id} not found on server (count: ${count}), deleting locally`)
+          await offlineStorage.deleteShoppingList(list.id, false) // Actually delete locally
+        }
       }
     } catch (error) {
       console.error('Failed to sync list to server:', error)
@@ -393,8 +438,15 @@ class SyncManager {
           .delete()
           .eq('id', item.id)
 
-        if (error) throw error
-        await offlineStorage.deleteItem(item.id, false) // Actually delete locally
+        if (error) {
+          // Even if server deletion fails, we should still delete locally
+          // to maintain consistency with user's action
+          console.warn('Server deletion failed for item:', item.id, error)
+          await offlineStorage.deleteItem(item.id, false) // Actually delete locally
+          // Don't throw error to prevent sync failure
+        } else {
+          await offlineStorage.deleteItem(item.id, false) // Actually delete locally
+        }
       }
     } catch (error) {
       console.error('Failed to sync item to server:', error)
