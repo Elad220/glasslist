@@ -143,6 +143,7 @@ export default function ListPage() {
   const [editingItem, setEditingItem] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [hideCheckedItems, setHideCheckedItems] = useState(false)
   const [orderedCategories, setOrderedCategories] = useState<string[]>([])
   const [newItem, setNewItem] = useState({
     name: '',
@@ -1266,7 +1267,8 @@ export default function ListPage() {
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
-    return matchesSearch && matchesCategory
+    const matchesCheckedFilter = !hideCheckedItems || !item.is_checked
+    return matchesSearch && matchesCategory && matchesCheckedFilter
   })
 
   // Group items by category and sort them
@@ -1444,12 +1446,25 @@ export default function ListPage() {
                   Large, touch-friendly interface for easier shopping
                 </p>
               </div>
-              <button 
-                onClick={() => setIsShoppingMode(false)}
-                className="text-sm glass-button px-3 py-1.5 hover:bg-primary/20"
-              >
-                Exit
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setHideCheckedItems(!hideCheckedItems)}
+                  className={`text-sm glass-button px-3 py-1.5 transition-all duration-200 ${
+                    hideCheckedItems 
+                      ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg' 
+                      : 'hover:bg-primary/20'
+                  }`}
+                  title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={() => setIsShoppingMode(false)}
+                  className="text-sm glass-button px-3 py-1.5 hover:bg-primary/20"
+                >
+                  Exit
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1544,6 +1559,19 @@ export default function ListPage() {
               <Sparkles className="w-4 h-4" />
               AI Quick Add
             </button>
+
+            <button 
+              onClick={() => setHideCheckedItems(!hideCheckedItems)}
+              className={`glass-button px-4 py-3 flex items-center gap-2 transition-all duration-200 ${
+                hideCheckedItems 
+                  ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg' 
+                  : 'hover:bg-primary/10'
+              }`}
+              title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
+            >
+              <CheckCircle className="w-4 h-4" />
+              {hideCheckedItems ? 'Show Checked' : 'Hide Checked'}
+            </button>
           </div>
         )}
 
@@ -1559,7 +1587,15 @@ export default function ListPage() {
                   No items found
                 </h3>
                 <p className="text-glass-muted mb-4">
-                  {searchQuery.trim() && categoryFilter !== 'all' 
+                  {searchQuery.trim() && categoryFilter !== 'all' && hideCheckedItems
+                    ? `No unchecked items match "${searchQuery}" in the "${categoryFilter}" category.`
+                    : searchQuery.trim() && hideCheckedItems
+                    ? `No unchecked items match "${searchQuery}".`
+                    : categoryFilter !== 'all' && hideCheckedItems
+                    ? `No unchecked items found in the "${categoryFilter}" category.`
+                    : hideCheckedItems
+                    ? "All items are checked. Uncheck some items or show checked items to see them."
+                    : searchQuery.trim() && categoryFilter !== 'all' 
                     ? `No items match "${searchQuery}" in the "${categoryFilter}" category.`
                     : searchQuery.trim()
                     ? `No items match "${searchQuery}".`
@@ -1570,6 +1606,7 @@ export default function ListPage() {
                   onClick={() => {
                     setSearchQuery('')
                     setCategoryFilter('all')
+                    setHideCheckedItems(false)
                   }}
                   className="glass-button px-6 py-3"
                 >
