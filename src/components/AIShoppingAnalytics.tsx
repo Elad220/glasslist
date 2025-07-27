@@ -58,16 +58,28 @@ export default function AIShoppingAnalytics({
   const toast = useToast()
 
   useEffect(() => {
-    if (userId && apiKey && analytics && shoppingLists.length > 0) {
+    if (userId && analytics && shoppingLists.length > 0) {
       generateAnalytics()
     }
   }, [userId, apiKey, analytics, shoppingLists])
 
   const generateAnalytics = async () => {
-    if (!userId || !apiKey) return
+    if (!userId) return
 
     setLoading(true)
     try {
+      // Check if we're in demo mode (no API key or no Supabase)
+      const isDemoMode = !apiKey || !supabase
+      
+      if (isDemoMode) {
+        // Generate demo analytics
+        const { demoMetrics, demoTrends } = generateDemoAnalytics(analytics, shoppingLists)
+        setMetrics(demoMetrics)
+        setTrends(demoTrends)
+        setLastUpdated(new Date())
+        return
+      }
+
       // Get comprehensive shopping history
       if (!supabase) {
         throw new Error('Supabase client not available')
@@ -283,6 +295,72 @@ Example output:
     }
   }
 
+  const generateDemoAnalytics = (analytics: any, shoppingLists: any[]): { demoMetrics: AnalyticsMetric[], demoTrends: TrendData[] } => {
+    const demoMetrics: AnalyticsMetric[] = []
+
+    // Demo shopping efficiency
+    const completionRate = Math.round((analytics.completed_items / analytics.total_items) * 100)
+    demoMetrics.push({
+      label: 'Completion Rate',
+      value: `${completionRate}%`,
+      change: 12,
+      trend: 'up',
+      icon: <CheckCircle className="w-5 h-5" />,
+      color: 'text-green-500'
+    })
+
+    // Demo shopping frequency
+    demoMetrics.push({
+      label: 'Monthly Activity',
+      value: `${analytics.items_this_month} items`,
+      change: 18,
+      trend: 'up',
+      icon: <ShoppingCart className="w-5 h-5" />,
+      color: 'text-blue-500'
+    })
+
+    // Demo list management
+    const activeLists = shoppingLists.filter(list => list.itemCount > 0).length
+    demoMetrics.push({
+      label: 'Active Lists',
+      value: `${activeLists}/${shoppingLists.length}`,
+      change: 8,
+      trend: 'up',
+      icon: <Package className="w-5 h-5" />,
+      color: 'text-purple-500'
+    })
+
+    // Demo category diversity
+    demoMetrics.push({
+      label: 'Category Focus',
+      value: analytics.most_frequent_category,
+      change: 5,
+      trend: 'up',
+      icon: <Target className="w-5 h-5" />,
+      color: 'text-orange-500'
+    })
+
+    const demoTrends: TrendData[] = [
+      {
+        period: 'This Month',
+        value: analytics.items_this_month || 0,
+        change: 18
+      },
+      {
+        period: 'Last Month',
+        value: Math.round((analytics.items_this_month || 0) * 0.85),
+        change: 12
+      },
+      {
+        period: '3 Months Ago',
+        value: Math.round((analytics.items_this_month || 0) * 0.7),
+        change: 8
+      }
+    ]
+
+    return { demoMetrics, demoTrends }
+  }
+
   const generateFallbackAnalytics = (analytics: any, shoppingLists: any[]): { basicMetrics: AnalyticsMetric[], basicTrends: TrendData[] } => {
     const basicMetrics: AnalyticsMetric[] = []
 
@@ -357,33 +435,7 @@ Example output:
     return { basicMetrics, basicTrends }
   }
 
-  if (!apiKey) {
-    return (
-      <div className="glass-card p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-            <ChartLine className="w-5 h-5 text-purple-500" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-glass-heading">AI Shopping Analytics</h3>
-            <p className="text-sm text-glass-muted">Advanced shopping insights and trends</p>
-          </div>
-        </div>
-        
-        <div className="glass p-4 rounded-lg opacity-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-glass">API Key Required</h4>
-              <p className="text-sm text-glass-muted">
-                Add your Gemini API key in settings to enable advanced analytics
-              </p>
-            </div>
-            <div className="w-6 h-6 rounded-full bg-glass-muted"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+
 
   return (
     <div className="glass-card p-6">

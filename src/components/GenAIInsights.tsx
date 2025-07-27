@@ -55,16 +55,27 @@ export default function GenAIInsights({
   const toast = useToast()
 
   useEffect(() => {
-    if (userId && apiKey && analytics && shoppingLists.length > 0) {
+    if (userId && analytics && shoppingLists.length > 0) {
       generateInsights()
     }
   }, [userId, apiKey, analytics, shoppingLists])
 
   const generateInsights = async () => {
-    if (!userId || !apiKey) return
+    if (!userId) return
 
     setLoading(true)
     try {
+      // Check if we're in demo mode (no API key or no Supabase)
+      const isDemoMode = !apiKey || !supabase
+      
+      if (isDemoMode) {
+        // Generate demo insights
+        const demoInsights = generateDemoInsights(analytics, shoppingLists)
+        setInsights(demoInsights)
+        setLastUpdated(new Date())
+        return
+      }
+
       // Get shopping history for analysis
       if (!supabase) {
         throw new Error('Supabase client not available')
@@ -263,6 +274,53 @@ Example output:
           color: 'text-gray-500'
         }
     }
+  }
+
+  const generateDemoInsights = (analytics: any, shoppingLists: any[]): Insight[] => {
+    const insights: Insight[] = []
+
+    // Demo trend insight
+    insights.push({
+      type: 'trend',
+      title: 'Strong Shopping Momentum',
+      description: `You've purchased ${analytics.items_this_month} items this month, showing excellent shopping consistency and planning.`,
+      icon: <TrendingUp className="w-5 h-5" />,
+      color: 'text-blue-500',
+      confidence: 0.9
+    })
+
+    // Demo achievement insight
+    const completionRate = Math.round((analytics.completed_items / analytics.total_items) * 100)
+    insights.push({
+      type: 'achievement',
+      title: 'Outstanding Completion Rate',
+      description: `You've completed ${completionRate}% of your shopping items. Your organization skills are impressive!`,
+      icon: <CheckCircle className="w-5 h-5" />,
+      color: 'text-green-500',
+      confidence: 0.95
+    })
+
+    // Demo recommendation insight
+    insights.push({
+      type: 'recommendation',
+      title: 'Smart Category Focus',
+      description: `Your top category is ${analytics.most_frequent_category}. Consider exploring related items to optimize your shopping trips.`,
+      icon: <Lightbulb className="w-5 h-5" />,
+      color: 'text-yellow-500',
+      confidence: 0.85
+    })
+
+    // Demo pattern insight
+    insights.push({
+      type: 'pattern',
+      title: 'Efficient List Management',
+      description: `You manage ${analytics.total_lists} shopping lists effectively. Your systematic approach saves time and reduces waste.`,
+      icon: <BarChart3 className="w-5 h-5" />,
+      color: 'text-purple-500',
+      confidence: 0.8
+    })
+
+    return insights
   }
 
   const generateFallbackInsights = (analytics: any, shoppingLists: any[]): Insight[] => {

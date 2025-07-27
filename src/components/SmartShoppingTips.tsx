@@ -51,16 +51,27 @@ export default function SmartShoppingTips({
   const toast = useToast()
 
   useEffect(() => {
-    if (userId && apiKey && analytics && shoppingLists.length > 0) {
+    if (userId && analytics && shoppingLists.length > 0) {
       generateTips()
     }
   }, [userId, apiKey, analytics, shoppingLists])
 
   const generateTips = async () => {
-    if (!userId || !apiKey) return
+    if (!userId) return
 
     setLoading(true)
     try {
+      // Check if we're in demo mode (no API key or no Supabase)
+      const isDemoMode = !apiKey || !supabase
+      
+      if (isDemoMode) {
+        // Generate demo tips
+        const demoTips = generateDemoTips(analytics, shoppingLists)
+        setTips(demoTips)
+        setLastUpdated(new Date())
+        return
+      }
+
       // Get shopping history for analysis
       if (!supabase) {
         throw new Error('Supabase client not available')
@@ -284,6 +295,52 @@ Example output:
     }
   }
 
+  const generateDemoTips = (analytics: any, shoppingLists: any[]): ShoppingTip[] => {
+    const tips: ShoppingTip[] = []
+
+    // Demo efficiency tip
+    tips.push({
+      id: 'demo-efficiency-1',
+      title: 'Optimize Your Shopping Route',
+      description: 'Based on your shopping patterns, try organizing your list by store sections to minimize backtracking and save time.',
+      category: 'efficiency',
+      priority: 'high',
+      actionable: true
+    })
+
+    // Demo savings tip
+    tips.push({
+      id: 'demo-savings-1',
+      title: 'Bulk Buy Your Top Items',
+      description: `You frequently buy ${analytics.most_frequent_items?.[0]?.name || 'milk'}. Consider buying in bulk when on sale to save money over time.`,
+      category: 'savings',
+      priority: 'medium',
+      actionable: true
+    })
+
+    // Demo organization tip
+    tips.push({
+      id: 'demo-organization-1',
+      title: 'Create Weekly Meal Plans',
+      description: 'Plan your meals for the week before shopping. This helps you buy only what you need and reduces food waste.',
+      category: 'organization',
+      priority: 'high',
+      actionable: true
+    })
+
+    // Demo health tip
+    tips.push({
+      id: 'demo-health-1',
+      title: 'Add More Fresh Produce',
+      description: 'Consider adding more fresh fruits and vegetables to your shopping routine for better nutrition and variety.',
+      category: 'health',
+      priority: 'medium',
+      actionable: true
+    })
+
+    return tips
+  }
+
   const generateFallbackTips = (analytics: any, shoppingLists: any[]): ShoppingTip[] => {
     const tips: ShoppingTip[] = []
 
@@ -334,33 +391,7 @@ Example output:
     return tips
   }
 
-  if (!apiKey) {
-    return (
-      <div className="glass-card p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500/20 to-orange-500/20 flex items-center justify-center">
-            <Lightbulb className="w-5 h-5 text-yellow-500" />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-glass-heading">Smart Shopping Tips</h3>
-            <p className="text-sm text-glass-muted">AI-powered shopping advice</p>
-          </div>
-        </div>
-        
-        <div className="glass p-4 rounded-lg opacity-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <h4 className="font-medium text-glass">API Key Required</h4>
-              <p className="text-sm text-glass-muted">
-                Add your Gemini API key in settings to enable smart tips
-              </p>
-            </div>
-            <div className="w-6 h-6 rounded-full bg-glass-muted"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+
 
   return (
     <div className="glass-card p-6">
