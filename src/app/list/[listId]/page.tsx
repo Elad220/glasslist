@@ -1535,6 +1535,7 @@ export default function ListPage() {
                                        ...(provided.draggableProps.style || {}),
                                        transition: snapshot.isDragging ? 'none' : undefined,
                                        pointerEvents: 'auto',
+                                       zIndex: snapshot.isDragging ? 1000 : undefined,
                                      }}
                                    >
                                      <span>
