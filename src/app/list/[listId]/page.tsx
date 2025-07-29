@@ -1519,38 +1519,36 @@ export default function ListPage() {
                         const CategoryIcon = categoryIcons[category] || Package2
                         return (
                           <Draggable key={category} draggableId={category} index={index}>
-                            {(provided, snapshot) => (
-                              {(() => {
+                            {(provided, snapshot) => {
                                 const pill = (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                    onClick={() => setCategoryFilter(category)}
-                                    className={`px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                                      (categoryFilter === category || snapshot.isDragging)
-                                        ? 'bg-primary/20 text-primary border border-primary/30' 
-                                        : 'glass-button'
-                                    } ${snapshot.isDragging ? '' : 'transition-all'}`}
-                                    style={{
-                                      ...(provided.draggableProps.style || {}),
-                                      transition: snapshot.isDragging ? 'none' : undefined,
-                                      pointerEvents: 'auto',
-                                    }}
-                                  >
-                                    <span>
-                                      <GripVertical className="w-4 h-4 text-gray-400" />
-                                    </span>
-                                    <CategoryIcon className="w-3 h-3 flex-shrink-0" />
-                                    <span className="truncate">{category}</span>
-                                    <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
-                                      {categoryCount}
-                                    </span>
-                                  </div>
+                                   <div
+                                     ref={provided.innerRef}
+                                     {...provided.draggableProps}
+                                     {...provided.dragHandleProps}
+                                     onClick={() => setCategoryFilter(category)}
+                                     className={`px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                                       (categoryFilter === category || snapshot.isDragging)
+                                         ? 'bg-primary/20 text-primary border border-primary/30' 
+                                         : 'glass-button'
+                                     } ${snapshot.isDragging ? '' : 'transition-all'}`}
+                                     style={{
+                                       ...(provided.draggableProps.style || {}),
+                                       transition: snapshot.isDragging ? 'none' : undefined,
+                                       pointerEvents: 'auto',
+                                     }}
+                                   >
+                                     <span>
+                                       <GripVertical className="w-4 h-4 text-gray-400" />
+                                     </span>
+                                     <CategoryIcon className="w-3 h-3 flex-shrink-0" />
+                                     <span className="truncate">{category}</span>
+                                     <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
+                                       {categoryCount}
+                                     </span>
+                                   </div>
                                 )
                                 return snapshot.isDragging ? <DndPortal>{pill}</DndPortal> : pill
-                              })()}
-                            )}
+                            }}
                           </Draggable>
                         )
                       })}
