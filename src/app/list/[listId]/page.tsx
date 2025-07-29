@@ -51,6 +51,7 @@ import {
 } from 'lucide-react'
 
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import DndPortal from '@/components/DndPortal'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI, analyzeVoiceRecording } from '@/lib/ai/gemini'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
@@ -1518,27 +1519,37 @@ export default function ListPage() {
                         const CategoryIcon = categoryIcons[category] || Package2
                         return (
                           <Draggable key={category} draggableId={category} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                onClick={() => setCategoryFilter(category)}
-                                className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                                  (categoryFilter === category || snapshot.isDragging)
-                                    ? 'bg-primary/20 text-primary border border-primary/30' 
-                                    : 'glass-button'
-                                }`}
-                              >
-                                <span {...provided.dragHandleProps}>
-                                  <GripVertical className="w-4 h-4 text-gray-400" />
-                                </span>
-                                <CategoryIcon className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{category}</span>
-                                <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
-                                  {categoryCount}
-                                </span>
-                              </div>
-                            )}
+                            {(provided, snapshot) => {
+                                const pill = (
+                                   <div
+                                     ref={provided.innerRef}
+                                     {...provided.draggableProps}
+                                     {...provided.dragHandleProps}
+                                     onClick={() => setCategoryFilter(category)}
+                                     className={`px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                                       (categoryFilter === category || snapshot.isDragging)
+                                         ? 'bg-primary/20 text-primary border border-primary/30' 
+                                         : 'glass-button'
+                                     } ${snapshot.isDragging ? '' : 'transition-all'}`}
+                                     style={{
+                                       ...(provided.draggableProps.style || {}),
+                                       transition: snapshot.isDragging ? 'none' : undefined,
+                                       pointerEvents: 'auto',
+                                       zIndex: snapshot.isDragging ? 1000 : undefined,
+                                     }}
+                                   >
+                                     <span>
+                                       <GripVertical className="w-4 h-4 text-gray-400" />
+                                     </span>
+                                     <CategoryIcon className="w-3 h-3 flex-shrink-0" />
+                                     <span className="truncate">{category}</span>
+                                     <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
+                                       {categoryCount}
+                                     </span>
+                                   </div>
+                                )
+                                return snapshot.isDragging ? <DndPortal>{pill}</DndPortal> : pill
+                            }}
                           </Draggable>
                         )
                       })}
