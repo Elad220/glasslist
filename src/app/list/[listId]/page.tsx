@@ -1522,6 +1522,7 @@ export default function ListPage() {
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
+                                {...provided.dragHandleProps}
                                 onClick={() => setCategoryFilter(category)}
                                 className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                   (categoryFilter === category || snapshot.isDragging)
@@ -1529,7 +1530,7 @@ export default function ListPage() {
                                     : 'glass-button'
                                 }`}
                               >
-                                <span {...provided.dragHandleProps}>
+                                <span>
                                   <GripVertical className="w-4 h-4 text-gray-400" />
                                 </span>
                                 <CategoryIcon className="w-3 h-3 flex-shrink-0" />
