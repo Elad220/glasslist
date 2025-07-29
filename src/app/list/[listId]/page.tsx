@@ -1524,11 +1524,16 @@ export default function ListPage() {
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
                                 onClick={() => setCategoryFilter(category)}
-                                className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                                className={`px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                   (categoryFilter === category || snapshot.isDragging)
                                     ? 'bg-primary/20 text-primary border border-primary/30' 
                                     : 'glass-button'
-                                }`}
+                                } ${snapshot.isDragging ? '' : 'transition-all'}`}
+                                style={{
+                                  ...(provided.draggableProps.style || {}),
+                                  transition: snapshot.isDragging ? 'none' : undefined,
+                                  zIndex: snapshot.isDragging ? 1000 : undefined,
+                                }}
                               >
                                 <span>
                                   <GripVertical className="w-4 h-4 text-gray-400" />
