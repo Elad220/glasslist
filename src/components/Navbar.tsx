@@ -31,7 +31,7 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-50 p-4 animate-slide-down">
+    <header className="sticky top-0 z-10 p-4 animate-slide-down">
       <div className="glass-premium flex items-center justify-between p-2 px-4 rounded-full hover-lift animate-scale-in">
         {/* Logo */}
         <div className="flex items-center gap-3">
@@ -169,7 +169,7 @@ function SyncPopover() {
         )}
       </button>
       {open && (
-        <div className="absolute left-0 mt-2 min-w-[260px] max-w-xs bg-black/80 border border-white/30 rounded-lg shadow-xl backdrop-blur-md z-50 p-4">
+        <div className="absolute left-0 mt-2 min-w-[260px] max-w-xs bg-black/80 border border-white/30 rounded-lg shadow-xl backdrop-blur-md z-20 p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-white">Sync Status</span>
             <button onClick={() => setOpen(false)} className="text-gray-300 hover:text-white" aria-label="Close sync status">
