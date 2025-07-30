@@ -1827,8 +1827,8 @@ export default function ListPage() {
                     <label className="block text-sm font-medium text-glass-muted mb-2">Amount</label>
                     <input
                       type="number"
-                      min="0.1"
-                      step="0.1"
+                      min="1"
+                      step="1"
                       value={editItemForm.amount}
                       onChange={(e) => setEditItemForm({ ...editItemForm, amount: parseFloat(e.target.value) || 1 })}
                       className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass focus-ring transition-all duration-300 hover:shadow-lg"
@@ -2314,8 +2314,8 @@ export default function ListPage() {
                     <label className="block text-sm font-medium text-glass-muted mb-2">Amount</label>
                     <input
                       type="number"
-                      min="0.1"
-                      step="0.1"
+                      min="1"
+                      step="1"
                       placeholder="1"
                       value={newItem.amount}
                       onChange={(e) => setNewItem({ ...newItem, amount: parseFloat(e.target.value) || 1 })}
