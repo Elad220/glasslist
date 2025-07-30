@@ -1767,17 +1767,17 @@ export default function ListPage() {
                           <div className="flex items-center gap-1 ml-2">
                             <button 
                               onClick={() => handleEditItem(item)}
-                              className="p-1.5 hover:bg-primary/10 rounded-lg transition-colors flex-shrink-0"
+                              className="p-2 hover:bg-primary/10 rounded-lg transition-colors flex-shrink-0"
                               title="Edit item"
                             >
-                              <Edit className="w-3.5 h-3.5 text-primary" />
+                              <Edit className="w-4 h-4 text-primary" />
                             </button>
                             <button 
                               onClick={() => handleDeleteItem(item.id)}
-                              className="p-1.5 hover:bg-red-100/20 rounded-lg transition-colors flex-shrink-0"
+                              className="p-2 hover:bg-red-100/20 rounded-lg transition-colors flex-shrink-0"
                               title="Delete item"
                             >
-                              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                              <Trash2 className="w-4 h-4 text-red-400" />
                             </button>
                           </div>
                         </div>
@@ -2460,7 +2460,7 @@ export default function ListPage() {
                       />
                       <button
                         onClick={handleRemoveImage}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors"
+                        className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>

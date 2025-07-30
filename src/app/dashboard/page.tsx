@@ -794,17 +794,17 @@ export default function DashboardPage() {
                       </button>
                       <button
                         onClick={(e) => handleEditList(list, e)}
-                        className="p-2 glass-button hover:bg-primary/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm"
+                        className="p-2.5 glass-button hover:bg-primary/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm"
                         title="Edit list"
                       >
-                        <Edit className="w-4 h-4 text-primary" />
+                        <Edit className="w-5 h-5 text-primary" />
                       </button>
                       <button
                         onClick={(e) => handleDeleteList(list, e)}
-                        className="p-2 glass-button hover:bg-red-500/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm border border-red-200/30"
+                        className="p-2.5 glass-button hover:bg-red-500/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm border border-red-200/30"
                         title="Delete list"
                       >
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                        <Trash2 className="w-5 h-5 text-red-500" />
                       </button>
                     </div>
                   </div>
@@ -1124,7 +1124,7 @@ export default function DashboardPage() {
                 onClick={confirmDeleteList}
                 className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-600 border border-red-500/30 px-4 py-2 rounded-lg transition-all duration-200 font-medium flex items-center justify-center gap-2"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-5 h-5" />
                 Delete List
               </button>
               <button 
