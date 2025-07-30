@@ -1825,14 +1825,36 @@ export default function ListPage() {
                 <div className="grid grid-cols-2 gap-3 animate-slide-up stagger-1">
                   <div>
                     <label className="block text-sm font-medium text-glass-muted mb-2">Amount</label>
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={editItemForm.amount}
-                      onChange={(e) => setEditItemForm({ ...editItemForm, amount: parseFloat(e.target.value) || 1 })}
-                      className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass focus-ring transition-all duration-300 hover:shadow-lg"
-                    />
+                    <div className="flex items-stretch glass-premium rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditItemForm((prev) => ({ ...prev, amount: Math.max(1, prev.amount - 1) }))
+                        }
+                        className="px-3 bg-glass-white-light text-glass-muted hover:bg-glass-white-light/50 focus:outline-none"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={editItemForm.amount}
+                        onChange={(e) =>
+                          setEditItemForm({ ...editItemForm, amount: parseInt(e.target.value) || 1 })
+                        }
+                        className="w-full border-0 bg-transparent text-center px-4 py-3 focus:ring-0 text-glass"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditItemForm((prev) => ({ ...prev, amount: prev.amount + 1 }))
+                        }
+                        className="px-3 bg-glass-white-light text-glass-muted hover:bg-glass-white-light/50 focus:outline-none"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   
                   <div>
@@ -2312,15 +2334,36 @@ export default function ListPage() {
                 <div className="grid grid-cols-2 gap-3 animate-slide-up stagger-1">
                   <div>
                     <label className="block text-sm font-medium text-glass-muted mb-2">Amount</label>
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      placeholder="1"
-                      value={newItem.amount}
-                      onChange={(e) => setNewItem({ ...newItem, amount: parseFloat(e.target.value) || 1 })}
-                      className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass focus-ring transition-all duration-300 hover:shadow-lg"
-                    />
+                    <div className="flex items-stretch glass-premium rounded-lg overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNewItem((prev) => ({ ...prev, amount: Math.max(1, prev.amount - 1) }))
+                        }
+                        className="px-3 bg-glass-white-light text-glass-muted hover:bg-glass-white-light/50 focus:outline-none"
+                      >
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={newItem.amount}
+                        onChange={(e) =>
+                          setNewItem({ ...newItem, amount: parseInt(e.target.value) || 1 })
+                        }
+                        className="w-full border-0 bg-transparent text-center px-4 py-3 focus:ring-0 text-glass"
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNewItem((prev) => ({ ...prev, amount: prev.amount + 1 }))
+                        }
+                        className="px-3 bg-glass-white-light text-glass-muted hover:bg-glass-white-light/50 focus:outline-none"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                   
                   <div>
