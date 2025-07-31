@@ -145,8 +145,6 @@ export default function ListPage() {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [hideCheckedItems, setHideCheckedItems] = useState(false)
   const [orderedCategories, setOrderedCategories] = useState<string[]>([])
-  const [isDraggingPill, setIsDraggingPill] = useState(false)
-  const [isDraggingPill, setIsDraggingPill] = useState(false)
   const [newItem, setNewItem] = useState({
     name: '',
     amount: 1,
