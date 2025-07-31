@@ -68,6 +68,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import SortableFilterPill from '@/components/SortableFilterPill'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI, analyzeVoiceRecording } from '@/lib/ai/gemini'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
@@ -204,6 +205,24 @@ export default function ListPage() {
   const router = useRouter()
   const listId = params.listId as string
   const toast = useToast()
+  
+  // DnD Kit sensors for better touch support
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
 
   const [user, setUser] = useState<any>(null)
@@ -1036,8 +1055,10 @@ export default function ListPage() {
     }
   }
 
-  const onDragEnd = async (result: any) => {
-    if (!result.destination) {
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    
+    if (!over || active.id === over.id) {
       return;
     }
 
@@ -1553,193 +1574,6 @@ export default function ListPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted" />
                 <input
-                  type="text"
-                  placeholder="Search items..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2 glass border-0 rounded-lg text-glass placeholder-glass-muted"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted hover:text-glass transition-colors"
-                    title="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              
-              {/* Category Pills */}
-              <DragDropContext 
-                onDragEnd={(result) => {
-                  document.body.style.overflow = ''
-                  onDragEnd(result)
-                }}
-                onDragStart={() => {
-                  document.body.style.overflow = 'hidden'
-                }}
-                sensors={[
-                  {
-                    sensor: 'touch',
-                    options: {}
-                  },
-                  {
-                    sensor: 'mouse',
-                    options: {}
-                  }
-                ]}
-              >
-                <Droppable droppableId="category-pills" direction="horizontal">
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
-                      style={{ 
-                        WebkitOverflowScrolling: 'touch',
-                        overscrollBehavior: 'contain'
-                      }}
-                    >
-                      <button
-                        onClick={() => setCategoryFilter('all')}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                          categoryFilter === 'all' 
-                            ? 'bg-primary/20 text-primary border border-primary/30' 
-                            : 'glass-button'
-                        }`}
-                      >
-                        All Aisles
-                      </button>
-                      {orderedCategories.map((category, index) => {
-                        const categoryCount = items.filter(item => item.category === category).length
-                        const CategoryIcon = categoryIcons[category] || Package2
-                        return (
-                          <Draggable key={category} draggableId={category} index={index}>
-                            {(provided, snapshot) => (
-                              <>
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  onClick={(e) => {
-                                    // Don't trigger onClick if dragging
-                                    if (!snapshot.isDragging && !e.defaultPrevented) {
-                                      setCategoryFilter(category)
-                                    }
-                                  }}
-                                  className={`filter-pill-draggable px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                                    snapshot.isDragging 
-                                      ? 'filter-pill-dragging' 
-                                      : ''
-                                  } ${
-                                    categoryFilter === category
-                                      ? 'bg-primary/20 text-primary border border-primary/30' 
-                                      : 'glass-button'
-                                  }`}
-                                  style={{
-                                    ...provided.draggableProps.style,
-                                    ...(snapshot.isDragging && {
-                                      // Force the transform to be applied correctly
-                                      position: 'fixed',
-                                      top: 0,
-                                      left: 0,
-                                      transform: provided.draggableProps.style?.transform || 'none',
-                                      // Remove transition for immediate response
-                                      transition: 'none',
-                                      // Ensure it stays on top
-                                      zIndex: 9999,
-                                    })
-                                  }}
-                                >
-                                  <span 
-                                    {...provided.dragHandleProps}
-                                    className="filter-pill-drag-handle"
-                                  >
-                                    <GripVertical className="w-4 h-4 text-gray-400" />
-                                  </span>
-                                  <CategoryIcon className="w-3 h-3 flex-shrink-0" />
-                                  <span className="truncate">{category}</span>
-                                  <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
-                                    {categoryCount}
-                                  </span>
-                                </div>
-                                {/* Placeholder element to maintain layout when dragging */}
-                                {snapshot.isDragging && (
-                                  <div className="filter-pill-dragging-placeholder px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap glass-button">
-                                    <span className="filter-pill-drag-handle">
-                                      <GripVertical className="w-4 h-4 text-gray-400" />
-                                    </span>
-                                    <CategoryIcon className="w-3 h-3 flex-shrink-0" />
-                                    <span className="truncate">{category}</span>
-                                    <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
-                                      {categoryCount}
-                                    </span>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </Draggable>
-                        )
-                      })}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            </div>
-          </div>
-        )}
-
-        {/* Add Item Actions */}
-        {!isShoppingMode && (
-          <div className="flex gap-3 mb-6 animate-slide-up">
-            <button 
-              onClick={() => setShowAddItem(true)}
-              className="glass-premium px-4 py-3 flex items-center gap-2 hover-glow micro-interaction animate-scale-in"
-            >
-              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-              Add Item
-            </button>
-            
-            <button 
-              onClick={() => setShowAiAdd(true)}
-              className="glass-premium px-4 py-3 flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 hover-lift micro-interaction animate-scale-in stagger-1"
-            >
-              <Sparkles className="w-4 h-4 animate-pulse" />
-              AI Quick Add
-            </button>
-
-            <button 
-              onClick={() => setHideCheckedItems(!hideCheckedItems)}
-              className={`glass-premium px-4 py-3 flex items-center gap-2 transition-all duration-300 micro-interaction animate-scale-in stagger-2 ${
-                hideCheckedItems 
-                  ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg animate-pulse-glow' 
-                  : 'hover:bg-primary/10'
-              }`}
-              title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
-            >
-              <CheckCircle className={`w-4 h-4 transition-transform ${hideCheckedItems ? 'scale-110' : ''}`} />
-              {hideCheckedItems ? 'Show Checked' : 'Hide Checked'}
-            </button>
-          </div>
-        )}
-
-
-        {/* Items List - Grouped by Category */}
-        <div className={isShoppingMode ? "space-y-6" : "space-y-4"}>
-          {filteredItems.length === 0 ? (
-            // Check if there are items in the list but filtering returned no results
-            items.length > 0 && (searchQuery.trim() || categoryFilter !== 'all') ? (
-              <div className="glass-card p-8 text-center">
-                <Search className="w-12 h-12 text-glass-muted mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-glass-heading mb-2">
-                  No items found
-                </h3>
-                <p className="text-glass-muted mb-4">
-                  {searchQuery.trim() && categoryFilter !== 'all' && hideCheckedItems
-                    ? `No unchecked items match "${searchQuery}" in the "${categoryFilter}" category.`
-                    : searchQuery.trim() && hideCheckedItems
-                    ? `No unchecked items match "${searchQuery}".`
                     : categoryFilter !== 'all' && hideCheckedItems
                     ? `No unchecked items found in the "${categoryFilter}" category.`
                     : hideCheckedItems
