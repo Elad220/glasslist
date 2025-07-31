@@ -325,6 +325,13 @@ body::before {
 /* Only disable touch-action on the drag handle */
 .filter-pill-drag-handle {
   touch-action: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.filter-pill-drag-handle:active {
+  cursor: grabbing;
 }
 
 /* Style for the dragging pill */

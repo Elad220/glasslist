@@ -39,7 +39,12 @@ export default function SortableFilterPill({
     <div
       ref={setNodeRef}
       style={style}
-      onClick={onClick}
+      onClick={(e) => {
+        // Only trigger onClick if not dragging and not clicking the drag handle
+        if (!isDragging && !(e.target as HTMLElement).closest('.filter-pill-drag-handle')) {
+          onClick()
+        }
+      }}
       className={`filter-pill-draggable px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
         isDragging ? 'filter-pill-dragging' : ''
       } ${
@@ -52,6 +57,7 @@ export default function SortableFilterPill({
         {...attributes}
         {...listeners}
         className="filter-pill-drag-handle"
+        onClick={(e) => e.stopPropagation()}
       >
         <GripVertical className="w-4 h-4 text-gray-400" />
       </span>

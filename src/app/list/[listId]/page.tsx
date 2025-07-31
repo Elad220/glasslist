@@ -50,6 +50,23 @@ import {
   ThermometerSnowflake
 } from 'lucide-react'
 
+import { 
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import SortableFilterPill from '@/components/SortableFilterPill'
 
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI, analyzeVoiceRecording } from '@/lib/ai/gemini'
@@ -128,6 +145,24 @@ export default function ListPage() {
   const router = useRouter()
   const listId = params.listId as string
   const toast = useToast()
+  
+  // DnD Kit sensors for better touch support
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
 
   const [user, setUser] = useState<any>(null)
@@ -960,14 +995,17 @@ export default function ListPage() {
     }
   }
 
-  const onDragEnd = async (result: any) => {
-    if (!result.destination) {
-      return;
+  const onDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    
+    if (!over || active.id === over.id) {
+      return
     }
+    
+    const oldIndex = orderedCategories.indexOf(active.id as string)
+    const newIndex = orderedCategories.indexOf(over.id as string)
 
-    const newOrderedCategories = Array.from(orderedCategories);
-    const [reorderedItem] = newOrderedCategories.splice(result.source.index, 1);
-    newOrderedCategories.splice(result.destination.index, 0, reorderedItem);
+    const newOrderedCategories = arrayMove(orderedCategories, oldIndex, newIndex)
 
     setOrderedCategories(newOrderedCategories);
 
@@ -1486,45 +1524,48 @@ export default function ListPage() {
               </div>
               
               {/* Category Pills */}
-              <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
-                style={{ 
-                  WebkitOverflowScrolling: 'touch',
-                  overscrollBehavior: 'contain'
-                }}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={onDragEnd}
               >
-                <button
-                  onClick={() => setCategoryFilter('all')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                    categoryFilter === 'all' 
-                      ? 'bg-primary/20 text-primary border border-primary/30' 
-                      : 'glass-button'
-                  }`}
+                <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
+                  style={{ 
+                    WebkitOverflowScrolling: 'touch',
+                    overscrollBehavior: 'contain'
+                  }}
                 >
-                  All Aisles
-                </button>
-                {orderedCategories.map((category) => {
-                  const categoryCount = items.filter(item => item.category === category).length
-                  const CategoryIcon = categoryIcons[category] || Package2
-                  return (
-                    <button
-                      key={category}
-                      onClick={() => setCategoryFilter(category)}
-                      className={`px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                        categoryFilter === category
-                          ? 'bg-primary/20 text-primary border border-primary/30' 
-                          : 'glass-button'
-                      }`}
-                    >
-                      <GripVertical className="w-4 h-4 text-gray-400" />
-                      <CategoryIcon className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{category}</span>
-                      <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
-                        {categoryCount}
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
+                  <button
+                    onClick={() => setCategoryFilter('all')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                      categoryFilter === 'all' 
+                        ? 'bg-primary/20 text-primary border border-primary/30' 
+                        : 'glass-button'
+                    }`}
+                  >
+                    All Aisles
+                  </button>
+                  <SortableContext
+                    items={orderedCategories}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    {orderedCategories.map((category) => {
+                      const categoryCount = items.filter(item => item.category === category).length
+                      const CategoryIcon = categoryIcons[category] || Package2
+                      return (
+                        <SortableFilterPill
+                          key={category}
+                          category={category}
+                          categoryCount={categoryCount}
+                          CategoryIcon={CategoryIcon}
+                          isActive={categoryFilter === category}
+                          onClick={() => setCategoryFilter(category)}
+                        />
+                      )
+                    })}
+                  </SortableContext>
+                </div>
+              </DndContext>
             </div>
           </div>
         )}
