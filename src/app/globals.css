@@ -248,6 +248,78 @@ body::before {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
+/* Fix mobile drag and drop issues */
+[data-rbd-draggable-context-id] {
+  /* Ensure draggable elements have proper stacking context */
+  position: relative;
+  z-index: 1;
+}
+
+[data-rbd-draggable-context-id][data-rbd-dragging="true"] {
+  /* When dragging, ensure the element stays on top */
+  z-index: 9999 !important;
+  position: relative !important;
+  transform: rotate(5deg) scale(1.05) !important;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+  transition: none !important;
+  /* Ensure text remains readable during drag */
+  color: var(--color-text-on-glass) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Ensure drag handle is properly positioned */
+[data-rbd-drag-handle-draggable-id] {
+  cursor: grab;
+  touch-action: none;
+}
+
+[data-rbd-drag-handle-draggable-id]:active {
+  cursor: grabbing;
+}
+
+/* Mobile-specific drag improvements */
+@media (max-width: 768px) {
+  [data-rbd-draggable-context-id][data-rbd-dragging="true"] {
+    /* Enhanced mobile drag styling */
+    z-index: 99999 !important;
+    transform: rotate(3deg) scale(1.1) !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25) !important;
+    border: 2px solid var(--color-primary) !important;
+    background: rgba(147, 51, 234, 0.1) !important;
+  }
+  
+  /* Prevent body scroll during drag on mobile */
+  body[data-rbd-dragging="true"] {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+  }
+  
+  /* Improve touch interaction for drag handles */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Make drag handles more prominent on mobile */
+  [data-rbd-drag-handle-draggable-id] {
+    padding: 8px !important;
+    margin: -8px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    transition: background 0.2s ease !important;
+  }
+  
+  [data-rbd-drag-handle-draggable-id]:active {
+    background: rgba(147, 51, 234, 0.2) !important;
+  }
+}
+
 /* Scrollbar styling for glassmorphism */
 ::-webkit-scrollbar {
   width: 8px;
