@@ -328,7 +328,7 @@ export default function SettingsPage() {
                     </button>
                     {profile?.avatar_url && (
                       <button className="glass-button px-4 py-2 flex items-center gap-2 text-red-400">
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-5 h-5" />
                         Remove
                       </button>
                     )}
