@@ -304,3 +304,51 @@ body::before {
   background: var(--color-primary);
   border-color: var(--color-primary);
 }
+
+/* Draggable filter pill styles */
+.filter-pill-draggable {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Style for the dragging pill */
+.filter-pill-dragging {
+  position: fixed !important;
+  z-index: 9999 !important;
+  pointer-events: none !important;
+  opacity: 0.9;
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Hide the original pill while dragging */
+.filter-pill-dragging-placeholder {
+  opacity: 0.4;
+  transform: scale(0.95);
+}
+
+/* Ensure smooth transitions except during drag */
+.filter-pill-draggable:not(.filter-pill-dragging) {
+  transition: all 0.2s ease;
+}
+
+/* Mobile-specific drag improvements */
+@media (max-width: 768px) {
+  .filter-pill-dragging {
+    transform: scale(1.1) translateY(-10px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Ensure drag handle is easily touchable on mobile */
+  .filter-pill-drag-handle {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: -8px;
+    padding: 8px;
+  }
+}

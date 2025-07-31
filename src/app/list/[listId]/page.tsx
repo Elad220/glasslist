@@ -1502,6 +1502,7 @@ export default function ListPage() {
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2"
+                      style={{ WebkitOverflowScrolling: 'touch' }}
                     >
                       <button
                         onClick={() => setCategoryFilter('all')}
@@ -1519,25 +1520,56 @@ export default function ListPage() {
                         return (
                           <Draggable key={category} draggableId={category} index={index}>
                             {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                onClick={() => setCategoryFilter(category)}
-                                className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                                  (categoryFilter === category || snapshot.isDragging)
-                                    ? 'bg-primary/20 text-primary border border-primary/30' 
-                                    : 'glass-button'
-                                }`}
-                              >
-                                <span {...provided.dragHandleProps}>
-                                  <GripVertical className="w-4 h-4 text-gray-400" />
-                                </span>
-                                <CategoryIcon className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{category}</span>
-                                <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
-                                  {categoryCount}
-                                </span>
-                              </div>
+                              <>
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  onClick={() => setCategoryFilter(category)}
+                                  className={`filter-pill-draggable px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                                    snapshot.isDragging 
+                                      ? 'filter-pill-dragging' 
+                                      : ''
+                                  } ${
+                                    categoryFilter === category
+                                      ? 'bg-primary/20 text-primary border border-primary/30' 
+                                      : 'glass-button'
+                                  }`}
+                                  style={{
+                                    ...provided.draggableProps.style,
+                                    // Ensure the dragged element stays visible and properly positioned
+                                    ...(snapshot.isDragging && {
+                                      position: 'fixed',
+                                      zIndex: 9999,
+                                      width: 'auto',
+                                    })
+                                  }}
+                                >
+                                  <span 
+                                    {...provided.dragHandleProps}
+                                    className="filter-pill-drag-handle"
+                                  >
+                                    <GripVertical className="w-4 h-4 text-gray-400" />
+                                  </span>
+                                  <CategoryIcon className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate">{category}</span>
+                                  <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
+                                    {categoryCount}
+                                  </span>
+                                </div>
+                                {/* Placeholder element to maintain layout when dragging */}
+                                {snapshot.isDragging && (
+                                  <div className="filter-pill-dragging-placeholder px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap glass-button">
+                                    <span className="filter-pill-drag-handle">
+                                      <GripVertical className="w-4 h-4 text-gray-400" />
+                                    </span>
+                                    <CategoryIcon className="w-3 h-3 flex-shrink-0" />
+                                    <span className="truncate">{category}</span>
+                                    <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
+                                      {categoryCount}
+                                    </span>
+                                  </div>
+                                )}
+                              </>
                             )}
                           </Draggable>
                         )
