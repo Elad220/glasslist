@@ -1739,39 +1739,35 @@ export default function ListPage() {
 
         {/* Add Item Actions */}
         {!isShoppingMode && (
-          <div className="glass-card p-4 mb-6">
-            <div className="flex flex-wrap gap-3">
-              <button 
-                onClick={() => setShowAddItem(true)}
-                className="glass-button px-4 py-2 flex items-center gap-2 hover-glow"
-                title="Add a single item"
-              >
-                <Plus className="w-4 h-4" />
-                Add Item
-              </button>
-              
-              <button 
-                onClick={() => setShowAiAdd(true)}
-                className="glass-button px-4 py-2 flex items-center gap-2 hover-glow"
-                title="AI Quick Add - add multiple items naturally"
-              >
-                <Sparkles className="w-4 h-4" />
-                Quick Add
-              </button>
-              
-              <button 
-                onClick={() => setHideCheckedItems(!hideCheckedItems)}
-                className={`glass-button px-4 py-2 flex items-center gap-2 transition-all duration-200 ${
-                  hideCheckedItems 
-                    ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg' 
-                    : 'hover-glow'
-                }`}
-                title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
-              >
-                <Filter className="w-4 h-4" />
-                Filter Checked
-              </button>
-            </div>
+          <div className="flex gap-3 mb-6 animate-slide-up">
+            <button 
+              onClick={() => setShowAddItem(true)}
+              className="glass-premium px-4 py-3 flex items-center gap-2 hover-glow micro-interaction animate-scale-in"
+            >
+              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
+              Add Item
+            </button>
+            
+            <button 
+              onClick={() => setShowAiAdd(true)}
+              className="glass-premium px-4 py-3 flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 hover-lift micro-interaction animate-scale-in stagger-1"
+            >
+              <Sparkles className="w-4 h-4 animate-pulse" />
+              AI Quick Add
+            </button>
+
+            <button 
+              onClick={() => setHideCheckedItems(!hideCheckedItems)}
+              className={`glass-premium px-4 py-3 flex items-center gap-2 transition-all duration-300 micro-interaction animate-scale-in stagger-2 ${
+                hideCheckedItems 
+                  ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg animate-pulse-glow'
+                  : 'hover:bg-primary/10'
+              }`}
+              title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
+            >
+              <CheckCircle className={`w-4 h-4 transition-transform ${hideCheckedItems ? 'scale-110' : ''}`} />
+              {hideCheckedItems ? 'Show Checked' : 'Hide Checked'}
+            </button>
           </div>
         )}
 
