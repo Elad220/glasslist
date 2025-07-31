@@ -50,7 +50,24 @@ import {
   ThermometerSnowflake
 } from 'lucide-react'
 
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import { 
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import SortableFilterPill from '@/components/SortableFilterPill'
+
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI, analyzeVoiceRecording } from '@/lib/ai/gemini'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
@@ -128,6 +145,24 @@ export default function ListPage() {
   const router = useRouter()
   const listId = params.listId as string
   const toast = useToast()
+  
+  // DnD Kit sensors for better touch support
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 10,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
 
 
   const [user, setUser] = useState<any>(null)
@@ -960,14 +995,17 @@ export default function ListPage() {
     }
   }
 
-  const onDragEnd = async (result: any) => {
-    if (!result.destination) {
-      return;
+  const onDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    
+    if (!over || active.id === over.id) {
+      return
     }
+    
+    const oldIndex = orderedCategories.indexOf(active.id as string)
+    const newIndex = orderedCategories.indexOf(over.id as string)
 
-    const newOrderedCategories = Array.from(orderedCategories);
-    const [reorderedItem] = newOrderedCategories.splice(result.source.index, 1);
-    newOrderedCategories.splice(result.destination.index, 0, reorderedItem);
+    const newOrderedCategories = arrayMove(orderedCategories, oldIndex, newIndex)
 
     setOrderedCategories(newOrderedCategories);
 
@@ -1481,171 +1519,81 @@ export default function ListPage() {
                   placeholder="Search items..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2 glass border-0 rounded-lg text-glass placeholder-glass-muted"
+                  className="glass-input w-full pl-10 pr-4 py-2"
                 />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted hover:text-glass transition-colors"
-                    title="Clear search"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
               </div>
               
               {/* Category Pills */}
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="category-pills" direction="horizontal">
-                  {(provided) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2"
-                    >
-                      <button
-                        onClick={() => setCategoryFilter('all')}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                          categoryFilter === 'all' 
-                            ? 'bg-primary/20 text-primary border border-primary/30' 
-                            : 'glass-button'
-                        }`}
-                      >
-                        All Aisles
-                      </button>
-                      {orderedCategories.map((category, index) => {
-                        const categoryCount = items.filter(item => item.category === category).length
-                        const CategoryIcon = categoryIcons[category] || Package2
-                        return (
-                          <Draggable key={category} draggableId={category} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                onClick={() => setCategoryFilter(category)}
-                                className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                                  (categoryFilter === category || snapshot.isDragging)
-                                    ? 'bg-primary/20 text-primary border border-primary/30' 
-                                    : 'glass-button'
-                                }`}
-                              >
-                                <span {...provided.dragHandleProps}>
-                                  <GripVertical className="w-4 h-4 text-gray-400" />
-                                </span>
-                                <CategoryIcon className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate">{category}</span>
-                                <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
-                                  {categoryCount}
-                                </span>
-                              </div>
-                            )}
-                          </Draggable>
-                        )
-                      })}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={onDragEnd}
+                modifiers={[]}
+              >
+                <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
+                  style={{ 
+                    WebkitOverflowScrolling: 'touch',
+                    overscrollBehavior: 'contain'
+                  }}
+                >
+                  <button
+                    onClick={() => setCategoryFilter('all')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                      categoryFilter === 'all' 
+                        ? 'bg-primary/20 text-primary border border-primary/30' 
+                        : 'glass-button'
+                    }`}
+                  >
+                    All Aisles
+                  </button>
+                  <SortableContext
+                    items={orderedCategories}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    {orderedCategories.map((category) => {
+                      const categoryCount = items.filter(item => item.category === category).length
+                      const CategoryIcon = categoryIcons[category] || Package2
+                      return (
+                        <SortableFilterPill
+                          key={category}
+                          category={category}
+                          categoryCount={categoryCount}
+                          CategoryIcon={CategoryIcon}
+                          isActive={categoryFilter === category}
+                          onClick={() => setCategoryFilter(category)}
+                        />
+                      )
+                    })}
+                  </SortableContext>
+                </div>
+              </DndContext>
             </div>
           </div>
         )}
 
-        {/* Add Item Actions */}
-        {!isShoppingMode && (
-          <div className="flex gap-3 mb-6 animate-slide-up">
-            <button 
-              onClick={() => setShowAddItem(true)}
-              className="glass-premium px-4 py-3 flex items-center gap-2 hover-glow micro-interaction animate-scale-in"
-            >
-              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-              Add Item
-            </button>
-            
-            <button 
-              onClick={() => setShowAiAdd(true)}
-              className="glass-premium px-4 py-3 flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 hover-lift micro-interaction animate-scale-in stagger-1"
-            >
-              <Sparkles className="w-4 h-4 animate-pulse" />
-              AI Quick Add
-            </button>
-
-            <button 
-              onClick={() => setHideCheckedItems(!hideCheckedItems)}
-              className={`glass-premium px-4 py-3 flex items-center gap-2 transition-all duration-300 micro-interaction animate-scale-in stagger-2 ${
-                hideCheckedItems 
-                  ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg animate-pulse-glow' 
-                  : 'hover:bg-primary/10'
-              }`}
-              title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
-            >
-              <CheckCircle className={`w-4 h-4 transition-transform ${hideCheckedItems ? 'scale-110' : ''}`} />
-              {hideCheckedItems ? 'Show Checked' : 'Hide Checked'}
-            </button>
+        {/* Items List */}
+        {items.length === 0 ? (
+          <div className="glass-card p-8 text-center">
+            <Package className="w-12 h-12 text-glass-muted mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-glass-heading mb-2">
+              {isShoppingMode ? "Ready to shop!" : "No items yet"}
+            </h3>
+            <p className="text-glass-muted mb-4">
+              {isShoppingMode 
+                ? "Exit shopping mode to add items to your list." 
+                : "Start building your shopping list!"
+              }
+            </p>
+            {!isShoppingMode && (
+              <button 
+                onClick={() => setShowAddItem(true)}
+                className="glass-button px-6 py-3"
+              >
+                Add Your First Item
+              </button>
+            )}
           </div>
-        )}
-
-
-        {/* Items List - Grouped by Category */}
-        <div className={isShoppingMode ? "space-y-6" : "space-y-4"}>
-          {filteredItems.length === 0 ? (
-            // Check if there are items in the list but filtering returned no results
-            items.length > 0 && (searchQuery.trim() || categoryFilter !== 'all') ? (
-              <div className="glass-card p-8 text-center">
-                <Search className="w-12 h-12 text-glass-muted mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-glass-heading mb-2">
-                  No items found
-                </h3>
-                <p className="text-glass-muted mb-4">
-                  {searchQuery.trim() && categoryFilter !== 'all' && hideCheckedItems
-                    ? `No unchecked items match "${searchQuery}" in the "${categoryFilter}" category.`
-                    : searchQuery.trim() && hideCheckedItems
-                    ? `No unchecked items match "${searchQuery}".`
-                    : categoryFilter !== 'all' && hideCheckedItems
-                    ? `No unchecked items found in the "${categoryFilter}" category.`
-                    : hideCheckedItems
-                    ? "All items are checked. Uncheck some items or show checked items to see them."
-                    : searchQuery.trim() && categoryFilter !== 'all' 
-                    ? `No items match "${searchQuery}" in the "${categoryFilter}" category.`
-                    : searchQuery.trim()
-                    ? `No items match "${searchQuery}".`
-                    : `No items found in the "${categoryFilter}" category.`
-                  }
-                </p>
-                <button 
-                  onClick={() => {
-                    setSearchQuery('')
-                    setCategoryFilter('all')
-                    setHideCheckedItems(false)
-                  }}
-                  className="glass-button px-6 py-3"
-                >
-                  Clear Filters
-                </button>
-              </div>
-            ) : (
-              <div className="glass-card p-8 text-center">
-                <Package className="w-12 h-12 text-glass-muted mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-glass-heading mb-2">
-                  {isShoppingMode ? "Ready to shop!" : "No items yet"}
-                </h3>
-                <p className="text-glass-muted mb-4">
-                  {isShoppingMode 
-                    ? "Exit shopping mode to add items to your list." 
-                    : "Start building your shopping list!"
-                  }
-                </p>
-                {!isShoppingMode && (
-                  <button 
-                    onClick={() => setShowAddItem(true)}
-                    className="glass-button px-6 py-3"
-                  >
-                    Add Your First Item
-                  </button>
-                )}
-              </div>
-            )
-          ) : (
+        ) : (
             orderedCategories.map((category) => {
               const categoryItems = groupedItems[category]
               if (!categoryItems) return null
@@ -1788,7 +1736,8 @@ export default function ListPage() {
               )
             })
           )}
-        </div>
+
+        {/* Add Item Actions */}
 
         {/* Edit Item Modal */}
         {showEditItem && editingItem && (
