@@ -320,6 +320,7 @@ body::before {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+  touch-action: pan-x pan-y; /* Allow scrolling by default */
 }
 
 /* Only disable touch-action on the drag handle */
@@ -379,7 +380,7 @@ body::before {
   
   /* Allow scrolling on the pills themselves, only prevent on drag handle */
   .filter-pill-draggable {
-    touch-action: pan-x pan-y;
+    touch-action: pan-x pan-y !important;
   }
 }
 

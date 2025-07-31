@@ -34,7 +34,6 @@ export default function SortableFilterPill({
     transition: isDragging ? undefined : transition,
     opacity: isDragging ? 0.9 : 1,
     zIndex: isDragging ? 9999 : undefined,
-    touchAction: 'none',
   }
 
   return (
