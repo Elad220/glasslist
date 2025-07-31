@@ -1738,6 +1738,42 @@ export default function ListPage() {
           )}
 
         {/* Add Item Actions */}
+        {!isShoppingMode && (
+          <div className="glass-card p-4 mb-6">
+            <div className="flex flex-wrap gap-3">
+              <button 
+                onClick={() => setShowAddItem(true)}
+                className="glass-button px-4 py-2 flex items-center gap-2 hover-glow"
+                title="Add a single item"
+              >
+                <Plus className="w-4 h-4" />
+                Add Item
+              </button>
+              
+              <button 
+                onClick={() => setShowAiAdd(true)}
+                className="glass-button px-4 py-2 flex items-center gap-2 hover-glow"
+                title="AI Quick Add - add multiple items naturally"
+              >
+                <Sparkles className="w-4 h-4" />
+                Quick Add
+              </button>
+              
+              <button 
+                onClick={() => setHideCheckedItems(!hideCheckedItems)}
+                className={`glass-button px-4 py-2 flex items-center gap-2 transition-all duration-200 ${
+                  hideCheckedItems 
+                    ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg' 
+                    : 'hover-glow'
+                }`}
+                title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
+              >
+                <Filter className="w-4 h-4" />
+                Filter Checked
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Edit Item Modal */}
         {showEditItem && editingItem && (
