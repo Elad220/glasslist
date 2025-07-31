@@ -50,7 +50,7 @@ import {
   ThermometerSnowflake
 } from 'lucide-react'
 
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import { DragDropContext, Droppable, Draggable, DragStart, DragUpdate } from '@hello-pangea/dnd'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI, analyzeVoiceRecording } from '@/lib/ai/gemini'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
@@ -145,6 +145,8 @@ export default function ListPage() {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [hideCheckedItems, setHideCheckedItems] = useState(false)
   const [orderedCategories, setOrderedCategories] = useState<string[]>([])
+  const [isDraggingPill, setIsDraggingPill] = useState(false)
+  const [isDraggingPill, setIsDraggingPill] = useState(false)
   const [newItem, setNewItem] = useState({
     name: '',
     amount: 1,
@@ -1495,7 +1497,25 @@ export default function ListPage() {
               </div>
               
               {/* Category Pills */}
-              <DragDropContext onDragEnd={onDragEnd} enableDefaultSensors={true}>
+              <DragDropContext 
+                onDragEnd={(result) => {
+                  document.body.style.overflow = ''
+                  onDragEnd(result)
+                }}
+                onDragStart={() => {
+                  document.body.style.overflow = 'hidden'
+                }}
+                sensors={[
+                  {
+                    sensor: 'touch',
+                    options: {}
+                  },
+                  {
+                    sensor: 'mouse',
+                    options: {}
+                  }
+                ]}
+              >
                 <Droppable droppableId="category-pills" direction="horizontal">
                   {(provided) => (
                     <div
@@ -1542,7 +1562,20 @@ export default function ListPage() {
                                       ? 'bg-primary/20 text-primary border border-primary/30' 
                                       : 'glass-button'
                                   }`}
-                                  style={provided.draggableProps.style}
+                                  style={{
+                                    ...provided.draggableProps.style,
+                                    ...(snapshot.isDragging && {
+                                      // Force the transform to be applied correctly
+                                      position: 'fixed',
+                                      top: 0,
+                                      left: 0,
+                                      transform: provided.draggableProps.style?.transform || 'none',
+                                      // Remove transition for immediate response
+                                      transition: 'none',
+                                      // Ensure it stays on top
+                                      zIndex: 9999,
+                                    })
+                                  }}
                                 >
                                   <span 
                                     {...provided.dragHandleProps}

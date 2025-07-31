@@ -329,10 +329,10 @@ body::before {
 
 /* Style for the dragging pill */
 .filter-pill-dragging {
-  z-index: 9999 !important;
   pointer-events: none !important;
   opacity: 0.9;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  /* Don't override position or transform - let React handle it */
 }
 
 /* Hide the original pill while dragging */
