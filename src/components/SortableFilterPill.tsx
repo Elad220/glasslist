@@ -26,13 +26,15 @@ export default function SortableFilterPill({
     transform,
     transition,
     isDragging,
+    active,
   } = useSortable({ id: category })
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? undefined : transition,
     opacity: isDragging ? 0.9 : 1,
-    zIndex: isDragging ? 9999 : 'auto' as any,
+    zIndex: isDragging ? 9999 : undefined,
+    touchAction: 'none',
   }
 
   return (
@@ -51,7 +53,7 @@ export default function SortableFilterPill({
         isActive
           ? 'bg-primary/20 text-primary border border-primary/30' 
           : 'glass-button'
-      }`}
+      } ${isDragging ? '' : 'transition-colors'}`}
     >
       <span 
         {...attributes}

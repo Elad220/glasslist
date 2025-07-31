@@ -337,9 +337,11 @@ body::before {
 /* Style for the dragging pill */
 .filter-pill-dragging {
   pointer-events: none !important;
-  opacity: 0.9;
+  opacity: 0.9 !important;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   /* Don't override position or transform - let React handle it */
+  transition: none !important;
+  -webkit-transition: none !important;
 }
 
 /* Hide the original pill while dragging */
@@ -379,4 +381,22 @@ body::before {
   .filter-pill-draggable {
     touch-action: pan-x pan-y;
   }
+}
+
+/* Fix for drag shaking on mobile */
+.filter-pill-dragging {
+  transition: none !important;
+  -webkit-transition: none !important;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Ensure smooth dragging */
+[data-dnd-kit-draggable] {
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  will-change: transform;
 }

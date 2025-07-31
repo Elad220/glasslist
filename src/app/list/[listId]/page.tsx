@@ -150,13 +150,13 @@ export default function ListPage() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 10,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 250,
-        tolerance: 5,
+        delay: 150,
+        tolerance: 10,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -1528,6 +1528,7 @@ export default function ListPage() {
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={onDragEnd}
+                modifiers={[]}
               >
                 <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
                   style={{ 
