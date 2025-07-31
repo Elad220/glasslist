@@ -1495,14 +1495,17 @@ export default function ListPage() {
               </div>
               
               {/* Category Pills */}
-              <DragDropContext onDragEnd={onDragEnd}>
+              <DragDropContext onDragEnd={onDragEnd} enableDefaultSensors={true}>
                 <Droppable droppableId="category-pills" direction="horizontal">
                   {(provided) => (
                     <div
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2"
-                      style={{ WebkitOverflowScrolling: 'touch' }}
+                      className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
+                      style={{ 
+                        WebkitOverflowScrolling: 'touch',
+                        overscrollBehavior: 'contain'
+                      }}
                     >
                       <button
                         onClick={() => setCategoryFilter('all')}
@@ -1524,7 +1527,12 @@ export default function ListPage() {
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
-                                  onClick={() => setCategoryFilter(category)}
+                                  onClick={(e) => {
+                                    // Don't trigger onClick if dragging
+                                    if (!snapshot.isDragging && !e.defaultPrevented) {
+                                      setCategoryFilter(category)
+                                    }
+                                  }}
                                   className={`filter-pill-draggable px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                     snapshot.isDragging 
                                       ? 'filter-pill-dragging' 
@@ -1534,15 +1542,7 @@ export default function ListPage() {
                                       ? 'bg-primary/20 text-primary border border-primary/30' 
                                       : 'glass-button'
                                   }`}
-                                  style={{
-                                    ...provided.draggableProps.style,
-                                    // Ensure the dragged element stays visible and properly positioned
-                                    ...(snapshot.isDragging && {
-                                      position: 'fixed',
-                                      zIndex: 9999,
-                                      width: 'auto',
-                                    })
-                                  }}
+                                  style={provided.draggableProps.style}
                                 >
                                   <span 
                                     {...provided.dragHandleProps}
