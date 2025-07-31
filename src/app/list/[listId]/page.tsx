@@ -960,7 +960,19 @@ export default function ListPage() {
     }
   }
 
+  const onDragStart = (result: any) => {
+    // Add body attribute to prevent scroll during drag on mobile
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      document.body.setAttribute('data-rbd-dragging', 'true');
+    }
+  };
+
   const onDragEnd = async (result: any) => {
+    // Remove body attribute to restore scroll
+    if (typeof window !== 'undefined') {
+      document.body.removeAttribute('data-rbd-dragging');
+    }
+
     if (!result.destination) {
       return;
     }
@@ -1317,6 +1329,16 @@ export default function ListPage() {
     });
   }, [items, listId, isDemoMode]);
 
+  // Cleanup effect to remove drag state when component unmounts
+  useEffect(() => {
+    return () => {
+      // Remove body attribute to restore scroll if component unmounts during drag
+      if (typeof window !== 'undefined') {
+        document.body.removeAttribute('data-rbd-dragging');
+      }
+    };
+  }, []);
+
 
   if (isLoading) {
     return (
@@ -1495,7 +1517,7 @@ export default function ListPage() {
               </div>
               
               {/* Category Pills */}
-              <DragDropContext onDragEnd={onDragEnd}>
+              <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
                 <Droppable droppableId="category-pills" direction="horizontal">
                   {(provided) => (
                     <div
@@ -1529,8 +1551,8 @@ export default function ListPage() {
                                     : 'glass-button'
                                 }`}
                               >
-                                <span {...provided.dragHandleProps}>
-                                  <GripVertical className="w-4 h-4 text-gray-400" />
+                                <span {...provided.dragHandleProps} className="touch-manipulation" title="Drag to reorder">
+                                  <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600 transition-colors" />
                                 </span>
                                 <CategoryIcon className="w-3 h-3 flex-shrink-0" />
                                 <span className="truncate">{category}</span>
