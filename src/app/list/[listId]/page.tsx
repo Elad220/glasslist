@@ -50,25 +50,7 @@ import {
   ThermometerSnowflake
 } from 'lucide-react'
 
-import { 
-  DndContext, 
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  horizontalListSortingStrategy,
-} from '@dnd-kit/sortable'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import SortableFilterPill from '@/components/SortableFilterPill'
+
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI, analyzeVoiceRecording } from '@/lib/ai/gemini'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
@@ -1574,51 +1556,81 @@ export default function ListPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted" />
                 <input
-                    : categoryFilter !== 'all' && hideCheckedItems
-                    ? `No unchecked items found in the "${categoryFilter}" category.`
-                    : hideCheckedItems
-                    ? "All items are checked. Uncheck some items or show checked items to see them."
-                    : searchQuery.trim() && categoryFilter !== 'all' 
-                    ? `No items match "${searchQuery}" in the "${categoryFilter}" category.`
-                    : searchQuery.trim()
-                    ? `No items match "${searchQuery}".`
-                    : `No items found in the "${categoryFilter}" category.`
-                  }
-                </p>
-                <button 
-                  onClick={() => {
-                    setSearchQuery('')
-                    setCategoryFilter('all')
-                    setHideCheckedItems(false)
-                  }}
-                  className="glass-button px-6 py-3"
+                  type="text"
+                  placeholder="Search items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="glass-input w-full pl-10 pr-4 py-2"
+                />
+              </div>
+              
+              {/* Category Pills */}
+              <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
+                style={{ 
+                  WebkitOverflowScrolling: 'touch',
+                  overscrollBehavior: 'contain'
+                }}
+              >
+                <button
+                  onClick={() => setCategoryFilter('all')}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                    categoryFilter === 'all' 
+                      ? 'bg-primary/20 text-primary border border-primary/30' 
+                      : 'glass-button'
+                  }`}
                 >
-                  Clear Filters
+                  All Aisles
                 </button>
+                {orderedCategories.map((category) => {
+                  const categoryCount = items.filter(item => item.category === category).length
+                  const CategoryIcon = categoryIcons[category] || Package2
+                  return (
+                    <button
+                      key={category}
+                      onClick={() => setCategoryFilter(category)}
+                      className={`px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                        categoryFilter === category
+                          ? 'bg-primary/20 text-primary border border-primary/30' 
+                          : 'glass-button'
+                      }`}
+                    >
+                      <GripVertical className="w-4 h-4 text-gray-400" />
+                      <CategoryIcon className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{category}</span>
+                      <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
+                        {categoryCount}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
-            ) : (
-              <div className="glass-card p-8 text-center">
-                <Package className="w-12 h-12 text-glass-muted mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-glass-heading mb-2">
-                  {isShoppingMode ? "Ready to shop!" : "No items yet"}
-                </h3>
-                <p className="text-glass-muted mb-4">
-                  {isShoppingMode 
-                    ? "Exit shopping mode to add items to your list." 
-                    : "Start building your shopping list!"
-                  }
-                </p>
-                {!isShoppingMode && (
-                  <button 
-                    onClick={() => setShowAddItem(true)}
-                    className="glass-button px-6 py-3"
-                  >
-                    Add Your First Item
-                  </button>
-                )}
-              </div>
-            )
-          ) : (
+            </div>
+          </div>
+        )}
+
+        {/* Items List */}
+        {items.length === 0 ? (
+          <div className="glass-card p-8 text-center">
+            <Package className="w-12 h-12 text-glass-muted mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-glass-heading mb-2">
+              {isShoppingMode ? "Ready to shop!" : "No items yet"}
+            </h3>
+            <p className="text-glass-muted mb-4">
+              {isShoppingMode 
+                ? "Exit shopping mode to add items to your list." 
+                : "Start building your shopping list!"
+              }
+            </p>
+            {!isShoppingMode && (
+              <button 
+                onClick={() => setShowAddItem(true)}
+                className="glass-button px-6 py-3"
+              >
+                Add Your First Item
+              </button>
+            )}
+          </div>
+        ) : (
             orderedCategories.map((category) => {
               const categoryItems = groupedItems[category]
               if (!categoryItems) return null
@@ -1761,7 +1773,8 @@ export default function ListPage() {
               )
             })
           )}
-        </div>
+
+        {/* Add Item Actions */}
 
         {/* Edit Item Modal */}
         {showEditItem && editingItem && (
