@@ -1522,6 +1522,11 @@ export default function ListPage() {
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
+                                style={{
+                                  ...provided.draggableProps.style,
+                                  zIndex: snapshot.isDragging ? 1000 : 'auto',
+                                  position: snapshot.isDragging ? 'relative' : undefined,
+                                }}
                                 onClick={() => setCategoryFilter(category)}
                                 className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                                   (categoryFilter === category || snapshot.isDragging)
