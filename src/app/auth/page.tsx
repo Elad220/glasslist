@@ -129,7 +129,7 @@ export default function AuthPage() {
         <div className="absolute top-1/2 right-1/3 w-48 h-48 bg-gradient-to-r from-primary to-secondary rounded-full blur-2xl opacity-20 animate-pulse-glow"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md animate-scale-in">
+      <div className="relative z-50 w-full max-w-md animate-scale-in">
         {/* Back to home link */}
         <Link 
           href="/" 

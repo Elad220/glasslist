@@ -158,7 +158,7 @@ export default function JoinListPage() {
           <div className="absolute bottom-1/4 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15"></div>
         </div>
 
-        <div className="relative z-10 glass-card p-8 text-center max-w-md w-full">
+        <div className="relative z-50 glass-card p-8 text-center max-w-md w-full">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-glass-heading mb-4">Invalid Invitation</h2>
           <p className="text-glass-muted mb-6">
@@ -193,7 +193,7 @@ export default function JoinListPage() {
           <div className="absolute bottom-1/4 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15"></div>
         </div>
 
-        <div className="relative z-10 glass-card p-8 text-center max-w-md w-full">
+        <div className="relative z-50 glass-card p-8 text-center max-w-md w-full">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-glass-heading mb-4">Successfully Joined!</h2>
           <p className="text-glass-muted mb-6">
@@ -213,7 +213,7 @@ export default function JoinListPage() {
         <div className="absolute bottom-1/4 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15"></div>
       </div>
 
-      <div className="relative z-10 glass-card p-8 max-w-md w-full">
+      <div className="relative z-50 glass-card p-8 max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-6">
           <ShoppingCart className="w-16 h-16 text-primary mx-auto mb-4" />

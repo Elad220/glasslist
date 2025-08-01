@@ -31,7 +31,7 @@ export default function Navbar() {
   ]
 
   return (
-    <header className="sticky top-0 z-10 p-4 animate-slide-down">
+    <header className="sticky top-0 z-30 p-4 animate-slide-down">
       <div className="glass-premium flex items-center justify-between p-2 px-4 rounded-full hover-lift animate-scale-in">
         {/* Logo */}
         <div className="flex items-center gap-3">
