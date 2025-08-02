@@ -2193,7 +2193,7 @@ export default function ListPage() {
         {/* AI Quick Add Modal */}
         {showAiAdd && (
           <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-fade-in"
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-fade-in"
             onClick={() => {
               setShowAiAdd(false)
               setAiInput('')
@@ -2201,7 +2201,7 @@ export default function ListPage() {
             }}
           >
             <div 
-              className="glass-premium p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-scale-in hover-lift"
+              className="glass-white p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-lg rounded-2xl animate-scale-in hover-lift"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-4 mb-8">
@@ -2220,7 +2220,7 @@ export default function ListPage() {
                   onClick={() => setAiInputMode('text')}
                   className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                     aiInputMode === 'text'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg animate-pulse-glow'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm'
                       : 'text-glass-muted hover:text-glass hover:bg-white/50'
                   }`}
                 >
@@ -2233,7 +2233,7 @@ export default function ListPage() {
                   onClick={() => setAiInputMode('voice')}
                   className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                     aiInputMode === 'voice'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg animate-pulse-glow'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm'
                       : 'text-glass-muted hover:text-glass hover:bg-white/50'
                   }`}
                 >
@@ -2257,7 +2257,7 @@ export default function ListPage() {
                       placeholder="Type your shopping list items..."
                       value={aiInput}
                       onChange={(e) => setAiInput(e.target.value)}
-                      className="w-full glass-premium border-0 rounded-xl px-5 py-4 text-glass placeholder-glass-muted resize-none focus-ring transition-all duration-300 hover:shadow-lg animate-scale-in"
+                      className="w-full bg-white/80 border border-gray-200 rounded-xl px-5 py-4 text-glass placeholder-glass-muted resize-none focus-ring transition-all duration-300 hover:shadow-sm animate-scale-in"
                       rows={4}
                       autoFocus
                     />
@@ -2376,7 +2376,7 @@ export default function ListPage() {
                   <button 
                     onClick={handleAiAdd}
                     disabled={isAiProcessing || !aiInput.trim()}
-                    className="flex-1 glass-premium px-6 py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium hover-lift micro-interaction transition-all duration-300 animate-pulse-glow"
+                    className="flex-1 bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 px-6 py-3 rounded-xl border border-purple-200 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium hover-lift micro-interaction transition-all duration-300 shadow-sm hover:shadow-md"
                   >
                     {isAiProcessing ? (
                       <>
@@ -2399,7 +2399,7 @@ export default function ListPage() {
                     setAiInput('')
                     resetVoiceRecording()
                   }}
-                  className="glass-premium px-6 py-3 hover-lift micro-interaction"
+                  className="bg-white/80 border border-gray-200 px-6 py-3 rounded-xl hover:bg-gray-50 hover-lift micro-interaction shadow-sm hover:shadow-md transition-all duration-300"
                   disabled={isAiProcessing || isProcessingVoice}
                 >
                   Cancel
