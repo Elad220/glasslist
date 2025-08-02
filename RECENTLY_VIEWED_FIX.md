@@ -21,7 +21,18 @@ The recently viewed list mechanism wasn't working properly. Lists weren't appear
 - Ensures consistent behavior between online and offline modes
 
 ### 3. Update List Timestamp on Item Changes
+We implemented two approaches:
+
+#### Option A: Database Trigger (Preferred but may not work in all Supabase environments)
 - Created database trigger (`sql/fix_recently_viewed_trigger.sql`) that automatically updates the shopping list's `updated_at` when items are modified
+- Run `create_trigger_final.sql` to create the trigger
+
+#### Option B: Application-Level Updates (Fallback solution)
+- Added `updateListTimestamp` helper function in `src/lib/supabase/client.ts`
+- Modified Supabase client functions to update list timestamps:
+  - `createItemOriginal`: Updates list timestamp after creating item
+  - `updateItemOriginal`: Updates list timestamp after updating item
+  - `deleteItemOriginal`: Updates list timestamp after deleting item
 - Modified offline client methods to update list timestamps:
   - `createItem`: Updates parent list's `updated_at` when item is created
   - `updateItem`: Updates parent list's `updated_at` when item is modified
@@ -35,11 +46,13 @@ The recently viewed list mechanism wasn't working properly. Lists weren't appear
   - Browser tab regains focus
   - Page becomes visible after being hidden
 
-## Database Migration Required
+## Database Migration (Try First)
 Run the following SQL to add the trigger:
 ```sql
--- Execute the contents of sql/fix_recently_viewed_trigger.sql
+-- Execute the contents of create_trigger_final.sql
 ```
+
+If the trigger doesn't work (check with `verify_trigger_setup.sql`), the application-level solution will handle it automatically.
 
 ## Debugging Steps
 
@@ -67,7 +80,7 @@ Open browser developer console and look for:
 4. The modified list should now appear at the top
 
 ### 4. Check Database Directly
-Run `test_trigger_simple.sql` to manually verify the trigger is working.
+Run `test_without_auth.sql` with your user ID to manually verify the behavior.
 
 ## Testing
 1. Create a new shopping list
@@ -83,3 +96,4 @@ Run `test_trigger_simple.sql` to manually verify the trigger is working.
 - The "Recent Lists" section will show genuinely recently used lists
 - Better user experience as frequently used lists are easily accessible
 - Dashboard stays up-to-date when navigating between pages
+- Works regardless of database trigger support
