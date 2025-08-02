@@ -92,7 +92,6 @@ const categoryIcons: { [key: string]: any } = {
   'Meat': Beef,
   'Bakery': Cookie,
   'Pantry': Package2,
-  'Frozen': Snowflake,
   'Hygiene': SoapDispenserDroplet,
   'Household': Home,
   'Other': Package2,
@@ -102,7 +101,6 @@ const categoryIcons: { [key: string]: any } = {
   'Organics': Leaf,
   'Registers': Receipt,
   'Canned Goods': PackageCheck,
-  'Disposable': Trash,
   'Freezer': ThermometerSnowflake
 }
 
@@ -1636,7 +1634,7 @@ export default function ListPage() {
               const totalInCategory = categoryItems.length
               
               return (
-                <div key={category} className="glass-card overflow-hidden">
+                <div key={category} className="glass-card overflow-hidden mb-6">
                   {/* Category Header */}
                   <div className={`border-b border-glass-white-border ${isShoppingMode ? 'p-6' : 'p-4'}`}>
                     <div className="flex items-center gap-3">
@@ -1879,14 +1877,12 @@ export default function ListPage() {
                     <option value="Bakery">Bakery</option>
                     <option value="Hygiene">Hygiene</option>
                     <option value="Pantry">Pantry</option>
-                    <option value="Frozen">Frozen</option>
                     <option value="Household">Household</option>
                     <option value="Snacks">Snacks</option>
                     <option value="Beverages">Beverages</option>
                     <option value="Organics">Organics</option>
                     <option value="Registers">Registers</option>
                     <option value="Canned Goods">Canned Goods</option>
-                    <option value="Disposable">Disposable</option>
                     <option value="Freezer">Freezer</option>
                     <option value="Other">Other</option>
                   </select>
@@ -2388,14 +2384,12 @@ export default function ListPage() {
                     <option value="Bakery">Bakery</option>
                     <option value="Hygiene">Hygiene</option>
                     <option value="Pantry">Pantry</option>
-                    <option value="Frozen">Frozen</option>
                     <option value="Household">Household</option>
                     <option value="Snacks">Snacks</option>
                     <option value="Beverages">Beverages</option>
                     <option value="Organics">Organics</option>
                     <option value="Registers">Registers</option>
                     <option value="Canned Goods">Canned Goods</option>
-                    <option value="Disposable">Disposable</option>
                     <option value="Freezer">Freezer</option>
                     <option value="Other">Other</option>
                   </select>

@@ -37,10 +37,10 @@ const mockProfile = {
   full_name: 'Demo User',
   avatar_url: null,
   gemini_api_key: null,
-  ai_suggestions_enabled: true,
-  ai_insights_enabled: true,
-  ai_tips_enabled: true,
-  ai_analytics_enabled: true,
+  ai_suggestions_enabled: false,
+  ai_insights_enabled: false,
+  ai_tips_enabled: false,
+  ai_analytics_enabled: false,
   created_at: '2024-01-15T10:00:00Z',
   updated_at: '2024-01-15T10:00:00Z'
 }
@@ -62,10 +62,10 @@ export default function SettingsPage() {
     full_name: '',
     email: '',
     gemini_api_key: '',
-    ai_suggestions_enabled: true,
-    ai_insights_enabled: true,
-    ai_tips_enabled: true,
-    ai_analytics_enabled: true
+    ai_suggestions_enabled: false,
+    ai_insights_enabled: false,
+    ai_tips_enabled: false,
+    ai_analytics_enabled: false
   })
 
   useEffect(() => {
@@ -87,10 +87,10 @@ export default function SettingsPage() {
               full_name: profileData.full_name || '',
               email: profileData.email || '',
               gemini_api_key: profileData.gemini_api_key || '',
-              ai_suggestions_enabled: profileData.ai_suggestions_enabled ?? true,
-              ai_insights_enabled: profileData.ai_insights_enabled ?? true,
-              ai_tips_enabled: profileData.ai_tips_enabled ?? true,
-              ai_analytics_enabled: profileData.ai_analytics_enabled ?? true
+              ai_suggestions_enabled: profileData.ai_suggestions_enabled ?? false,
+              ai_insights_enabled: profileData.ai_insights_enabled ?? false,
+              ai_tips_enabled: profileData.ai_tips_enabled ?? false,
+              ai_analytics_enabled: profileData.ai_analytics_enabled ?? false
             })
           }
         } else {
@@ -100,10 +100,10 @@ export default function SettingsPage() {
               full_name: mockProfile.full_name || '',
               email: mockProfile.email || '',
               gemini_api_key: mockProfile.gemini_api_key || '',
-              ai_suggestions_enabled: mockProfile.ai_suggestions_enabled ?? true,
-              ai_insights_enabled: mockProfile.ai_insights_enabled ?? true,
-              ai_tips_enabled: mockProfile.ai_tips_enabled ?? true,
-              ai_analytics_enabled: mockProfile.ai_analytics_enabled ?? true
+              ai_suggestions_enabled: mockProfile.ai_suggestions_enabled ?? false,
+              ai_insights_enabled: mockProfile.ai_insights_enabled ?? false,
+              ai_tips_enabled: mockProfile.ai_tips_enabled ?? false,
+              ai_analytics_enabled: mockProfile.ai_analytics_enabled ?? false
             })
         }
       } catch (error) {

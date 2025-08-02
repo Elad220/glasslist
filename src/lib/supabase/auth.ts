@@ -19,10 +19,10 @@ const mockProfile: Profile = {
   full_name: 'Demo User',
   avatar_url: null,
   gemini_api_key: null,
-  ai_suggestions_enabled: true,
-  ai_insights_enabled: true,
-  ai_tips_enabled: true,
-  ai_analytics_enabled: true,
+  ai_suggestions_enabled: false,
+  ai_insights_enabled: false,
+  ai_tips_enabled: false,
+  ai_analytics_enabled: false,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 }
@@ -123,24 +123,24 @@ export async function getProfile(userId: string): Promise<{ profile: Profile | n
       const storedSettings = localStorage.getItem(`ai_settings_${userId}`)
       if (storedSettings !== null) {
         const aiSettings = JSON.parse(storedSettings)
-        profile.ai_suggestions_enabled = aiSettings.ai_suggestions_enabled ?? true
-        profile.ai_insights_enabled = aiSettings.ai_insights_enabled ?? true
-        profile.ai_tips_enabled = aiSettings.ai_tips_enabled ?? true
-        profile.ai_analytics_enabled = aiSettings.ai_analytics_enabled ?? true
+        profile.ai_suggestions_enabled = aiSettings.ai_suggestions_enabled ?? false
+        profile.ai_insights_enabled = aiSettings.ai_insights_enabled ?? false
+        profile.ai_tips_enabled = aiSettings.ai_tips_enabled ?? false
+        profile.ai_analytics_enabled = aiSettings.ai_analytics_enabled ?? false
       } else {
         // Set defaults if no stored settings
-        profile.ai_suggestions_enabled = profile.ai_suggestions_enabled ?? true
-        profile.ai_insights_enabled = profile.ai_insights_enabled ?? true
-        profile.ai_tips_enabled = profile.ai_tips_enabled ?? true
-        profile.ai_analytics_enabled = profile.ai_analytics_enabled ?? true
+        profile.ai_suggestions_enabled = profile.ai_suggestions_enabled ?? false
+        profile.ai_insights_enabled = profile.ai_insights_enabled ?? false
+        profile.ai_tips_enabled = profile.ai_tips_enabled ?? false
+        profile.ai_analytics_enabled = profile.ai_analytics_enabled ?? false
       }
     } catch (e) {
       console.warn('Failed to read AI settings from localStorage:', e)
       // Set defaults on error
-      profile.ai_suggestions_enabled = profile.ai_suggestions_enabled ?? true
-      profile.ai_insights_enabled = profile.ai_insights_enabled ?? true
-      profile.ai_tips_enabled = profile.ai_tips_enabled ?? true
-      profile.ai_analytics_enabled = profile.ai_analytics_enabled ?? true
+      profile.ai_suggestions_enabled = profile.ai_suggestions_enabled ?? false
+      profile.ai_insights_enabled = profile.ai_insights_enabled ?? false
+      profile.ai_tips_enabled = profile.ai_tips_enabled ?? false
+      profile.ai_analytics_enabled = profile.ai_analytics_enabled ?? false
     }
   }
 
