@@ -93,6 +93,14 @@ class OfflineClient {
         const items = itemRecords.map(record => record.data)
         listsWithItems.push({ ...listRecord.data, items })
       }
+      
+      // Sort lists by updated_at in descending order (most recent first)
+      listsWithItems.sort((a, b) => {
+        const dateA = new Date(a.updated_at).getTime()
+        const dateB = new Date(b.updated_at).getTime()
+        return dateB - dateA
+      })
+      
       return { data: listsWithItems, error: null }
     } catch (error) {
       return { data: null, error: error instanceof Error ? error.message : 'Failed to get shopping lists' }
@@ -291,6 +299,17 @@ class OfflineClient {
       if (data) {
         // Also update local storage for consistency
         await offlineStorage.saveItem(data, 'update', false)
+        
+        // Update the list's updated_at timestamp
+        const listRecord = await offlineStorage.getShoppingList(data.list_id)
+        if (listRecord) {
+          const updatedList: ShoppingList = {
+            ...listRecord.data,
+            updated_at: new Date().toISOString()
+          }
+          await offlineStorage.saveShoppingList(updatedList, 'update', false)
+        }
+        
         return { data, error: null }
       }
       // If Supabase fails, fallback to IndexedDB
@@ -318,6 +337,16 @@ class OfflineClient {
         return { data: null, error: 'Failed to update item' }
       }
       
+      // Update the list's updated_at timestamp
+      const listRecord = await offlineStorage.getShoppingList(updatedItem.list_id)
+      if (listRecord) {
+        const updatedList: ShoppingList = {
+          ...listRecord.data,
+          updated_at: new Date().toISOString()
+        }
+        await offlineStorage.saveShoppingList(updatedList, 'update', true)
+      }
+      
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {
         syncManager.forceSync().catch(console.error)
@@ -343,6 +372,17 @@ class OfflineClient {
       if (data) {
         // Also save to local storage for consistency
         await offlineStorage.saveItem(data, 'update', false)
+        
+        // Update the list's updated_at timestamp
+        const listRecord = await offlineStorage.getShoppingList(data.list_id)
+        if (listRecord) {
+          const updatedList: ShoppingList = {
+            ...listRecord.data,
+            updated_at: new Date().toISOString()
+          }
+          await offlineStorage.saveShoppingList(updatedList, 'update', false)
+        }
+        
         return { data, error: null }
       }
       // If Supabase fails, fallback to IndexedDB
@@ -353,6 +393,16 @@ class OfflineClient {
       const record = await offlineStorage.saveItem(itemData, 'create', true)
       if (!record) {
         return { data: null, error: 'Failed to create item' }
+      }
+      
+      // Update the list's updated_at timestamp
+      const listRecord = await offlineStorage.getShoppingList(itemData.list_id)
+      if (listRecord) {
+        const updatedList: ShoppingList = {
+          ...listRecord.data,
+          updated_at: new Date().toISOString()
+        }
+        await offlineStorage.saveShoppingList(updatedList, 'update', true)
       }
       
       // Trigger immediate sync if online (non-blocking)
@@ -403,12 +453,29 @@ class OfflineClient {
   }
 
   async deleteItem(itemId: string): Promise<OfflineClientResponse<null>> {
+    // Get the item first to find its list_id
+    const itemRecord = await offlineStorage.getItem(itemId)
+    const listId = itemRecord?.data?.list_id
+    
     if (syncManager.getStatus().isOnline) {
       // Try Supabase first when online
       const { error } = await deleteItemOriginal(itemId)
       if (!error) {
         // Also delete from local storage for consistency
         await offlineStorage.deleteItem(itemId, false)
+        
+        // Update the list's updated_at timestamp
+        if (listId) {
+          const listRecord = await offlineStorage.getShoppingList(listId)
+          if (listRecord) {
+            const updatedList: ShoppingList = {
+              ...listRecord.data,
+              updated_at: new Date().toISOString()
+            }
+            await offlineStorage.saveShoppingList(updatedList, 'update', false)
+          }
+        }
+        
         return { data: null, error: null }
       }
       // If Supabase fails, fallback to IndexedDB
@@ -417,6 +484,18 @@ class OfflineClient {
     // Offline or Supabase failed - use IndexedDB
     try {
       await offlineStorage.deleteItem(itemId, true)
+      
+      // Update the list's updated_at timestamp
+      if (listId) {
+        const listRecord = await offlineStorage.getShoppingList(listId)
+        if (listRecord) {
+          const updatedList: ShoppingList = {
+            ...listRecord.data,
+            updated_at: new Date().toISOString()
+          }
+          await offlineStorage.saveShoppingList(updatedList, 'update', true)
+        }
+      }
       
       // Trigger immediate sync if online (non-blocking)
       if (syncManager.getStatus().isOnline) {

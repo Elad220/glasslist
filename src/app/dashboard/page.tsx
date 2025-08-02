@@ -199,6 +199,14 @@ export default function DashboardPage() {
             completedCount: list.items?.filter((item: any) => item.is_checked)?.length || 0
           }
         })
+        
+        // Sort lists by updated_at in descending order (most recent first)
+        listsWithCounts.sort((a, b) => {
+          const dateA = new Date(a.updated_at).getTime()
+          const dateB = new Date(b.updated_at).getTime()
+          return dateB - dateA
+        })
+        
         setShoppingLists(listsWithCounts)
       }
     } catch (error) {
