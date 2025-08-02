@@ -29,6 +29,11 @@ export const supabase = createSupabaseClient()
 
 // Helper function to update shopping list timestamp
 async function updateListTimestamp(listId: string) {
+  if (!supabase) {
+    console.error('Cannot update list timestamp: Supabase client not available')
+    return
+  }
+  
   try {
     const { error } = await supabase
       .from('shopping_lists')
