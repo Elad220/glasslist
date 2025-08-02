@@ -1900,7 +1900,7 @@ export default function ListPage() {
                         onClick={() =>
                           setEditItemForm((prev) => ({ ...prev, amount: Math.max(1, prev.amount - 1) }))
                         }
-                        className="px-3 bg-glass-white-light text-glass-muted hover:bg-glass-white-light/50 focus:outline-none"
+                        className="px-3 bg-glass-white-light/30 text-glass-muted hover:bg-glass-white-light/50 focus:outline-none transition-colors duration-200"
                       >
                         −
                       </button>
@@ -1912,14 +1912,14 @@ export default function ListPage() {
                         onChange={(e) =>
                           setEditItemForm({ ...editItemForm, amount: parseInt(e.target.value) || 1 })
                         }
-                        className="w-full border-0 bg-transparent text-center px-4 py-3 focus:ring-0 text-glass"
+                        className="w-full border-0 bg-glass-white-light/20 text-center px-4 py-3 focus:ring-0 text-glass focus:bg-glass-white-light/30 transition-colors duration-200"
                       />
                       <button
                         type="button"
                         onClick={() =>
                           setEditItemForm((prev) => ({ ...prev, amount: prev.amount + 1 }))
                         }
-                        className="px-3 bg-glass-white-light text-glass-muted hover:bg-glass-white-light/50 focus:outline-none"
+                        className="px-3 bg-glass-white-light/30 text-glass-muted hover:bg-glass-white-light/50 focus:outline-none transition-colors duration-200"
                       >
                         +
                       </button>
@@ -2407,7 +2407,7 @@ export default function ListPage() {
                         onClick={() =>
                           setNewItem((prev) => ({ ...prev, amount: Math.max(1, prev.amount - 1) }))
                         }
-                        className="px-3 bg-glass-white-light text-glass-muted hover:bg-glass-white-light/50 focus:outline-none"
+                        className="px-3 bg-glass-white-light/30 text-glass-muted hover:bg-glass-white-light/50 focus:outline-none transition-colors duration-200"
                       >
                         −
                       </button>
@@ -2419,14 +2419,14 @@ export default function ListPage() {
                         onChange={(e) =>
                           setNewItem({ ...newItem, amount: parseInt(e.target.value) || 1 })
                         }
-                        className="w-full border-0 bg-transparent text-center px-4 py-3 focus:ring-0 text-glass"
+                        className="w-full border-0 bg-glass-white-light/20 text-center px-4 py-3 focus:ring-0 text-glass focus:bg-glass-white-light/30 transition-colors duration-200"
                       />
                       <button
                         type="button"
                         onClick={() =>
                           setNewItem((prev) => ({ ...prev, amount: prev.amount + 1 }))
                         }
-                        className="px-3 bg-glass-white-light text-glass-muted hover:bg-glass-white-light/50 focus:outline-none"
+                        className="px-3 bg-glass-white-light/30 text-glass-muted hover:bg-glass-white-light/50 focus:outline-none transition-colors duration-200"
                       >
                         +
                       </button>
