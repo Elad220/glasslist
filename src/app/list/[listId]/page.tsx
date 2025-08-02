@@ -1544,8 +1544,18 @@ export default function ListPage() {
                     placeholder="Search items..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="glass-input w-full py-2 px-3 pl-10 has-left-icon"
+                    className={`glass-input w-full py-2 px-3 ${searchQuery ? 'pl-10 pr-10 has-both-icons' : 'pl-10 has-left-icon'}`}
                   />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted hover:text-glass-heading transition-colors duration-200"
+                      title="Clear search"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 
                 {/* Compact Hide Checked Toggle */}
@@ -1676,6 +1686,43 @@ export default function ListPage() {
                 Add Your First Item
               </button>
             )}
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="glass-card p-8 text-center">
+            <Search className="w-12 h-12 text-glass-muted mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-glass-heading mb-2">
+              No items found
+            </h3>
+            <p className="text-glass-muted mb-4">
+              {searchQuery 
+                ? `No items match "${searchQuery}"`
+                : categoryFilter !== 'all'
+                ? `No items in the "${categoryFilter}" category`
+                : hideCheckedItems
+                ? "No unchecked items found"
+                : "No items match your current filters"
+              }
+            </p>
+            <div className="flex gap-3 justify-center">
+              <button 
+                onClick={() => {
+                  setSearchQuery('')
+                  setCategoryFilter('all')
+                  setHideCheckedItems(false)
+                }}
+                className="glass-button px-6 py-3"
+              >
+                Clear Filters
+              </button>
+              {!isShoppingMode && (
+                <button 
+                  onClick={() => setShowAddItem(true)}
+                  className="glass-button px-6 py-3"
+                >
+                  Add New Item
+                </button>
+              )}
+            </div>
           </div>
         ) : (
             orderedCategories.map((category) => {

@@ -1,5 +1,18 @@
 // Simple undo/redo system for toast-based interactions
 
+// Helper to generate a UUID (v4) - safe for all environments
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  // Fallback: manual UUID v4
+  // https://stackoverflow.com/a/2117523/329700
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
 export interface UndoAction {
   id: string
   type: 'DELETE_ITEM' | 'DELETE_LIST'
@@ -21,7 +34,7 @@ class UndoManager {
   addAction(action: UndoActionData) {
     const newAction: UndoAction = {
       ...action,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       timestamp: Date.now()
     }
 

@@ -28,7 +28,8 @@ import {
   Filter,
   Zap,
   Copy,
-  HelpCircle
+  HelpCircle,
+  X
 } from 'lucide-react'
 
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
@@ -1159,15 +1160,25 @@ export default function DashboardPage() {
               Search Your Lists
             </h3>
             
-            <div className="mb-4">
+            <div className="mb-4 relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full glass-input"
+                className={`w-full glass-input ${searchQuery ? 'pr-10' : ''}`}
                 placeholder="Type to search lists..."
                 autoFocus
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted hover:text-glass-heading transition-colors duration-200"
+                  title="Clear search"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
             
             <div className="space-y-2 max-h-60 overflow-y-auto">
