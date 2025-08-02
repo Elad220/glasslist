@@ -178,6 +178,34 @@ export default function DashboardPage() {
     checkAuth()
   }, [])
 
+  // Refresh lists when the page gains focus (e.g., when navigating back)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user && !isDemoMode) {
+        console.log('Dashboard: Page gained focus, refreshing lists...')
+        fetchShoppingLists(user.id)
+      }
+    }
+
+    // Listen for focus events
+    window.addEventListener('focus', handleFocus)
+    
+    // Also refresh when the page becomes visible (handles tab switching)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && !isDemoMode) {
+        console.log('Dashboard: Page became visible, refreshing lists...')
+        fetchShoppingLists(user.id)
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [user, isDemoMode])
+
   const fetchShoppingLists = async (userId: string) => {
     try {
       const { data, error } = await getShoppingLists(userId)
@@ -200,12 +228,26 @@ export default function DashboardPage() {
           }
         })
         
+        // Debug: Log lists before sorting
+        console.log('Dashboard: Lists before sorting:', listsWithCounts.map(l => ({
+          name: l.name,
+          updated_at: l.updated_at,
+          date: new Date(l.updated_at).toLocaleString()
+        })))
+        
         // Sort lists by updated_at in descending order (most recent first)
         listsWithCounts.sort((a, b) => {
           const dateA = new Date(a.updated_at).getTime()
           const dateB = new Date(b.updated_at).getTime()
           return dateB - dateA
         })
+        
+        // Debug: Log lists after sorting
+        console.log('Dashboard: Lists after sorting:', listsWithCounts.map(l => ({
+          name: l.name,
+          updated_at: l.updated_at,
+          date: new Date(l.updated_at).toLocaleString()
+        })))
         
         setShoppingLists(listsWithCounts)
       }

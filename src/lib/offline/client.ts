@@ -380,6 +380,12 @@ class OfflineClient {
             ...listRecord.data,
             updated_at: new Date().toISOString()
           }
+          console.log('OfflineClient: Updating list timestamp after createItem (online):', {
+            listId: data.list_id,
+            listName: updatedList.name,
+            oldTimestamp: listRecord.data.updated_at,
+            newTimestamp: updatedList.updated_at
+          })
           await offlineStorage.saveShoppingList(updatedList, 'update', false)
         }
         
