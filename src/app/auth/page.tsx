@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Mail, Lock, User, Eye, EyeOff, ArrowLeft, AlertCircle, ArrowRight } from 'lucide-react'
+import { ShoppingCart, Mail, Lock, User, Eye, EyeOff, ArrowLeft, AlertCircle, ArrowRight, Sparkles, Shield, CheckCircle } from 'lucide-react'
 import { signIn, signUp } from '@/lib/supabase/auth'
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
@@ -11,6 +11,7 @@ const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true)
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -115,203 +116,236 @@ export default function AuthPage() {
     setFormData({
       email: 'demo@glasslist.com',
       password: 'demo123',
-      fullName: 'Demo User',
-      confirmPassword: 'demo123'
+      fullName: '',
+      confirmPassword: ''
     })
+    setIsLogin(true)
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      {/* Floating background elements */}
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 animate-page-load">
+      {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/3 left-1/4 w-72 h-72 glass-white rounded-full blur-3xl opacity-15 animate-float"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-10 animate-float" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute top-1/2 right-1/3 w-48 h-48 bg-gradient-to-r from-primary to-secondary rounded-full blur-2xl opacity-20 animate-pulse-glow"></div>
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 glass-white rounded-full blur-3xl opacity-10 animate-float"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 glass-white rounded-full blur-3xl opacity-8 animate-float floating-delayed"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] glass-white rounded-full blur-3xl opacity-5 animate-morph"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md animate-scale-in">
-        {/* Back to home link */}
-        <Link 
-          href="/" 
-          className="glass-premium mb-8 px-4 py-2 inline-flex items-center gap-2 text-sm hover-lift micro-interaction animate-slide-down"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Home
-        </Link>
-
-        {/* Demo Mode Indicator */}
-        {isDemoMode && (
-          <div className="glass-card bg-blue-100/10 border-blue-300/30 p-4 mb-6">
-            <div className="flex items-center gap-2 text-blue-600">
-              <AlertCircle className="w-5 h-5" />
-              <div>
-                <p className="font-semibold">Demo Mode Active</p>
-                <p className="text-sm">No Supabase configuration needed - try any credentials!</p>
-                <button 
-                  onClick={handleDemoLogin}
-                  className="text-xs underline mt-1"
-                >
-                  Fill demo credentials
-                </button>
+      <div className="relative z-10 w-full max-w-md">
+        {/* Header */}
+        <div className="mb-8 animate-slide-down">
+          {/* Back to Home Link */}
+          <div className="mb-6">
+            <Link href="/" className="inline-flex items-center gap-2 text-glass-muted hover:text-glass-heading transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Link>
+          </div>
+          
+          {/* Logo and Title Section */}
+          <div className="text-center">
+            <div className="relative inline-block mb-6">
+              <ShoppingCart className="w-16 h-16 mx-auto text-primary animate-bounce-in" />
+              <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
+                <Sparkles className="w-3 h-3 text-white" />
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Auth Card */}
-        <div className="glass-premium p-8 animate-slide-up stagger-1 hover-lift">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <ShoppingCart className="w-12 h-12 mx-auto mb-4 text-primary animate-bounce-in" />
-            <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent animate-text-shimmer">
+            
+            <h1 className="text-3xl font-bold text-glass-heading mb-2">
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h1>
-            <p className="text-text-secondary animate-slide-up stagger-2">
-              {isLogin 
-                ? 'Sign in to your GlassList account' 
-                : 'Join GlassList and start organizing'
-              }
+            <p className="text-glass-muted">
+              {isLogin ? 'Sign in to continue to GlassList' : 'Join thousands of users'}
             </p>
           </div>
+        </div>
 
-          {/* Error Message */}
-          {error && (
-            <div className="glass-card bg-red-100/10 border-red-300/30 p-4 mb-6 text-red-600 text-sm">
-              {error}
-            </div>
-          )}
-
-          {/* Success Message */}
-          {success && (
-            <div className="glass-card bg-green-100/10 border-green-300/30 p-4 mb-6 text-green-600 text-sm">
-              {success}
-            </div>
-          )}
-
-          {/* Form */}
+        {/* Auth Form */}
+        <div className="glass-premium p-8 animate-scale-in">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Full Name (Register only) */}
+            {/* Full Name Field (Sign Up Only) */}
             {!isLogin && (
-              <div>
-                <label htmlFor="fullName" className="block text-sm font-medium mb-2">
+              <div className="animate-slide-up stagger-1">
+                <label htmlFor="fullName" className="block text-sm font-medium text-glass-heading mb-2">
                   Full Name
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-glass-muted pointer-events-none" />
                   <input
+                    type="text"
                     id="fullName"
                     name="fullName"
-                    type="text"
-                    required={!isLogin}
                     value={formData.fullName}
                     onChange={handleInputChange}
-                    className="glass-premium w-full pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-text-secondary/50 focus-ring transition-all duration-300"
+                    className="w-full py-3 glass-input has-left-icon"
                     placeholder="Enter your full name"
+                    required
                   />
                 </div>
               </div>
             )}
 
-            {/* Email */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-2">
+            {/* Email Field */}
+            <div className="animate-slide-up stagger-2">
+              <label htmlFor="email" className="block text-sm font-medium text-glass-heading mb-2">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-glass-muted pointer-events-none" />
                 <input
+                  type="email"
                   id="email"
                   name="email"
-                  type="email"
-                  required
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="glass w-full pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-text-secondary/50"
+                  className="w-full py-3 glass-input has-left-icon"
                   placeholder="Enter your email"
+                  required
                 />
               </div>
             </div>
 
-            {/* Password */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium mb-2">
+            {/* Password Field */}
+            <div className="animate-slide-up stagger-3">
+              <label htmlFor="password" className="block text-sm font-medium text-glass-heading mb-2">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-glass-muted pointer-events-none" />
                 <input
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="glass w-full pl-10 pr-12 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-text-secondary/50"
-                  placeholder={isLogin ? "Enter your password" : "Create a password"}
+                  className="w-full py-3 glass-input has-both-icons"
+                  placeholder="Enter your password"
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-secondary hover:text-primary"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-glass-muted hover:text-glass-heading transition-colors p-1 rounded"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Confirm Password (Register only) */}
+            {/* Confirm Password Field (Sign Up Only) */}
             {!isLogin && (
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
+              <div className="animate-slide-up stagger-4">
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-glass-heading mb-2">
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-secondary" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-glass-muted pointer-events-none" />
                   <input
+                    type={showConfirmPassword ? 'text' : 'password'}
                     id="confirmPassword"
                     name="confirmPassword"
-                    type={showPassword ? 'text' : 'password'}
-                    required={!isLogin}
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
-                    className="glass w-full pl-10 pr-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-text-secondary/50"
+                    className="w-full py-3 glass-input has-both-icons"
                     placeholder="Confirm your password"
+                    required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-glass-muted hover:text-glass-heading transition-colors p-1 rounded"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {error && (
+              <div className="animate-slide-up stagger-5">
+                <div className="flex items-center gap-2 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                  <span className="text-red-300 text-sm">{error}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <div className="animate-slide-up stagger-5">
+                <div className="flex items-center gap-2 p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <span className="text-green-300 text-sm">{success}</span>
                 </div>
               </div>
             )}
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full glass-premium py-3 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover-glow micro-interaction animate-slide-up stagger-3 transition-all duration-300"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
-                  Please wait...
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  {isLogin ? 'Sign In' : 'Create Account'}
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              )}
-            </button>
+            <div className="animate-slide-up stagger-6">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full glass-button py-3 text-lg font-semibold button-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner"></div>
+                    {isLogin ? 'Signing In...' : 'Creating Account...'}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    {isLogin ? 'Sign In' : 'Create Account'}
+                    <ArrowRight className="w-5 h-5" />
+                  </div>
+                )}
+              </button>
+            </div>
+
+            {/* Demo Login Button */}
+            {isDemoMode && (
+              <div className="animate-slide-up stagger-7">
+                <button
+                  type="button"
+                  onClick={handleDemoLogin}
+                  className="w-full glass-button bg-glass-white-light py-3 text-lg font-semibold hover:bg-glass-white-border"
+                >
+                  Try Demo Account
+                </button>
+              </div>
+            )}
           </form>
 
           {/* Toggle Mode */}
-          <div className="mt-8 text-center">
-            <button
-              onClick={toggleMode}
-              className="text-primary hover:text-primary-light transition-colors"
-            >
-              {isLogin 
-                ? "Don't have an account? Sign up" 
-                : "Already have an account? Sign in"
-              }
-            </button>
+          <div className="mt-8 pt-6 border-t border-glass-white-border animate-slide-up stagger-8">
+            <p className="text-center text-glass-muted">
+              {isLogin ? "Don't have an account?" : "Already have an account?"}
+              <button
+                onClick={toggleMode}
+                className="ml-2 text-primary hover:text-primary-light font-medium transition-colors"
+              >
+                {isLogin ? 'Sign Up' : 'Sign In'}
+              </button>
+            </p>
+          </div>
+        </div>
+
+        {/* Trust Indicators */}
+        <div className="mt-8 text-center animate-slide-up stagger-9">
+          <div className="glass-card p-6">
+            <div className="flex justify-center items-center gap-4 mb-4">
+              <div className="flex items-center gap-2 text-glass-muted">
+                <Shield className="w-4 h-4 text-primary" />
+                <span className="text-sm">Secure</span>
+              </div>
+              <div className="flex items-center gap-2 text-glass-muted">
+                <CheckCircle className="w-4 h-4 text-primary" />
+                <span className="text-sm">Free</span>
+              </div>
+            </div>
+            <p className="text-xs text-glass-muted">
+              Your data is encrypted and secure. We never share your information.
+            </p>
           </div>
         </div>
       </div>

@@ -1030,7 +1030,7 @@ export default function DashboardPage() {
                   type="text"
                   value={editListForm.name}
                   onChange={(e) => setEditListForm({ ...editListForm, name: e.target.value })}
-                  className="w-full glass border-0 rounded-lg px-4 py-2 text-glass placeholder-glass-muted"
+                  className="w-full glass-input"
                   placeholder="Enter list name"
                   maxLength={100}
                 />
@@ -1164,7 +1164,7 @@ export default function DashboardPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted"
+                className="w-full glass-input"
                 placeholder="Type to search lists..."
                 autoFocus
               />
@@ -1232,7 +1232,7 @@ export default function DashboardPage() {
                 type="text"
                 value={shareCode}
                 onChange={(e) => setShareCode(e.target.value.toUpperCase())}
-                className="w-full glass border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted font-mono"
+                className="w-full glass-input font-mono"
                 placeholder="Enter 6-character code"
                 maxLength={10}
                 autoFocus

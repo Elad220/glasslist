@@ -69,18 +69,18 @@ export default function OfflineIndicator({
       case 'offline':
         return {
           icon: WifiOff,
-          color: 'text-red-500',
-          bgColor: 'bg-red-500/20',
-          borderColor: 'border-red-500/30',
+          color: 'text-error',
+          bgColor: 'bg-error/20',
+          borderColor: 'border-error/30',
           label: 'Offline',
           description: 'Working offline. Changes will sync when online.'
         }
       case 'syncing':
         return {
           icon: RefreshCw,
-          color: 'text-blue-500',
-          bgColor: 'bg-blue-500/20',
-          borderColor: 'border-blue-500/30',
+          color: 'text-info',
+          bgColor: 'bg-info/20',
+          borderColor: 'border-info/30',
           label: 'Syncing',
           description: 'Syncing your changes...',
           animate: true
@@ -88,18 +88,18 @@ export default function OfflineIndicator({
       case 'error':
         return {
           icon: AlertCircle,
-          color: 'text-yellow-500',
-          bgColor: 'bg-yellow-500/20',
-          borderColor: 'border-yellow-500/30',
+          color: 'text-warning',
+          bgColor: 'bg-warning/20',
+          borderColor: 'border-warning/30',
           label: 'Sync Error',
           description: 'Some changes failed to sync. Tap to retry.'
         }
       case 'pending':
         return {
           icon: Upload,
-          color: 'text-orange-500',
-          bgColor: 'bg-orange-500/20',
-          borderColor: 'border-orange-500/30',
+          color: 'text-warning',
+          bgColor: 'bg-warning/20',
+          borderColor: 'border-warning/30',
           label: `${pendingCount} Pending`,
           description: `${pendingCount} change${pendingCount !== 1 ? 's' : ''} waiting to sync.`
         }
@@ -107,9 +107,9 @@ export default function OfflineIndicator({
       default:
         return {
           icon: CheckCircle,
-          color: 'text-green-500',
-          bgColor: 'bg-green-500/20',
-          borderColor: 'border-green-500/30',
+          color: 'text-success',
+          bgColor: 'bg-success/20',
+          borderColor: 'border-success/30',
           label: 'Synced',
           description: lastSync ? `Last sync: ${formatLastSync()}` : 'All changes synced.'
         }
@@ -146,7 +146,7 @@ export default function OfflineIndicator({
       <div
         onClick={handleIndicatorClick}
         className={`
-          glass-card cursor-pointer transition-all duration-200 hover:scale-105
+          glass-card cursor-pointer transition-all duration-300 hover:scale-105
           ${statusConfig.bgColor} ${statusConfig.borderColor}
           border rounded-lg p-3 shadow-lg backdrop-blur-md
         `}
@@ -159,7 +159,7 @@ export default function OfflineIndicator({
             <div className={`text-sm font-medium ${statusConfig.color}`}>
               {statusConfig.label}
             </div>
-            <div className="text-xs text-gray-300 opacity-80">
+            <div className="text-xs text-glass-muted">
               {statusConfig.description}
             </div>
           </div>
@@ -168,13 +168,13 @@ export default function OfflineIndicator({
 
       {/* Details panel */}
       {showDetailsPanel && (
-        <div className="glass-card mt-2 p-4 rounded-lg border border-white/20 backdrop-blur-md">
+        <div className="glass-card mt-2 p-4 rounded-lg border border-glass-white-border backdrop-blur-md animate-slide-up">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-glass-heading">Sync Status</span>
               <button
                 onClick={() => setShowDetailsPanel(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-glass-muted hover:text-glass-heading transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -182,36 +182,36 @@ export default function OfflineIndicator({
             
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-300">Connection:</span>
-                <span className={isOnline ? 'text-green-400' : 'text-red-400'}>
+                <span className="text-glass-muted">Connection:</span>
+                <span className={isOnline ? 'text-success' : 'text-error'}>
                   {isOnline ? 'Online' : 'Offline'}
                 </span>
               </div>
               
               <div className="flex justify-between">
-                <span className="text-gray-300">Sync Status:</span>
-                <span className={syncing ? 'text-blue-400' : 'text-green-400'}>
+                <span className="text-glass-muted">Sync Status:</span>
+                <span className={syncing ? 'text-info' : 'text-success'}>
                   {syncing ? 'Syncing...' : 'Idle'}
                 </span>
               </div>
               
               <div className="flex justify-between">
-                <span className="text-gray-300">Pending Changes:</span>
-                <span className="text-orange-400">{pendingCount}</span>
+                <span className="text-glass-muted">Pending Changes:</span>
+                <span className="text-warning">{pendingCount}</span>
               </div>
               
               {lastSync && (
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Last Sync:</span>
-                  <span className="text-gray-300">{formatLastSync()}</span>
+                  <span className="text-glass-muted">Last Sync:</span>
+                  <span className="text-glass-muted">{formatLastSync()}</span>
                 </div>
               )}
               
               {errors.length > 0 && (
-                <div className="mt-3 p-2 bg-red-500/20 border border-red-500/30 rounded">
-                  <div className="text-red-400 text-xs font-medium mb-1">Errors:</div>
+                <div className="mt-3 p-3 bg-error/20 border border-error/30 rounded-lg">
+                  <div className="text-error text-xs font-medium mb-1">Errors:</div>
                   {errors.map((error, index) => (
-                    <div key={index} className="text-red-300 text-xs">{error}</div>
+                    <div key={index} className="text-error/80 text-xs">{error}</div>
                   ))}
                 </div>
               )}
@@ -221,8 +221,8 @@ export default function OfflineIndicator({
               <button
                 onClick={() => forceSync()}
                 disabled={syncing || !isOnline}
-                className="flex-1 px-3 py-1.5 text-xs bg-blue-500/20 border border-blue-500/30 
-                         text-blue-300 rounded hover:bg-blue-500/30 disabled:opacity-50 
+                className="flex-1 px-3 py-1.5 text-xs glass-button bg-info/20 border-info/30 
+                         text-info rounded hover:bg-info/30 disabled:opacity-50 
                          disabled:cursor-not-allowed transition-colors"
               >
                 {syncing ? 'Syncing...' : 'Force Sync'}
@@ -254,10 +254,10 @@ export function CompactOfflineIndicator({ className = '' }: { className?: string
   if (!isClient) return null
 
   const getStatusColor = () => {
-    if (!isOnline) return 'text-red-400'
-    if (syncing) return 'text-blue-400'
-    if (pendingCount > 0) return 'text-orange-400'
-    return 'text-green-400'
+    if (!isOnline) return 'text-error'
+    if (syncing) return 'text-info'
+    if (pendingCount > 0) return 'text-warning'
+    return 'text-success'
   }
 
   const getStatusIcon = () => {
@@ -273,7 +273,7 @@ export function CompactOfflineIndicator({ className = '' }: { className?: string
     <div className={`flex items-center gap-1 ${className}`}>
       <Icon className={`w-4 h-4 ${getStatusColor()} ${syncing ? 'animate-spin' : ''}`} />
       {pendingCount > 0 && (
-        <span className="text-xs text-orange-400 font-medium">
+        <span className="text-xs text-warning font-medium">
           {pendingCount}
         </span>
       )}
@@ -374,21 +374,21 @@ export function SyncNotification() {
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <div className={`
-        glass-card flex items-center gap-3 p-4 rounded-lg border backdrop-blur-md
-        ${isError ? 'border-red-500/30 bg-red-500/20' : 'border-green-500/30 bg-green-500/20'}
+        glass-card flex items-center gap-3 p-4 rounded-lg border backdrop-blur-md animate-slide-up
+        ${isError ? 'border-error/30 bg-error/20' : 'border-success/30 bg-success/20'}
       `}>
-        <Icon className={`w-5 h-5 ${isError ? 'text-red-400' : 'text-green-400'}`} />
+        <Icon className={`w-5 h-5 ${isError ? 'text-error' : 'text-success'}`} />
         <div>
-          <div className={`text-sm font-medium ${isError ? 'text-red-300' : 'text-green-300'}`}>
+          <div className={`text-sm font-medium ${isError ? 'text-error' : 'text-success'}`}>
             {isError ? 'Sync Error' : 'Sync Complete'}
           </div>
-          <div className="text-xs text-gray-300">
+          <div className="text-xs text-glass-muted">
             {isError ? errors[0] : 'All changes synced successfully'}
           </div>
         </div>
         <button
           onClick={() => setShowNotification(false)}
-          className="text-gray-400 hover:text-white"
+          className="text-glass-muted hover:text-glass-heading transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
