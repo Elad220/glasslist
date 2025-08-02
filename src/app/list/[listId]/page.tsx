@@ -2423,11 +2423,11 @@ export default function ListPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-green-500/20 to-blue-500/20 flex items-center justify-center animate-bounce-in">
-                  <Plus className="w-7 h-7 text-green-600 animate-pulse" />
+                <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center animate-bounce-in">
+                  <Plus className="w-7 h-7 text-primary animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-glass-heading bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Add New Item</h3>
+                  <h3 className="text-2xl font-bold text-glass-heading bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">Add New Item</h3>
                   <p className="text-sm text-glass-muted animate-slide-up">Add an item to your shopping list</p>
                 </div>
               </div>
@@ -2585,11 +2585,11 @@ export default function ListPage() {
                 <button 
                   onClick={handleAddItem}
                   disabled={!newItem.name.trim() || isUploading}
-                  className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 hover:from-green-500/30 hover:to-blue-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-green-700 font-medium"
+                  className="flex-1 glass-button px-4 py-2 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
                 >
                   {isUploading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                       Adding...
                     </>
                   ) : (
