@@ -599,3 +599,62 @@ button:focus {
   border: 1px solid rgb(255 255 255 / 0.25);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
 }
+
+/* Collapsible Category Animations */
+.category-collapsible {
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+  overflow: hidden;
+}
+
+.category-collapsible.collapsed {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.category-collapsible.expanded {
+  max-height: 2000px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.category-header-button {
+  transition: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.category-header-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+.category-header-button:active {
+  transform: translateY(0);
+}
+
+.category-chevron {
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.category-chevron.rotated {
+  transform: rotate(90deg);
+}
+
+/* Mobile-friendly action buttons */
+@media (max-width: 640px) {
+  .action-buttons-container {
+    gap: 0.5rem;
+  }
+  
+  .action-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .search-container {
+    gap: 0.5rem;
+  }
+  
+  .search-toggle-button {
+    padding: 0.625rem;
+  }
+}

@@ -47,7 +47,9 @@ import {
   Receipt,
   PackageCheck,
   Trash,
-  ThermometerSnowflake
+  ThermometerSnowflake,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react'
 
 import { 
@@ -178,6 +180,7 @@ export default function ListPage() {
   const [categoryFilter, setCategoryFilter] = useState('all')
   const [hideCheckedItems, setHideCheckedItems] = useState(false)
   const [orderedCategories, setOrderedCategories] = useState<string[]>([])
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set())
   const [newItem, setNewItem] = useState({
     name: '',
     amount: 1,
@@ -1019,6 +1022,29 @@ export default function ListPage() {
     }
   };
 
+  const toggleCategoryCollapse = (category: string) => {
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(category)) {
+        newSet.delete(category)
+      } else {
+        newSet.add(category)
+      }
+      return newSet
+    })
+  }
+
+  const toggleAllCategories = () => {
+    const allCollapsed = orderedCategories.every(cat => collapsedCategories.has(cat))
+    if (allCollapsed) {
+      setCollapsedCategories(new Set())
+    } else {
+      setCollapsedCategories(new Set(orderedCategories))
+    }
+  }
+
+  const areAllCategoriesCollapsed = orderedCategories.every(cat => collapsedCategories.has(cat))
+
   // Voice recording functions
   const startRecording = async () => {
     try {
@@ -1510,15 +1536,31 @@ export default function ListPage() {
         {!isShoppingMode && (
           <div className="glass-card p-4 mb-6">
             <div className="flex flex-col gap-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="Search items..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="glass-input w-full py-2 has-left-icon"
-                />
+              <div className="search-container flex items-center gap-2 sm:gap-3">
+                <div className="flex-1 relative min-w-0">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-glass-muted pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search items..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="glass-input w-full py-2 px-3 pl-10 has-left-icon"
+                  />
+                </div>
+                
+                {/* Compact Hide Checked Toggle */}
+                <button 
+                  onClick={() => setHideCheckedItems(!hideCheckedItems)}
+                  className={`search-toggle-button glass-button p-2.5 transition-all duration-200 flex-shrink-0 ${
+                    hideCheckedItems 
+                      ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg' 
+                      : 'hover:bg-primary/20'
+                  }`}
+                  title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
+                  aria-label={hideCheckedItems ? "Show checked items" : "Hide checked items"}
+                >
+                  <CheckCircle className={`w-4 h-4 transition-transform ${hideCheckedItems ? 'scale-110' : ''}`} />
+                </button>
               </div>
               
               {/* Category Pills */}
@@ -1571,10 +1613,10 @@ export default function ListPage() {
 
         {/* Add Item Actions */}
         {!isShoppingMode && (
-          <div className="flex gap-3 mb-6 animate-slide-up">
+          <div className="action-buttons-container flex flex-wrap gap-3 mb-6 animate-slide-up">
             <button 
               onClick={() => setShowAddItem(true)}
-              className="glass-premium px-4 py-3 flex items-center gap-2 hover-glow micro-interaction animate-scale-in"
+              className="action-button glass-premium px-4 py-3 flex items-center gap-2 hover-glow micro-interaction animate-scale-in"
             >
               <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
               Add Item
@@ -1582,23 +1624,33 @@ export default function ListPage() {
             
             <button 
               onClick={() => setShowAiAdd(true)}
-              className="glass-premium px-4 py-3 flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 hover-lift micro-interaction animate-scale-in stagger-1"
+              className="action-button glass-premium px-4 py-3 flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 hover-lift micro-interaction animate-scale-in stagger-1"
             >
               <Sparkles className="w-4 h-4 animate-pulse" />
               AI Quick Add
             </button>
 
             <button 
-              onClick={() => setHideCheckedItems(!hideCheckedItems)}
-              className={`glass-premium px-4 py-3 flex items-center gap-2 transition-all duration-300 micro-interaction animate-scale-in stagger-2 ${
-                hideCheckedItems 
-                  ? 'bg-primary/30 border-2 border-primary/50 text-primary shadow-lg animate-pulse-glow'
+              onClick={toggleAllCategories}
+              className={`action-button glass-premium px-3 py-3 flex items-center gap-1 sm:gap-2 micro-interaction animate-scale-in stagger-2 transition-all duration-200 ${
+                areAllCategoriesCollapsed
+                  ? 'bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30'
                   : 'hover:bg-primary/10'
               }`}
-              title={hideCheckedItems ? "Show checked items" : "Hide checked items"}
+              title={areAllCategoriesCollapsed ? "Expand all categories" : "Collapse all categories"}
+              aria-label={areAllCategoriesCollapsed ? "Expand all categories" : "Collapse all categories"}
             >
-              <CheckCircle className={`w-4 h-4 transition-transform ${hideCheckedItems ? 'scale-110' : ''}`} />
-              {hideCheckedItems ? 'Show Checked' : 'Hide Checked'}
+              {areAllCategoriesCollapsed ? (
+                <>
+                  <ChevronDown className="w-4 h-4 transition-transform duration-200" />
+                  <span className="text-sm">Expand</span>
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="w-4 h-4 transition-transform duration-200" />
+                  <span className="text-sm">Collapse</span>
+                </>
+              )}
             </button>
           </div>
         )}
@@ -1638,26 +1690,62 @@ export default function ListPage() {
                   {/* Category Header */}
                   <div className={`border-b border-glass-white-border ${isShoppingMode ? 'p-6' : 'p-4'}`}>
                     <div className="flex items-center gap-3">
-                      <div className={`bg-primary/20 rounded-lg flex items-center justify-center ${isShoppingMode ? 'w-12 h-12' : 'w-8 h-8'}`}>
-                        <CategoryIcon className={`text-primary ${isShoppingMode ? 'w-6 h-6' : 'w-4 h-4'}`} />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className={`font-semibold text-glass-heading ${isShoppingMode ? 'text-xl' : ''}`}>{category}</h3>
-                        <p className={`text-glass-muted ${isShoppingMode ? 'text-sm' : 'text-xs'}`}>
-                          {completedInCategory} of {totalInCategory} items
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className={`font-bold text-glass px-3 py-1 bg-glass-white-light rounded-full ${isShoppingMode ? 'text-base' : 'text-sm'}`}>
-                          {totalInCategory}
-                        </span>
-                      </div>
+                      <button
+                        onClick={() => toggleCategoryCollapse(category)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            toggleCategoryCollapse(category)
+                          }
+                        }}
+                        className={`category-header-button flex items-center gap-3 flex-1 rounded-lg p-1 ${
+                          collapsedCategories.has(category) ? 'bg-glass-white-light/30' : ''
+                        }`}
+                        aria-expanded={!collapsedCategories.has(category)}
+                        aria-label={`${collapsedCategories.has(category) ? 'Expand' : 'Collapse'} ${category} category`}
+                        tabIndex={0}
+                      >
+                        <div className={`bg-primary/20 rounded-lg flex items-center justify-center ${isShoppingMode ? 'w-12 h-12' : 'w-8 h-8'}`}>
+                          <CategoryIcon className={`text-primary ${isShoppingMode ? 'w-6 h-6' : 'w-4 h-4'}`} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <h3 className={`font-semibold text-glass-heading ${isShoppingMode ? 'text-xl' : ''}`}>
+                            {category}
+                            {collapsedCategories.has(category) && (
+                              <span className="ml-2 text-sm font-normal text-glass-muted">
+                                ({totalInCategory} items)
+                              </span>
+                            )}
+                          </h3>
+                          {!collapsedCategories.has(category) && (
+                            <p className={`text-glass-muted ${isShoppingMode ? 'text-sm' : 'text-xs'}`}>
+                              {completedInCategory} of {totalInCategory} items
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className={`font-bold text-glass px-3 py-1 bg-glass-white-light rounded-full ${isShoppingMode ? 'text-base' : 'text-sm'}`}>
+                            {totalInCategory}
+                          </span>
+                        </div>
+                        <div className={`category-chevron ${collapsedCategories.has(category) ? 'rotated' : ''}`}>
+                          {collapsedCategories.has(category) ? (
+                            <ChevronRight className={`text-glass-muted ${isShoppingMode ? 'w-6 h-6' : 'w-4 h-4'}`} />
+                          ) : (
+                            <ChevronDown className={`text-glass-muted ${isShoppingMode ? 'w-6 h-6' : 'w-4 h-4'}`} />
+                          )}
+                        </div>
+                      </button>
                     </div>
                   </div>
                   
                   {/* Category Items */}
-                  <div className={isShoppingMode ? "space-y-2 p-2" : "divide-y divide-glass-white-border"}>
-                    {categoryItems.map((item: any) => (
+                  <div 
+                    className={`category-collapsible ${isShoppingMode ? "space-y-2 p-2" : "divide-y divide-glass-white-border"} ${
+                      collapsedCategories.has(category) ? 'collapsed' : 'expanded'
+                    }`}
+                  >
+                      {categoryItems.map((item: any) => (
                       isShoppingMode ? (
                         // Shopping Mode Layout - Large, touch-friendly
                         <button
