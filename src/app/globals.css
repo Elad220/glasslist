@@ -658,3 +658,34 @@ button:focus {
     padding: 0.625rem;
   }
 }
+
+/* Primary color utilities for Tailwind */
+.bg-primary {
+  background-color: var(--color-primary);
+}
+
+.bg-primary\/20 {
+  background-color: oklch(from var(--color-primary) l c h / 0.2);
+}
+
+.bg-primary\/30 {
+  background-color: oklch(from var(--color-primary) l c h / 0.3);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.border-primary {
+  border-color: var(--color-primary);
+}
+
+.from-primary {
+  --tw-gradient-from: var(--color-primary) var(--tw-gradient-from-position);
+  --tw-gradient-to: oklch(from var(--color-primary) l c h / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.to-primary-light {
+  --tw-gradient-to: var(--color-primary-light) var(--tw-gradient-to-position);
+}
