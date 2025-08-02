@@ -736,6 +736,105 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Shopping Lists - Moved to top */}
+        <div className="mb-8">
+          <div className="glass-card p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold flex items-center gap-2 text-glass-heading">
+                <ShoppingCart className="w-5 h-5" />
+                Your Shopping Lists
+              </h2>
+              <Link 
+                href="/list/new"
+                className="glass-button px-4 py-2 flex items-center gap-2 text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                New List
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {shoppingLists.map((list) => (
+                <div
+                  key={list.id}
+                  className="glass-card p-4 hover:scale-[1.02] transition-all duration-200 relative group"
+                >
+                  <Link
+                    href={`/list/${list.id}`}
+                    className="block"
+                  >
+                    <div className="pr-20">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="font-semibold text-glass-heading">{list.name}</h3>
+                        {list.is_shared && (
+                          <div className="flex items-center gap-1 text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                            <Share2 className="w-3 h-3" />
+                            Shared
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-glass-muted text-sm mb-3">{list.description}</p>
+                      <div className="flex items-center gap-4 text-xs text-glass-muted mb-3">
+                        <span>{list.itemCount || 0} items</span>
+                        <span>{list.completedCount || 0} completed</span>
+                        <span>{formatDate(list.created_at)}</span>
+                      </div>
+                      
+                      {/* Progress Bar - Moved down */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <div className="w-full h-2 bg-glass-white-light rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary transition-all duration-300"
+                              style={{ 
+                                width: `${getCompletionPercentage(
+                                  list.completedCount || 0,
+                                  list.itemCount || 0
+                                )}%` 
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                        <div className="text-sm font-bold text-primary">
+                          {getCompletionPercentage(
+                            list.completedCount || 0,
+                            list.itemCount || 0
+                          )}%
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  
+                  {/* Action buttons */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all duration-300">
+                    <button
+                      onClick={(e) => handleExportSingleList(list, e)}
+                      className="p-2 glass-button hover:bg-green-500/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm"
+                      title="Export list"
+                    >
+                      <Download className="w-4 h-4 text-green-600" />
+                    </button>
+                    <button
+                      onClick={(e) => handleEditList(list, e)}
+                      className="p-2.5 glass-button hover:bg-primary/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm"
+                      title="Edit list"
+                    >
+                      <Edit className="w-5 h-5 text-primary" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteList(list, e)}
+                      className="p-2.5 glass-button hover:bg-red-500/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm border border-red-200/30"
+                      title="Delete list"
+                    >
+                      <Trash2 className="w-5 h-5 text-red-500" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Analytics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="glass-card p-6 text-center">
@@ -763,109 +862,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Main Content Grid */}
+        {/* AI Insights Section */}
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Shopping Lists */}
-          <div className="lg:col-span-2">
-            <div className="glass-card p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold flex items-center gap-2 text-glass-heading">
-                  <ShoppingCart className="w-5 h-5" />
-                  Your Shopping Lists
-                </h2>
-                <Link 
-                  href="/list/new"
-                  className="glass-button px-4 py-2 flex items-center gap-2 text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  New List
-                </Link>
-              </div>
-
-              <div className="space-y-4">
-                {shoppingLists.map((list) => (
-                  <div
-                    key={list.id}
-                    className="glass-card p-4 hover:scale-[1.02] transition-all duration-200 relative group"
-                  >
-                    <Link
-                      href={`/list/${list.id}`}
-                      className="block"
-                    >
-                      <div className="pr-20">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="font-semibold text-glass-heading">{list.name}</h3>
-                          {list.is_shared && (
-                            <div className="flex items-center gap-1 text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                              <Share2 className="w-3 h-3" />
-                              Shared
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-glass-muted text-sm mb-3">{list.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-glass-muted mb-3">
-                          <span>{list.itemCount || 0} items</span>
-                          <span>{list.completedCount || 0} completed</span>
-                          <span>{formatDate(list.created_at)}</span>
-                        </div>
-                        
-                        {/* Progress Bar - Moved down */}
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <div className="w-full h-2 bg-glass-white-light rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-primary transition-all duration-300"
-                                style={{ 
-                                  width: `${getCompletionPercentage(
-                                    list.completedCount || 0,
-                                    list.itemCount || 0
-                                  )}%` 
-                                }}
-                              ></div>
-                            </div>
-                          </div>
-                          <div className="text-sm font-bold text-primary">
-                            {getCompletionPercentage(
-                              list.completedCount || 0,
-                              list.itemCount || 0
-                            )}%
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                    
-                    {/* Action buttons */}
-                    <div className="absolute top-3 right-3 flex items-center gap-1 opacity-60 group-hover:opacity-100 transition-all duration-300">
-                      <button
-                        onClick={(e) => handleExportSingleList(list, e)}
-                        className="p-2 glass-button hover:bg-green-500/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm"
-                        title="Export list"
-                      >
-                        <Download className="w-4 h-4 text-green-600" />
-                      </button>
-                      <button
-                        onClick={(e) => handleEditList(list, e)}
-                        className="p-2.5 glass-button hover:bg-primary/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm"
-                        title="Edit list"
-                      >
-                        <Edit className="w-5 h-5 text-primary" />
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteList(list, e)}
-                        className="p-2.5 glass-button hover:bg-red-500/20 hover:scale-110 rounded-lg transition-all duration-200 shadow-sm border border-red-200/30"
-                        title="Delete list"
-                      >
-                        <Trash2 className="w-5 h-5 text-red-500" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Insights Sidebar */}
-          <div className="space-y-6">
+          {/* Insights and Analytics */}
+          <div className="lg:col-span-3 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* AI-Powered Insights */}
             {user && profile?.ai_insights_enabled ? (
               <GenAIInsights 
