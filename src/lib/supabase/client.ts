@@ -27,6 +27,27 @@ export const createSupabaseClient = () => {
 
 export const supabase = createSupabaseClient()
 
+// Helper function to update shopping list timestamp
+async function updateListTimestamp(listId: string) {
+  if (!supabase) {
+    console.error('Cannot update list timestamp: Supabase client not available')
+    return
+  }
+  
+  try {
+    const { error } = await supabase
+      .from('shopping_lists')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', listId)
+    
+    if (error) {
+      console.error('Failed to update list timestamp:', error)
+    }
+  } catch (err) {
+    console.error('Error updating list timestamp:', err)
+  }
+}
+
 // Re-export offline client functions for backward compatibility
 export const getShoppingLists = offlineClient.getShoppingLists
 export const getShoppingList = offlineClient.getShoppingList  
@@ -282,6 +303,11 @@ export async function createItemOriginal(item: NewItem) {
       return { data: null, error: errorMessage }
     }
 
+    // Update the list's timestamp
+    if (data) {
+      await updateListTimestamp(item.list_id)
+    }
+
     return { data, error: null }
 
   } catch (error) {
@@ -340,6 +366,11 @@ export async function updateItemOriginal(itemId: string, updates: UpdateItem) {
       .select()
       .single()
 
+    // Update the list's timestamp
+    if (data && !error) {
+      await updateListTimestamp(itemCheck.list_id)
+    }
+
     return { data, error }
 
   } catch (error) {
@@ -364,12 +395,34 @@ export async function toggleItemCheckedOriginal(itemId: string, isChecked: boole
 export async function deleteItemOriginal(itemId: string) {
   if (!supabase) return { error: 'Supabase not available' }
 
-  const { error } = await supabase
-    .from('items')
-    .delete()
-    .eq('id', itemId)
+  try {
+    // First get the list_id before deleting
+    const { data: item, error: fetchError } = await supabase
+      .from('items')
+      .select('list_id')
+      .eq('id', itemId)
+      .single()
+    
+    if (fetchError || !item) {
+      return { error: fetchError || 'Item not found' }
+    }
 
-  return { error }
+    // Delete the item
+    const { error } = await supabase
+      .from('items')
+      .delete()
+      .eq('id', itemId)
+
+    // Update the list's timestamp if deletion was successful
+    if (!error && item.list_id) {
+      await updateListTimestamp(item.list_id)
+    }
+
+    return { error }
+  } catch (error) {
+    console.error('deleteItem unexpected error:', error)
+    return { error: 'Unexpected error occurred' }
+  }
 }
 
 // =============================================
