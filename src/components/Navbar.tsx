@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { LayoutDashboard, Settings, LogOut, ShoppingCart, WifiOff, RefreshCw, Upload, CheckCircle, X, Sun, Moon, Monitor } from 'lucide-react'
+import { Home, Settings, LogOut, ShoppingCart, WifiOff, RefreshCw, Upload, CheckCircle, X, Sun, Moon, Monitor } from 'lucide-react'
 import { signOut } from '@/lib/supabase/auth'
 import { useSyncStatus, useOnlineStatus, usePendingChanges } from '@/lib/offline/hooks'
 import { useTheme } from '@/lib/theme/context'
@@ -26,7 +26,7 @@ export default function Navbar() {
   }
 
   const navItems = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard', label: 'Dashboard', icon: Home },
     { href: '/settings', label: 'Settings', icon: Settings },
   ]
 
