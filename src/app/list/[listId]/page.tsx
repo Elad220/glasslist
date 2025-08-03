@@ -1422,7 +1422,7 @@ export default function ListPage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="flex-1">
-              <h1 className="text-2xl font-bold animate-scale-in bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style={{ textShadow: 'none' }}>{list.name}</h1>
+              <h1 className="text-2xl font-bold text-glass-heading animate-scale-in bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent" style={{ textShadow: 'none' }}>{list.name}</h1>
               {list.description && (
                 <p className="text-glass-muted animate-slide-up stagger-1">{list.description}</p>
               )}
