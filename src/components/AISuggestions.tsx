@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Sparkles, Plus, Brain, TrendingUp, Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { Sparkles, Plus, Brain, TrendingUp, Clock, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react'
 import { getAISuggestions, addSuggestedItemToList, type SuggestedItem } from '../lib/ai/suggestions'
 import { useToast } from '../lib/toast/context'
 import { supabase } from '../lib/supabase/client'
+import { aiSuggestionsCooldown } from '../lib/ai/cooldown'
 
 interface AISuggestionsProps {
   userId: string
@@ -18,14 +19,46 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
   const [selectedList, setSelectedList] = useState<string>('')
   const [lists, setLists] = useState<any[]>([])
   const [addingItems, setAddingItems] = useState<Set<string>>(new Set())
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [cooldownText, setCooldownText] = useState<string>('')
+  const [canRefresh, setCanRefresh] = useState(false)
   const toast = useToast()
 
   useEffect(() => {
     if (userId && apiKey) {
-      loadSuggestions()
+      // Check for cached data first
+      const cachedData = aiSuggestionsCooldown.getCachedData()
+      if (cachedData && cachedData.suggestions) {
+        setSuggestions(cachedData.suggestions)
+        setLastUpdated(aiSuggestionsCooldown.getLastUpdateTime())
+      } else if (!aiSuggestionsCooldown.isInCooldown()) {
+        // Only load if not in cooldown
+        loadSuggestions()
+      }
       loadLists()
     }
   }, [userId, apiKey])
+
+  // Update cooldown status periodically
+  useEffect(() => {
+    const updateCooldownStatus = () => {
+      setCanRefresh(!aiSuggestionsCooldown.isInCooldown())
+      setCooldownText(aiSuggestionsCooldown.getLastUpdateText())
+    }
+    
+    updateCooldownStatus()
+    const interval = setInterval(updateCooldownStatus, 60000) // Update every minute
+    
+    return () => clearInterval(interval)
+  }, [lastUpdated])
+
+  const handleManualRefresh = async () => {
+    if (loading) return
+    
+    // Force refresh by clearing cooldown
+    aiSuggestionsCooldown.forceRefresh()
+    await loadSuggestions()
+  }
 
   const loadSuggestions = async () => {
     if (!userId || !apiKey) return
@@ -35,6 +68,9 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
       const response = await getAISuggestions(userId, apiKey, 8)
       if (response.success) {
         setSuggestions(response.items)
+        setLastUpdated(new Date())
+        // Update cooldown with cached data
+        aiSuggestionsCooldown.updateCooldown({ suggestions: response.items })
       } else {
         toast.error('Failed to load suggestions', response.error || 'Unknown error')
       }
@@ -153,16 +189,34 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
         </div>
         
         <button
-          onClick={loadSuggestions}
-          disabled={loading}
-          className="glass-button px-3 py-2 text-sm bg-purple-500/10 border-purple-200/30 hover:bg-purple-500/20"
+          onClick={handleManualRefresh}
+          disabled={loading || (!canRefresh && aiSuggestionsCooldown.isInCooldown())}
+          className={`glass-button px-3 py-2 text-sm ${
+            canRefresh 
+              ? 'bg-purple-500/10 border-purple-200/30 hover:bg-purple-500/20' 
+              : 'bg-gray-500/10 border-gray-200/30 opacity-50 cursor-not-allowed'
+          }`}
+          title={canRefresh ? "Refresh suggestions" : aiSuggestionsCooldown.getTimeRemainingText()}
         >
           {loading ? (
             <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
           ) : (
-            <Sparkles className="w-4 h-4" />
+            <RefreshCw className="w-4 h-4" />
           )}
         </button>
+      </div>
+
+      {/* Cooldown Status */}
+      <div className="flex items-center justify-between text-xs text-glass-muted mb-4">
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3" />
+          <span>Last updated: {cooldownText}</span>
+        </div>
+        {!canRefresh && (
+          <span className="text-amber-600">
+            {aiSuggestionsCooldown.getTimeRemainingText()}
+          </span>
+        )}
       </div>
 
       {/* List Selection */}

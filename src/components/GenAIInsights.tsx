@@ -20,6 +20,7 @@ import {
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { supabase } from '../lib/supabase/client'
 import { useToast } from '../lib/toast/context'
+import { genAIInsightsCooldown } from '../lib/ai/cooldown'
 
 interface Insight {
   type: 'trend' | 'recommendation' | 'pattern' | 'alert' | 'achievement'
@@ -52,13 +53,48 @@ export default function GenAIInsights({
   const [insights, setInsights] = useState<Insight[]>([])
   const [loading, setLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [cooldownText, setCooldownText] = useState<string>('')
+  const [canRefresh, setCanRefresh] = useState(false)
   const toast = useToast()
 
   useEffect(() => {
     if (userId && analytics && shoppingLists.length > 0) {
-      generateInsights()
+      // Check for cached data first
+      const cachedData = genAIInsightsCooldown.getCachedData()
+      if (cachedData && cachedData.insights) {
+        setInsights(cachedData.insights)
+        setLastUpdated(genAIInsightsCooldown.getLastUpdateTime())
+      } else if (!genAIInsightsCooldown.isInCooldown()) {
+        // Only generate if not in cooldown
+        generateInsights()
+      }
     }
   }, [userId, analytics, shoppingLists])
+
+  // Update cooldown status periodically
+  useEffect(() => {
+    const updateCooldownStatus = () => {
+      setCanRefresh(!genAIInsightsCooldown.isInCooldown())
+      setCooldownText(genAIInsightsCooldown.getLastUpdateText())
+    }
+    
+    updateCooldownStatus()
+    const interval = setInterval(updateCooldownStatus, 60000) // Update every minute
+    
+    return () => clearInterval(interval)
+  }, [lastUpdated])
+
+  const handleManualRefresh = async () => {
+    if (loading) return
+    
+    // Force refresh by clearing cooldown
+    genAIInsightsCooldown.forceRefresh()
+    await generateInsights()
+    
+    if (onRefresh) {
+      onRefresh()
+    }
+  }
 
   const generateInsights = async () => {
     if (!userId) return
@@ -73,6 +109,8 @@ export default function GenAIInsights({
         const demoInsights = generateDemoInsights(analytics, shoppingLists)
         setInsights(demoInsights)
         setLastUpdated(new Date())
+        // Update cooldown with cached data
+        genAIInsightsCooldown.updateCooldown({ insights: demoInsights })
         return
       }
 
@@ -109,6 +147,8 @@ export default function GenAIInsights({
       const aiInsights = await generateAIInsights(historyData, analytics, shoppingLists, apiKey)
       setInsights(aiInsights)
       setLastUpdated(new Date())
+      // Update cooldown with cached data
+      genAIInsightsCooldown.updateCooldown({ insights: aiInsights })
     } catch (error) {
       console.error('Error generating insights:', error)
       toast.error('Failed to generate insights', 'Please try again later')
@@ -419,10 +459,14 @@ Example output:
         </div>
         
         <button
-          onClick={generateInsights}
-          disabled={loading}
-          className="glass-button px-3 py-2 text-sm bg-blue-500/10 border-blue-200/30 hover:bg-blue-500/20"
-          title="Refresh insights"
+          onClick={handleManualRefresh}
+          disabled={loading || (!canRefresh && genAIInsightsCooldown.isInCooldown())}
+          className={`glass-button px-3 py-2 text-sm ${
+            canRefresh 
+              ? 'bg-blue-500/10 border-blue-200/30 hover:bg-blue-500/20' 
+              : 'bg-gray-500/10 border-gray-200/30 opacity-50 cursor-not-allowed'
+          }`}
+          title={canRefresh ? "Refresh insights" : genAIInsightsCooldown.getTimeRemainingText()}
         >
           {loading ? (
             <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
@@ -432,12 +476,17 @@ Example output:
         </button>
       </div>
 
-      {lastUpdated && (
-        <div className="text-xs text-glass-muted mb-4 flex items-center gap-1">
+      <div className="flex items-center justify-between text-xs text-glass-muted mb-4">
+        <div className="flex items-center gap-1">
           <Clock className="w-3 h-3" />
-          Last updated: {lastUpdated.toLocaleTimeString()}
+          <span>Last updated: {cooldownText}</span>
         </div>
-      )}
+        {!canRefresh && (
+          <span className="text-amber-600">
+            {genAIInsightsCooldown.getTimeRemainingText()}
+          </span>
+        )}
+      </div>
 
       {loading ? (
         <div className="space-y-4">

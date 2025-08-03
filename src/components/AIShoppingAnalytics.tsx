@@ -22,6 +22,7 @@ import {
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { supabase } from '../lib/supabase/client'
 import { useToast } from '../lib/toast/context'
+import { aiShoppingAnalyticsCooldown } from '../lib/ai/cooldown'
 
 interface AnalyticsMetric {
   label: string
@@ -55,13 +56,45 @@ export default function AIShoppingAnalytics({
   const [trends, setTrends] = useState<TrendData[]>([])
   const [loading, setLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [cooldownText, setCooldownText] = useState<string>('')
+  const [canRefresh, setCanRefresh] = useState(false)
   const toast = useToast()
 
   useEffect(() => {
     if (userId && analytics && shoppingLists.length > 0) {
-      generateAnalytics()
+      // Check for cached data first
+      const cachedData = aiShoppingAnalyticsCooldown.getCachedData()
+      if (cachedData && cachedData.metrics && cachedData.trends) {
+        setMetrics(cachedData.metrics)
+        setTrends(cachedData.trends)
+        setLastUpdated(aiShoppingAnalyticsCooldown.getLastUpdateTime())
+      } else if (!aiShoppingAnalyticsCooldown.isInCooldown()) {
+        // Only generate if not in cooldown
+        generateAnalytics()
+      }
     }
   }, [userId, analytics, shoppingLists])
+
+  // Update cooldown status periodically
+  useEffect(() => {
+    const updateCooldownStatus = () => {
+      setCanRefresh(!aiShoppingAnalyticsCooldown.isInCooldown())
+      setCooldownText(aiShoppingAnalyticsCooldown.getLastUpdateText())
+    }
+    
+    updateCooldownStatus()
+    const interval = setInterval(updateCooldownStatus, 60000) // Update every minute
+    
+    return () => clearInterval(interval)
+  }, [lastUpdated])
+
+  const handleManualRefresh = async () => {
+    if (loading) return
+    
+    // Force refresh by clearing cooldown
+    aiShoppingAnalyticsCooldown.forceRefresh()
+    await generateAnalytics()
+  }
 
   const generateAnalytics = async () => {
     if (!userId) return
@@ -77,6 +110,8 @@ export default function AIShoppingAnalytics({
         setMetrics(demoMetrics)
         setTrends(demoTrends)
         setLastUpdated(new Date())
+        // Update cooldown with cached data
+        aiShoppingAnalyticsCooldown.updateCooldown({ metrics: demoMetrics, trends: demoTrends })
         return
       }
 
@@ -115,6 +150,8 @@ export default function AIShoppingAnalytics({
       setMetrics(aiMetrics)
       setTrends(aiTrends)
       setLastUpdated(new Date())
+      // Update cooldown with cached data
+      aiShoppingAnalyticsCooldown.updateCooldown({ metrics: aiMetrics, trends: aiTrends })
     } catch (error) {
       console.error('Error generating analytics:', error)
       toast.error('Failed to generate analytics', 'Please try again later')
@@ -451,10 +488,14 @@ Example output:
         </div>
         
         <button
-          onClick={generateAnalytics}
-          disabled={loading}
-          className="glass-button px-3 py-2 text-sm bg-purple-500/10 border-purple-200/30 hover:bg-purple-500/20"
-          title="Refresh analytics"
+          onClick={handleManualRefresh}
+          disabled={loading || (!canRefresh && aiShoppingAnalyticsCooldown.isInCooldown())}
+          className={`glass-button px-3 py-2 text-sm ${
+            canRefresh 
+              ? 'bg-purple-500/10 border-purple-200/30 hover:bg-purple-500/20' 
+              : 'bg-gray-500/10 border-gray-200/30 opacity-50 cursor-not-allowed'
+          }`}
+          title={canRefresh ? "Refresh analytics" : aiShoppingAnalyticsCooldown.getTimeRemainingText()}
         >
           {loading ? (
             <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
@@ -464,12 +505,17 @@ Example output:
         </button>
       </div>
 
-      {lastUpdated && (
-        <div className="text-xs text-glass-muted mb-4 flex items-center gap-1">
+      <div className="flex items-center justify-between text-xs text-glass-muted mb-4">
+        <div className="flex items-center gap-1">
           <Clock className="w-3 h-3" />
-          Last updated: {lastUpdated.toLocaleTimeString()}
+          <span>Last updated: {cooldownText}</span>
         </div>
-      )}
+        {!canRefresh && (
+          <span className="text-amber-600">
+            {aiShoppingAnalyticsCooldown.getTimeRemainingText()}
+          </span>
+        )}
+      </div>
 
       {loading ? (
         <div className="space-y-4">
