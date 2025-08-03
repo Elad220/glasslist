@@ -29,7 +29,7 @@ interface AnalyticsMetric {
   value: string | number
   change?: number
   trend: 'up' | 'down' | 'stable'
-  icon: React.ReactNode
+  iconName: string
   color: string
 }
 
@@ -61,7 +61,7 @@ export default function AIShoppingAnalytics({
   const toast = useToast()
 
   useEffect(() => {
-    if (userId && analytics && shoppingLists.length > 0) {
+    if (userId && analytics && Array.isArray(shoppingLists) && shoppingLists.length > 0) {
       // Check for cached data first
       const cachedData = aiShoppingAnalyticsCooldown.getCachedData()
       if (cachedData && cachedData.metrics && cachedData.trends) {
@@ -311,24 +311,47 @@ Example output:
     switch (trend) {
       case 'up':
         return {
-          icon: <TrendingUp className="w-5 h-5" />,
+          iconName: 'trending-up',
           color: 'text-green-500'
         }
       case 'down':
         return {
-          icon: <TrendingDown className="w-5 h-5" />,
+          iconName: 'trending-down',
           color: 'text-red-500'
         }
       case 'stable':
         return {
-          icon: <BarChart3 className="w-5 h-5" />,
+          iconName: 'bar-chart-3',
           color: 'text-blue-500'
         }
       default:
         return {
-          icon: <ChartLine className="w-5 h-5" />,
+          iconName: 'chart-line',
           color: 'text-gray-500'
         }
+    }
+  }
+
+  const renderIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'trending-up':
+        return <TrendingUp className="w-5 h-5" />
+      case 'trending-down':
+        return <TrendingDown className="w-5 h-5" />
+      case 'bar-chart-3':
+        return <BarChart3 className="w-5 h-5" />
+      case 'chart-line':
+        return <ChartLine className="w-5 h-5" />
+      case 'check-circle':
+        return <CheckCircle className="w-5 h-5" />
+      case 'shopping-cart':
+        return <ShoppingCart className="w-5 h-5" />
+      case 'package':
+        return <Package className="w-5 h-5" />
+      case 'target':
+        return <Target className="w-5 h-5" />
+      default:
+        return <ChartLine className="w-5 h-5" />
     }
   }
 
@@ -336,61 +359,61 @@ Example output:
     const demoMetrics: AnalyticsMetric[] = []
 
     // Demo shopping efficiency
-    const completionRate = Math.round((analytics.completed_items / analytics.total_items) * 100)
+    const completionRate = Math.round(((analytics?.completed_items || 0) / (analytics?.total_items || 1)) * 100)
     demoMetrics.push({
       label: 'Completion Rate',
       value: `${completionRate}%`,
       change: 12,
       trend: 'up',
-      icon: <CheckCircle className="w-5 h-5" />,
+      iconName: 'check-circle',
       color: 'text-green-500'
     })
 
     // Demo shopping frequency
     demoMetrics.push({
       label: 'Monthly Activity',
-      value: `${analytics.items_this_month} items`,
+      value: `${analytics?.items_this_month || 0} items`,
       change: 18,
       trend: 'up',
-      icon: <ShoppingCart className="w-5 h-5" />,
+      iconName: 'shopping-cart',
       color: 'text-blue-500'
     })
 
     // Demo list management
-    const activeLists = shoppingLists.filter(list => list.itemCount > 0).length
+    const activeLists = Array.isArray(shoppingLists) ? shoppingLists.filter(list => list?.itemCount > 0).length : 0
     demoMetrics.push({
       label: 'Active Lists',
-      value: `${activeLists}/${shoppingLists.length}`,
+      value: `${activeLists}/${Array.isArray(shoppingLists) ? shoppingLists.length : 0}`,
       change: 8,
       trend: 'up',
-      icon: <Package className="w-5 h-5" />,
+      iconName: 'package',
       color: 'text-purple-500'
     })
 
     // Demo category diversity
     demoMetrics.push({
       label: 'Category Focus',
-      value: analytics.most_frequent_category,
+      value: analytics?.most_frequent_category || 'Groceries',
       change: 5,
       trend: 'up',
-      icon: <Target className="w-5 h-5" />,
+      iconName: 'target',
       color: 'text-orange-500'
     })
 
     const demoTrends: TrendData[] = [
       {
         period: 'This Month',
-        value: analytics.items_this_month || 0,
+        value: analytics?.items_this_month || 0,
         change: 18
       },
       {
         period: 'Last Month',
-        value: Math.round((analytics.items_this_month || 0) * 0.85),
+        value: Math.round((analytics?.items_this_month || 0) * 0.85),
         change: 12
       },
       {
         period: '3 Months Ago',
-        value: Math.round((analytics.items_this_month || 0) * 0.7),
+        value: Math.round((analytics?.items_this_month || 0) * 0.7),
         change: 8
       }
     ]
@@ -402,51 +425,51 @@ Example output:
     const basicMetrics: AnalyticsMetric[] = []
 
     // Shopping efficiency
-    if (analytics.total_items > 0) {
-      const completionRate = Math.round((analytics.completed_items / analytics.total_items) * 100)
+    if (analytics?.total_items > 0) {
+      const completionRate = Math.round(((analytics.completed_items || 0) / analytics.total_items) * 100)
       basicMetrics.push({
         label: 'Completion Rate',
         value: `${completionRate}%`,
         change: completionRate >= 80 ? 5 : completionRate >= 60 ? 0 : -10,
         trend: completionRate >= 80 ? 'up' : completionRate >= 60 ? 'stable' : 'down',
-        icon: <CheckCircle className="w-5 h-5" />,
+        iconName: 'check-circle',
         color: completionRate >= 80 ? 'text-green-500' : completionRate >= 60 ? 'text-blue-500' : 'text-red-500'
       })
     }
 
     // Shopping frequency
-    if (analytics.items_this_month > 0) {
+    if (analytics?.items_this_month > 0) {
       basicMetrics.push({
         label: 'Monthly Activity',
         value: `${analytics.items_this_month} items`,
         change: analytics.items_this_month > 20 ? 15 : analytics.items_this_month > 10 ? 5 : -5,
         trend: analytics.items_this_month > 20 ? 'up' : analytics.items_this_month > 10 ? 'stable' : 'down',
-        icon: <ShoppingCart className="w-5 h-5" />,
+        iconName: 'shopping-cart',
         color: analytics.items_this_month > 20 ? 'text-green-500' : analytics.items_this_month > 10 ? 'text-blue-500' : 'text-red-500'
       })
     }
 
     // List management
-    if (shoppingLists.length > 0) {
-      const activeLists = shoppingLists.filter(list => list.itemCount > 0).length
+    if (Array.isArray(shoppingLists) && shoppingLists.length > 0) {
+      const activeLists = shoppingLists.filter(list => list?.itemCount > 0).length
       basicMetrics.push({
         label: 'Active Lists',
         value: `${activeLists}/${shoppingLists.length}`,
         change: activeLists > shoppingLists.length * 0.7 ? 10 : activeLists > shoppingLists.length * 0.5 ? 0 : -10,
         trend: activeLists > shoppingLists.length * 0.7 ? 'up' : activeLists > shoppingLists.length * 0.5 ? 'stable' : 'down',
-        icon: <Package className="w-5 h-5" />,
+        iconName: 'package',
         color: activeLists > shoppingLists.length * 0.7 ? 'text-green-500' : activeLists > shoppingLists.length * 0.5 ? 'text-blue-500' : 'text-red-500'
       })
     }
 
     // Category diversity
-    if (analytics.most_frequent_category) {
+    if (analytics?.most_frequent_category) {
       basicMetrics.push({
         label: 'Category Focus',
         value: analytics.most_frequent_category,
         change: 0,
         trend: 'stable',
-        icon: <Target className="w-5 h-5" />,
+        iconName: 'target',
         color: 'text-purple-500'
       })
     }
@@ -454,17 +477,17 @@ Example output:
     const basicTrends: TrendData[] = [
       {
         period: 'This Month',
-        value: analytics.items_this_month || 0,
+        value: analytics?.items_this_month || 0,
         change: 0
       },
       {
         period: 'Last Month',
-        value: Math.round((analytics.items_this_month || 0) * 0.9),
+        value: Math.round((analytics?.items_this_month || 0) * 0.9),
         change: -10
       },
       {
         period: '3 Months Ago',
-        value: Math.round((analytics.items_this_month || 0) * 0.8),
+        value: Math.round((analytics?.items_this_month || 0) * 0.8),
         change: -20
       }
     ]
@@ -520,7 +543,7 @@ Example output:
       {loading ? (
         <div className="space-y-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="glass p-4 rounded-lg animate-pulse">
+            <div key={`loading-analytics-${i}`} className="glass p-4 rounded-lg animate-pulse">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-glass-muted rounded-full"></div>
                 <div className="flex-1">
@@ -543,13 +566,13 @@ Example output:
               <div className="grid gap-3">
                 {metrics.map((metric, index) => (
                   <div
-                    key={index}
+                    key={`metric-${metric.label}-${index}`}
                     className="glass p-3 rounded-lg border border-glass-white-border/50"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full bg-gradient-to-r from-${metric.color.split('-')[1]}-500/20 to-${metric.color.split('-')[1]}-600/20 flex items-center justify-center`}>
-                          {metric.icon}
+                        <div className={`w-8 h-8 rounded-full ${metric.color === 'text-green-500' ? 'bg-green-500/20' : metric.color === 'text-red-500' ? 'bg-red-500/20' : metric.color === 'text-blue-500' ? 'bg-blue-500/20' : 'bg-gray-500/20'} flex items-center justify-center`}>
+                          {renderIcon(metric.iconName)}
                         </div>
                         <div>
                           <p className="text-sm text-glass-muted">{metric.label}</p>
@@ -579,7 +602,7 @@ Example output:
               <div className="space-y-2">
                 {trends.map((trend, index) => (
                   <div
-                    key={index}
+                    key={`trend-${trend.period}-${index}`}
                     className="glass p-3 rounded-lg border border-glass-white-border/50"
                   >
                     <div className="flex items-center justify-between">

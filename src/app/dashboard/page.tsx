@@ -56,10 +56,10 @@ const mockProfile: Profile = {
   full_name: 'Demo User',
   avatar_url: null,
   gemini_api_key: null,
-  ai_suggestions_enabled: false,
-  ai_insights_enabled: false,
-  ai_tips_enabled: false,
-  ai_analytics_enabled: false,
+  ai_suggestions_enabled: true,
+  ai_insights_enabled: true,
+  ai_tips_enabled: true,
+  ai_analytics_enabled: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 }
@@ -76,7 +76,11 @@ const mockAnalytics = {
     { name: 'Eggs', count: 5 },
     { name: 'Apples', count: 4 },
     { name: 'Bananas', count: 3 }
-  ]
+  ],
+  // Add any missing properties that might be expected
+  completion_rate: 75,
+  shopping_frequency: 'weekly',
+  average_items_per_trip: 8
 }
 
 const mockShoppingLists = [
@@ -87,7 +91,10 @@ const mockShoppingLists = [
     itemCount: 12,
     completedCount: 8,
     is_shared: true,
-    created_at: '2024-01-15T10:00:00Z'
+    created_at: '2024-01-15T10:00:00Z',
+    updated_at: '2024-01-15T10:00:00Z',
+    user_id: 'demo-user-123',
+    is_archived: false
   },
   {
     id: '2', 
@@ -96,7 +103,10 @@ const mockShoppingLists = [
     itemCount: 8,
     completedCount: 3,
     is_shared: false,
-    created_at: '2024-01-20T14:30:00Z'
+    created_at: '2024-01-20T14:30:00Z',
+    updated_at: '2024-01-20T14:30:00Z',
+    user_id: 'demo-user-123',
+    is_archived: false
   },
   {
     id: '3',
@@ -105,7 +115,10 @@ const mockShoppingLists = [
     itemCount: 15,
     completedCount: 15,
     is_shared: true,
-    created_at: '2024-01-10T09:15:00Z'
+    created_at: '2024-01-10T09:15:00Z',
+    updated_at: '2024-01-10T09:15:00Z',
+    user_id: 'demo-user-123',
+    is_archived: false
   }
 ]
 
@@ -313,14 +326,21 @@ export default function DashboardPage() {
   
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    })
+    if (!dateString) return 'Unknown'
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric'
+      })
+    } catch (error) {
+      return 'Invalid date'
+    }
   }
 
   const getCompletionPercentage = (completed: number, total: number) => {
-    return total > 0 ? Math.round((completed / total) * 100) : 0
+    const completedNum = Number(completed) || 0
+    const totalNum = Number(total) || 0
+    return totalNum > 0 ? Math.round((completedNum / totalNum) * 100) : 0
   }
 
   const handleEditList = (list: any, event: React.MouseEvent) => {
@@ -328,9 +348,9 @@ export default function DashboardPage() {
     event.stopPropagation()
     setEditingList(list)
     setEditListForm({
-      name: list.name || '',
-      description: list.description || '',
-      is_shared: list.is_shared || false
+      name: list?.name || '',
+      description: list?.description || '',
+      is_shared: list?.is_shared || false
     })
     setShowEditList(true)
   }
@@ -367,7 +387,7 @@ export default function DashboardPage() {
       
       setShowEditList(false)
       setEditingList(null)
-      toast.success('List updated', `${editListForm.name} has been updated`)
+      toast.success('List updated', `${editListForm.name || 'List'} has been updated`)
     } catch (error) {
       console.error('Error updating list:', error)
       toast.error('Update failed', 'Failed to update list. Please try again.')
@@ -411,7 +431,7 @@ export default function DashboardPage() {
       // Show toast with undo button
       toast.success(
         'List deleted', 
-        `${listToDelete.name} has been deleted`,
+        `${listToDelete?.name || 'List'} has been deleted`,
         {
           action: {
             label: 'Undo',
@@ -421,7 +441,7 @@ export default function DashboardPage() {
                 if (latestAction && latestAction.id === undoAction.id) {
                   await latestAction.execute()
                   undoManager.removeAction(latestAction.id)
-                  toast.success('Undone', `${listToDelete.name} has been restored`)
+                  toast.success('Undone', `${listToDelete?.name || 'List'} has been restored`)
                 }
               } catch (error) {
                 console.error('Error undoing action:', error)
@@ -521,7 +541,7 @@ export default function DashboardPage() {
 
       const exportData = {
         lists: listsWithItems,
-        analytics: analytics,
+        analytics: analytics || {},
         exportDate: new Date().toISOString()
       }
       const dataStr = JSON.stringify(exportData, null, 2)
@@ -540,10 +560,11 @@ export default function DashboardPage() {
   }
 
   const getFilteredLists = () => {
+    if (!Array.isArray(shoppingLists)) return []
     if (!searchQuery.trim()) return shoppingLists
     return shoppingLists.filter(list => 
-      list.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      list.description?.toLowerCase().includes(searchQuery.toLowerCase())
+      list?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      list?.description?.toLowerCase().includes(searchQuery.toLowerCase())
     )
   }
 
@@ -556,13 +577,13 @@ export default function DashboardPage() {
       
       if (isDemoMode && isMockList(list)) {
         // For demo mode, create mock export data
-        items = Array.from({ length: list.itemCount }, (_, i) => ({
+        items = Array.from({ length: list?.itemCount || 0 }, (_, i) => ({
           name: `Item ${i + 1}`,
           amount: 1,
           unit: 'pcs',
           category: 'Other',
           notes: '',
-          is_checked: i < list.completedCount,
+          is_checked: i < (list?.completedCount || 0),
           image_url: null
         }))
       } else {
@@ -578,10 +599,10 @@ export default function DashboardPage() {
 
       const exportData = {
         list: {
-          name: list.name,
-          description: list.description,
-          is_shared: list.is_shared,
-          created_at: list.created_at
+          name: list?.name || 'Unknown List',
+          description: list?.description || '',
+          is_shared: list?.is_shared || false,
+          created_at: list?.created_at || new Date().toISOString()
         },
         items: items,
         exportDate: new Date().toISOString(),
@@ -594,7 +615,7 @@ export default function DashboardPage() {
       const link = document.createElement('a')
       link.href = url
       // Create a safe filename that preserves Hebrew characters but removes problematic ones
-      const safeName = list.name
+      const safeName = (list?.name || 'Unknown List')
         .replace(/[<>:"/\\|?*]/g, '_') // Remove Windows filename invalid characters
         .replace(/\s+/g, '_') // Replace spaces with underscores
         .substring(0, 50) // Limit length
@@ -602,7 +623,7 @@ export default function DashboardPage() {
       link.click()
       URL.revokeObjectURL(url)
       
-      toast.success('List exported', `${list.name} has been exported successfully`)
+      toast.success('List exported', `${list?.name || 'List'} has been exported successfully`)
     } catch (error) {
       console.error('Error exporting list:', error)
       toast.error('Export failed', 'Unable to export the list')
@@ -644,8 +665,8 @@ export default function DashboardPage() {
           id: `imported-${Date.now()}-${index}`,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          itemCount: list.items?.length || list.itemCount || 0,
-          completedCount: list.items?.filter((item: any) => item.is_checked)?.length || list.completedCount || 0
+          itemCount: list?.items?.length || list?.itemCount || 0,
+          completedCount: list?.items?.filter((item: any) => item?.is_checked)?.length || list?.completedCount || 0
         }))
 
         setShoppingLists(prevLists => [...prevLists, ...newLists])
@@ -754,9 +775,9 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {shoppingLists.map((list) => (
+              {Array.isArray(shoppingLists) && shoppingLists.map((list) => (
                 <div
-                  key={list.id}
+                  key={`list-${list.id}`}
                   className="glass-card p-4 hover:scale-[1.02] transition-all duration-200 relative group"
                 >
                   <Link
@@ -765,19 +786,19 @@ export default function DashboardPage() {
                   >
                     <div className="pr-20">
                       <div className="flex items-center gap-3 mb-1">
-                        <h3 className="font-semibold text-glass-heading">{list.name}</h3>
-                        {list.is_shared && (
+                        <h3 className="font-semibold text-glass-heading">{list?.name || 'Unnamed List'}</h3>
+                        {list?.is_shared && (
                           <div className="flex items-center gap-1 text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
                             <Share2 className="w-3 h-3" />
                             Shared
                           </div>
                         )}
                       </div>
-                      <p className="text-glass-muted text-sm mb-3">{list.description}</p>
+                      <p className="text-glass-muted text-sm mb-3">{list?.description || 'No description'}</p>
                       <div className="flex items-center gap-4 text-xs text-glass-muted mb-3">
-                        <span>{list.itemCount || 0} items</span>
-                        <span>{list.completedCount || 0} completed</span>
-                        <span>{formatDate(list.created_at)}</span>
+                        <span>{list?.itemCount || 0} items</span>
+                        <span>{list?.completedCount || 0} completed</span>
+                        <span>{formatDate(list?.created_at)}</span>
                       </div>
                       
                       {/* Progress Bar - Moved down */}
@@ -787,18 +808,18 @@ export default function DashboardPage() {
                             <div 
                               className="h-full bg-primary transition-all duration-300"
                               style={{ 
-                                width: `${getCompletionPercentage(
-                                  list.completedCount || 0,
-                                  list.itemCount || 0
-                                )}%` 
+                                                              width: `${getCompletionPercentage(
+                                list?.completedCount || 0,
+                                list?.itemCount || 0
+                              )}%`  
                               }}
                             ></div>
                           </div>
                         </div>
                         <div className="text-sm font-bold text-primary">
                           {getCompletionPercentage(
-                            list.completedCount || 0,
-                            list.itemCount || 0
+                            list?.completedCount || 0,
+                            list?.itemCount || 0
                           )}%
                         </div>
                       </div>
@@ -867,12 +888,12 @@ export default function DashboardPage() {
           {/* Insights and Analytics */}
           <div className="lg:col-span-3 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* AI-Powered Insights */}
-            {user && profile?.ai_insights_enabled ? (
+            {user && profile?.ai_insights_enabled && user.id ? (
               <GenAIInsights 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
-                analytics={analytics}
-                shoppingLists={shoppingLists}
+                analytics={analytics || {}}
+                shoppingLists={shoppingLists || []}
                 onRefresh={() => {
                   if (!isDemoMode) {
                     fetchAnalytics(user.id)
@@ -890,14 +911,14 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-glass-muted">Most shopped category</p>
-                    <p className="font-semibold text-primary">{analytics.most_frequent_category}</p>
+                    <p className="font-semibold text-primary">{analytics?.most_frequent_category || 'Groceries'}</p>
                   </div>
                   
                   <div>
                     <p className="text-sm text-glass-muted mb-2">Top items</p>
                     <div className="space-y-1">
-                      {analytics.most_frequent_items?.slice(0, 3).map((item, index) => (
-                        <div key={index} className="flex justify-between text-sm">
+                      {analytics?.most_frequent_items?.slice(0, 3).map((item, index) => (
+                        <div key={`analytics-item-${item.name}-${index}`} className="flex justify-between text-sm">
                           <span className="text-glass">{item.name}</span>
                           <span className="text-glass-muted">{item.count}x</span>
                         </div>
@@ -918,27 +939,27 @@ export default function DashboardPage() {
             )}
 
             {/* Smart Shopping Tips */}
-            {user && profile?.ai_tips_enabled && (
+            {user && profile?.ai_tips_enabled && user.id && (
               <SmartShoppingTips 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
-                analytics={analytics}
-                shoppingLists={shoppingLists}
+                analytics={analytics || {}}
+                shoppingLists={shoppingLists || []}
               />
             )}
 
             {/* AI Shopping Analytics */}
-            {user && profile?.ai_analytics_enabled && (
+            {user && profile?.ai_analytics_enabled && user.id && (
               <AIShoppingAnalytics 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
-                analytics={analytics}
-                shoppingLists={shoppingLists}
+                analytics={analytics || {}}
+                shoppingLists={shoppingLists || []}
               />
             )}
 
             {/* Recent Lists */}
-            {shoppingLists.length > 0 && (
+            {Array.isArray(shoppingLists) && shoppingLists.length > 0 && (
               <div className="glass-card p-6 mb-6">
                 <h3 className="font-bold mb-4 text-glass-heading flex items-center gap-2">
                   <Clock className="w-5 h-5" />
@@ -947,7 +968,7 @@ export default function DashboardPage() {
                 <div className="space-y-2">
                   {shoppingLists.slice(0, 3).map((list) => (
                     <Link
-                      key={list.id}
+                      key={`recent-${list.id}`}
                       href={`/list/${list.id}`}
                       className="flex items-center gap-3 p-3 glass-button hover:scale-[1.02] transition-all duration-200"
                     >
@@ -955,12 +976,12 @@ export default function DashboardPage() {
                         <ShoppingCart className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-glass-heading truncate">{list.name}</p>
+                        <p className="font-medium text-glass-heading truncate">{list?.name || 'Unnamed List'}</p>
                         <p className="text-xs text-glass-muted">
-                          {list.itemCount} items • {formatDate(list.updated_at)}
+                          {list?.itemCount || 0} items • {formatDate(list?.updated_at)}
                         </p>
                       </div>
-                      {list.is_shared && (
+                                              {list?.is_shared && (
                         <Share2 className="w-4 h-4 text-primary" />
                       )}
                     </Link>
@@ -1040,7 +1061,7 @@ export default function DashboardPage() {
             </div>
 
             {/* AI Suggestions */}
-            {user && profile?.ai_suggestions_enabled && (
+            {user && profile?.ai_suggestions_enabled && user.id && (
               <AISuggestions 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
@@ -1163,10 +1184,10 @@ export default function DashboardPage() {
             
             <div className="mb-6">
               <p className="text-glass">
-                Are you sure you want to delete <strong>"{listToDelete.name}"</strong>?
+                Are you sure you want to delete <strong>"{listToDelete?.name || 'this list'}"</strong>?
               </p>
               <p className="text-glass-muted text-sm mt-2">
-                This will permanently remove the list and all {listToDelete.itemCount} items in it.
+                This will permanently remove the list and all {listToDelete?.itemCount || 0} items in it.
               </p>
             </div>
             
@@ -1234,7 +1255,7 @@ export default function DashboardPage() {
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {getFilteredLists().map((list) => (
                 <Link
-                  key={list.id}
+                  key={`search-${list.id}`}
                   href={`/list/${list.id}`}
                   className="block p-3 glass-card hover:scale-[1.02] transition-all duration-200"
                   onClick={() => {
@@ -1242,10 +1263,10 @@ export default function DashboardPage() {
                     setSearchQuery('')
                   }}
                 >
-                  <h4 className="font-medium text-glass-heading">{list.name}</h4>
-                  <p className="text-sm text-glass-muted">{list.description}</p>
+                  <h4 className="font-medium text-glass-heading">{list?.name || 'Unnamed List'}</h4>
+                  <p className="text-sm text-glass-muted">{list?.description || 'No description'}</p>
                   <p className="text-xs text-glass-muted mt-1">
-                    {list.itemCount} items
+                    {list?.itemCount || 0} items
                   </p>
                 </Link>
               ))}
@@ -1344,7 +1365,7 @@ export default function DashboardPage() {
             <div className="grid gap-4">
               {listTemplates.map((template, index) => (
                 <div
-                  key={index}
+                  key={`template-${template.name}-${index}`}
                   className="glass-card p-4 hover:scale-[1.02] transition-all duration-200 cursor-pointer"
                   onClick={() => handleCreateFromTemplate(template)}
                 >
@@ -1353,7 +1374,7 @@ export default function DashboardPage() {
                   <div className="flex flex-wrap gap-1">
                     {template.items.slice(0, 4).map((item, itemIndex) => (
                       <span
-                        key={itemIndex}
+                        key={`template-item-${template.name}-${itemIndex}`}
                         className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full"
                       >
                         {item}

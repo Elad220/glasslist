@@ -25,7 +25,7 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
   const toast = useToast()
 
   useEffect(() => {
-    if (userId && apiKey) {
+    if (userId && apiKey && typeof userId === 'string' && userId.length > 0) {
       // Check for cached data first
       const cachedData = aiSuggestionsCooldown.getCachedData()
       if (cachedData && cachedData.suggestions) {
@@ -243,7 +243,7 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
       {loading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="glass p-4 rounded-lg animate-pulse">
+            <div key={`loading-suggestion-${i}`} className="glass p-4 rounded-lg animate-pulse">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="h-4 bg-glass-muted rounded w-3/4 mb-2"></div>
@@ -258,7 +258,7 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
         <div className="space-y-3">
           {suggestions.map((item, index) => (
             <div
-              key={`${item.name}-${index}`}
+              key={`suggestion-${item.name}-${index}`}
               className="glass p-4 rounded-lg border border-glass-white-border/50 hover:border-purple-200/30 transition-all duration-200"
             >
               <div className="flex items-center justify-between">

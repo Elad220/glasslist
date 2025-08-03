@@ -27,6 +27,7 @@ interface ShoppingTip {
   category: 'efficiency' | 'savings' | 'organization' | 'health' | 'seasonal'
   priority: 'high' | 'medium' | 'low'
   actionable: boolean
+  iconName: string
   action?: {
     label: string
     onClick: () => void
@@ -54,7 +55,7 @@ export default function SmartShoppingTips({
   const toast = useToast()
 
   useEffect(() => {
-    if (userId && analytics && shoppingLists.length > 0) {
+    if (userId && analytics && Array.isArray(shoppingLists) && shoppingLists.length > 0) {
       // Check for cached data first
       const cachedData = smartShoppingTipsCooldown.getCachedData()
       if (cachedData && cachedData.tips) {
@@ -261,7 +262,8 @@ Example output:
         description: tip.description,
         category: tip.category,
         priority: tip.priority,
-        actionable: tip.actionable || false
+        actionable: tip.actionable || false,
+        iconName: getTipStyling(tip.category).iconName
       }))
 
     } catch (error) {
@@ -281,40 +283,59 @@ Example output:
     switch (category) {
       case 'efficiency':
         return {
-          icon: <Clock className="w-4 h-4" />,
+          iconName: 'clock',
           color: 'text-blue-500',
           bgColor: 'bg-blue-500/10'
         }
       case 'savings':
         return {
-          icon: <DollarSign className="w-4 h-4" />,
+          iconName: 'dollar-sign',
           color: 'text-green-500',
           bgColor: 'bg-green-500/10'
         }
       case 'organization':
         return {
-          icon: <Package className="w-4 h-4" />,
+          iconName: 'package',
           color: 'text-purple-500',
           bgColor: 'bg-purple-500/10'
         }
       case 'health':
         return {
-          icon: <Target className="w-4 h-4" />,
+          iconName: 'target',
           color: 'text-orange-500',
           bgColor: 'bg-orange-500/10'
         }
       case 'seasonal':
         return {
-          icon: <Calendar className="w-4 h-4" />,
+          iconName: 'calendar',
           color: 'text-pink-500',
           bgColor: 'bg-pink-500/10'
         }
       default:
         return {
-          icon: <Lightbulb className="w-4 h-4" />,
+          iconName: 'lightbulb',
           color: 'text-gray-500',
           bgColor: 'bg-gray-500/10'
         }
+    }
+  }
+
+  const renderIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'clock':
+        return <Clock className="w-4 h-4" />
+      case 'dollar-sign':
+        return <DollarSign className="w-4 h-4" />
+      case 'package':
+        return <Package className="w-4 h-4" />
+      case 'target':
+        return <Target className="w-4 h-4" />
+      case 'calendar':
+        return <Calendar className="w-4 h-4" />
+      case 'lightbulb':
+        return <Lightbulb className="w-4 h-4" />
+      default:
+        return <Lightbulb className="w-4 h-4" />
     }
   }
 
@@ -341,17 +362,19 @@ Example output:
       description: 'Based on your shopping patterns, try organizing your list by store sections to minimize backtracking and save time.',
       category: 'efficiency',
       priority: 'high',
-      actionable: true
+      actionable: true,
+      iconName: 'clock'
     })
 
     // Demo savings tip
     tips.push({
       id: 'demo-savings-1',
       title: 'Bulk Buy Your Top Items',
-      description: `You frequently buy ${analytics.most_frequent_items?.[0]?.name || 'milk'}. Consider buying in bulk when on sale to save money over time.`,
+      description: `You frequently buy ${analytics?.most_frequent_items?.[0]?.name || 'milk'}. Consider buying in bulk when on sale to save money over time.`,
       category: 'savings',
       priority: 'medium',
-      actionable: true
+      actionable: true,
+      iconName: 'dollar-sign'
     })
 
     // Demo organization tip
@@ -361,7 +384,8 @@ Example output:
       description: 'Plan your meals for the week before shopping. This helps you buy only what you need and reduces food waste.',
       category: 'organization',
       priority: 'high',
-      actionable: true
+      actionable: true,
+      iconName: 'package'
     })
 
     // Demo health tip
@@ -371,7 +395,8 @@ Example output:
       description: 'Consider adding more fresh fruits and vegetables to your shopping routine for better nutrition and variety.',
       category: 'health',
       priority: 'medium',
-      actionable: true
+      actionable: true,
+      iconName: 'target'
     })
 
     return tips
@@ -381,26 +406,28 @@ Example output:
     const tips: ShoppingTip[] = []
 
     // Efficiency tip
-    if (analytics.total_items > 0) {
+    if (analytics?.total_items > 0) {
       tips.push({
         id: 'tip-efficiency-1',
         title: 'Plan Your Shopping',
         description: 'Create a weekly meal plan and shopping list to reduce impulse purchases and save time.',
         category: 'efficiency',
         priority: 'high',
-        actionable: true
+        actionable: true,
+        iconName: 'clock'
       })
     }
 
     // Organization tip
-    if (shoppingLists.length > 0) {
+    if (Array.isArray(shoppingLists) && shoppingLists.length > 0) {
       tips.push({
         id: 'tip-organization-1',
         title: 'Organize Your Lists',
         description: 'Group items by category in your shopping lists to make your trips more efficient.',
         category: 'organization',
         priority: 'medium',
-        actionable: true
+        actionable: true,
+        iconName: 'package'
       })
     }
 
@@ -411,7 +438,8 @@ Example output:
       description: 'Consider buying non-perishable items in bulk to save money in the long run.',
       category: 'savings',
       priority: 'medium',
-      actionable: true
+      actionable: true,
+      iconName: 'dollar-sign'
     })
 
     // Health tip
@@ -421,7 +449,8 @@ Example output:
       description: 'Focus on fresh produce, dairy, and proteins around the store perimeter for healthier choices.',
       category: 'health',
       priority: 'low',
-      actionable: true
+      actionable: true,
+      iconName: 'target'
     })
 
     return tips
@@ -475,7 +504,7 @@ Example output:
       {loading ? (
         <div className="space-y-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="glass p-4 rounded-lg animate-pulse">
+            <div key={`loading-tip-${i}`} className="glass p-4 rounded-lg animate-pulse">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 bg-glass-muted rounded-full"></div>
                 <div className="flex-1">
@@ -495,13 +524,13 @@ Example output:
             
             return (
               <div
-                key={tip.id}
+                key={`tip-${tip.id}`}
                 className="glass p-4 rounded-lg border border-glass-white-border/50 hover:border-yellow-200/30 transition-all duration-200"
               >
-                <div className="flex items-start gap-3">
-                  <div className={`w-8 h-8 rounded-full ${styling.bgColor} flex items-center justify-center flex-shrink-0`}>
-                    {styling.icon}
-                  </div>
+                              <div className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-full ${styling.bgColor} flex items-center justify-center flex-shrink-0`}>
+                  {renderIcon(tip.iconName)}
+                </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">

@@ -26,7 +26,7 @@ interface Insight {
   type: 'trend' | 'recommendation' | 'pattern' | 'alert' | 'achievement'
   title: string
   description: string
-  icon: React.ReactNode
+  iconName: string
   color: string
   confidence?: number
   action?: {
@@ -58,7 +58,7 @@ export default function GenAIInsights({
   const toast = useToast()
 
   useEffect(() => {
-    if (userId && analytics && shoppingLists.length > 0) {
+    if (userId && analytics && Array.isArray(shoppingLists) && shoppingLists.length > 0) {
       // Check for cached data first
       const cachedData = genAIInsightsCooldown.getCachedData()
       if (cachedData && cachedData.insights) {
@@ -285,34 +285,53 @@ Example output:
     switch (type) {
       case 'trend':
         return {
-          icon: <TrendingUp className="w-5 h-5" />,
+          iconName: 'trending-up',
           color: 'text-blue-500'
         }
       case 'recommendation':
         return {
-          icon: <Lightbulb className="w-5 h-5" />,
+          iconName: 'lightbulb',
           color: 'text-yellow-500'
         }
       case 'pattern':
         return {
-          icon: <BarChart3 className="w-5 h-5" />,
+          iconName: 'bar-chart-3',
           color: 'text-purple-500'
         }
       case 'alert':
         return {
-          icon: <AlertTriangle className="w-5 h-5" />,
+          iconName: 'alert-triangle',
           color: 'text-orange-500'
         }
       case 'achievement':
         return {
-          icon: <CheckCircle className="w-5 h-5" />,
+          iconName: 'check-circle',
           color: 'text-green-500'
         }
       default:
         return {
-          icon: <Brain className="w-5 h-5" />,
+          iconName: 'brain',
           color: 'text-gray-500'
         }
+    }
+  }
+
+  const renderIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'trending-up':
+        return <TrendingUp className="w-5 h-5" />
+      case 'lightbulb':
+        return <Lightbulb className="w-5 h-5" />
+      case 'bar-chart-3':
+        return <BarChart3 className="w-5 h-5" />
+      case 'alert-triangle':
+        return <AlertTriangle className="w-5 h-5" />
+      case 'check-circle':
+        return <CheckCircle className="w-5 h-5" />
+      case 'brain':
+        return <Brain className="w-5 h-5" />
+      default:
+        return <Brain className="w-5 h-5" />
     }
   }
 
@@ -323,19 +342,19 @@ Example output:
     insights.push({
       type: 'trend',
       title: 'Strong Shopping Momentum',
-      description: `You've purchased ${analytics.items_this_month} items this month, showing excellent shopping consistency and planning.`,
-      icon: <TrendingUp className="w-5 h-5" />,
+      description: `You've purchased ${analytics?.items_this_month || 0} items this month, showing excellent shopping consistency and planning.`,
+      iconName: 'trending-up',
       color: 'text-blue-500',
       confidence: 0.9
     })
 
     // Demo achievement insight
-    const completionRate = Math.round((analytics.completed_items / analytics.total_items) * 100)
+    const completionRate = Math.round(((analytics?.completed_items || 0) / (analytics?.total_items || 1)) * 100)
     insights.push({
       type: 'achievement',
       title: 'Outstanding Completion Rate',
       description: `You've completed ${completionRate}% of your shopping items. Your organization skills are impressive!`,
-      icon: <CheckCircle className="w-5 h-5" />,
+      iconName: 'check-circle',
       color: 'text-green-500',
       confidence: 0.95
     })
@@ -344,8 +363,8 @@ Example output:
     insights.push({
       type: 'recommendation',
       title: 'Smart Category Focus',
-      description: `Your top category is ${analytics.most_frequent_category}. Consider exploring related items to optimize your shopping trips.`,
-      icon: <Lightbulb className="w-5 h-5" />,
+      description: `Your top category is ${analytics?.most_frequent_category || 'Groceries'}. Consider exploring related items to optimize your shopping trips.`,
+      iconName: 'lightbulb',
       color: 'text-yellow-500',
       confidence: 0.85
     })
@@ -354,8 +373,8 @@ Example output:
     insights.push({
       type: 'pattern',
       title: 'Efficient List Management',
-      description: `You manage ${analytics.total_lists} shopping lists effectively. Your systematic approach saves time and reduces waste.`,
-      icon: <BarChart3 className="w-5 h-5" />,
+      description: `You manage ${analytics?.total_lists || 0} shopping lists effectively. Your systematic approach saves time and reduces waste.`,
+      iconName: 'bar-chart-3',
       color: 'text-purple-500',
       confidence: 0.8
     })
@@ -367,26 +386,26 @@ Example output:
     const insights: Insight[] = []
 
     // Basic trend insight
-    if (analytics.items_this_month > 0) {
+    if (analytics?.items_this_month > 0) {
       insights.push({
         type: 'trend',
         title: 'Active Shopping Month',
         description: `You've purchased ${analytics.items_this_month} items this month, showing consistent shopping activity.`,
-        icon: <TrendingUp className="w-5 h-5" />,
+        iconName: 'trending-up',
         color: 'text-blue-500',
         confidence: 0.8
       })
     }
 
     // Completion rate insight
-    if (analytics.total_items > 0) {
-      const completionRate = Math.round((analytics.completed_items / analytics.total_items) * 100)
+    if (analytics?.total_items > 0) {
+      const completionRate = Math.round(((analytics.completed_items || 0) / analytics.total_items) * 100)
       if (completionRate >= 80) {
         insights.push({
           type: 'achievement',
           title: 'Excellent Completion Rate',
           description: `You've completed ${completionRate}% of your shopping items. Great job staying organized!`,
-          icon: <CheckCircle className="w-5 h-5" />,
+          iconName: 'check-circle',
           color: 'text-green-500',
           confidence: 0.9
         })
@@ -395,7 +414,7 @@ Example output:
           type: 'alert',
           title: 'Low Completion Rate',
           description: `Only ${completionRate}% of items are completed. Consider reviewing your lists to improve efficiency.`,
-          icon: <AlertTriangle className="w-5 h-5" />,
+          iconName: 'alert-triangle',
           color: 'text-orange-500',
           confidence: 0.7
         })
@@ -403,12 +422,12 @@ Example output:
     }
 
     // Category insight
-    if (analytics.most_frequent_category) {
+    if (analytics?.most_frequent_category) {
       insights.push({
         type: 'pattern',
         title: 'Favorite Category',
         description: `${analytics.most_frequent_category} is your most shopped category, showing your shopping preferences.`,
-        icon: <BarChart3 className="w-5 h-5" />,
+        iconName: 'bar-chart-3',
         color: 'text-purple-500',
         confidence: 0.8
       })
@@ -491,7 +510,7 @@ Example output:
       {loading ? (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="glass p-4 rounded-lg animate-pulse">
+            <div key={`loading-insight-${i}`} className="glass p-4 rounded-lg animate-pulse">
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 bg-glass-muted rounded-full"></div>
                 <div className="flex-1">
@@ -507,12 +526,12 @@ Example output:
         <div className="space-y-4">
           {insights.map((insight, index) => (
             <div
-              key={index}
+              key={`insight-${insight.type}-${index}`}
               className="glass p-4 rounded-lg border border-glass-white-border/50 hover:border-blue-200/30 transition-all duration-200"
             >
               <div className="flex items-start gap-3">
-                <div className={`w-8 h-8 rounded-full bg-gradient-to-r from-${insight.color.split('-')[1]}-500/20 to-${insight.color.split('-')[1]}-600/20 flex items-center justify-center flex-shrink-0`}>
-                  {insight.icon}
+                <div className={`w-8 h-8 rounded-full ${insight.color === 'text-blue-500' ? 'bg-blue-500/20' : insight.color === 'text-yellow-500' ? 'bg-yellow-500/20' : insight.color === 'text-purple-500' ? 'bg-purple-500/20' : insight.color === 'text-orange-500' ? 'bg-orange-500/20' : insight.color === 'text-green-500' ? 'bg-green-500/20' : 'bg-gray-500/20'} flex items-center justify-center flex-shrink-0`}>
+                  {renderIcon(insight.iconName)}
                 </div>
                 
                 <div className="flex-1 min-w-0">
