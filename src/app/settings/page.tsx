@@ -41,6 +41,7 @@ const mockProfile = {
   ai_insights_enabled: false,
   ai_tips_enabled: false,
   ai_analytics_enabled: false,
+  ai_auto_populate_enabled: false,
   created_at: '2024-01-15T10:00:00Z',
   updated_at: '2024-01-15T10:00:00Z'
 }
@@ -65,7 +66,8 @@ export default function SettingsPage() {
     ai_suggestions_enabled: false,
     ai_insights_enabled: false,
     ai_tips_enabled: false,
-    ai_analytics_enabled: false
+    ai_analytics_enabled: false,
+    ai_auto_populate_enabled: false
   })
 
   useEffect(() => {
@@ -90,7 +92,8 @@ export default function SettingsPage() {
               ai_suggestions_enabled: profileData.ai_suggestions_enabled ?? false,
               ai_insights_enabled: profileData.ai_insights_enabled ?? false,
               ai_tips_enabled: profileData.ai_tips_enabled ?? false,
-              ai_analytics_enabled: profileData.ai_analytics_enabled ?? false
+              ai_analytics_enabled: profileData.ai_analytics_enabled ?? false,
+              ai_auto_populate_enabled: profileData.ai_auto_populate_enabled ?? false
             })
           }
         } else {
@@ -103,7 +106,8 @@ export default function SettingsPage() {
               ai_suggestions_enabled: mockProfile.ai_suggestions_enabled ?? false,
               ai_insights_enabled: mockProfile.ai_insights_enabled ?? false,
               ai_tips_enabled: mockProfile.ai_tips_enabled ?? false,
-              ai_analytics_enabled: mockProfile.ai_analytics_enabled ?? false
+              ai_analytics_enabled: mockProfile.ai_analytics_enabled ?? false,
+              ai_auto_populate_enabled: mockProfile.ai_auto_populate_enabled ?? false
             })
         }
       } catch (error) {
@@ -144,7 +148,8 @@ export default function SettingsPage() {
               ai_suggestions_enabled: formData.ai_suggestions_enabled,
               ai_insights_enabled: formData.ai_insights_enabled,
               ai_tips_enabled: formData.ai_tips_enabled,
-              ai_analytics_enabled: formData.ai_analytics_enabled
+              ai_analytics_enabled: formData.ai_analytics_enabled,
+              ai_auto_populate_enabled: formData.ai_auto_populate_enabled
             }
             
             const { data: updatedProfile, error } = await updateProfile(user.id, updateData)
@@ -568,6 +573,39 @@ export default function SettingsPage() {
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                             formData.ai_analytics_enabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="glass p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-glass">AI Auto-Populate</h4>
+                        <p className="text-sm text-glass-muted">
+                          Automatically fill item details when typing item names
+                        </p>
+                        {isDemoMode && (
+                          <p className="text-xs text-blue-500 mt-1">
+                            Demo mode: Toggle functionality simulated
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          ai_auto_populate_enabled: !formData.ai_auto_populate_enabled
+                        })}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 ${
+                          formData.ai_auto_populate_enabled 
+                            ? 'bg-green-500' 
+                            : 'bg-glass-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.ai_auto_populate_enabled ? 'translate-x-6' : 'translate-x-1'
                           }`}
                         />
                       </button>

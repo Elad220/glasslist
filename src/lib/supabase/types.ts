@@ -20,6 +20,7 @@ export type Database = {
           ai_insights_enabled: boolean
           ai_tips_enabled: boolean
           ai_analytics_enabled: boolean
+          ai_auto_populate_enabled: boolean
           created_at: string
           updated_at: string
         }
@@ -33,6 +34,7 @@ export type Database = {
           ai_insights_enabled?: boolean
           ai_tips_enabled?: boolean
           ai_analytics_enabled?: boolean
+          ai_auto_populate_enabled?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -46,6 +48,7 @@ export type Database = {
           ai_insights_enabled?: boolean
           ai_tips_enabled?: boolean
           ai_analytics_enabled?: boolean
+          ai_auto_populate_enabled?: boolean
           created_at?: string
           updated_at?: string
         }

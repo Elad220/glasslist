@@ -72,6 +72,7 @@ import SortableFilterPill from '@/components/SortableFilterPill'
 
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI, analyzeVoiceRecording } from '@/lib/ai/gemini'
+import { autoPopulateItemDetails, fallbackAutoPopulate } from '@/lib/ai/auto-populate'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
 import { useToast } from '@/lib/toast/context'
 import { 
@@ -226,6 +227,10 @@ export default function ListPage() {
   const [audioChunks, setAudioChunks] = useState<Blob[]>([])
   const [showVoiceFallback, setShowVoiceFallback] = useState(false)
   const [voiceFallbackInput, setVoiceFallbackInput] = useState('')
+
+  // Auto-populate state
+  const [isAutoPopulating, setIsAutoPopulating] = useState(false)
+  const [autoPopulateTimeout, setAutoPopulateTimeout] = useState<NodeJS.Timeout | null>(null)
 
   const loadData = async () => {
     console.log('ListPage: loadData called with listId:', listId)
@@ -1326,6 +1331,54 @@ export default function ListPage() {
     }
   };
 
+  const handleAutoPopulate = async (itemName: string) => {
+    if (!profile?.ai_auto_populate_enabled || !profile?.gemini_api_key || !itemName.trim()) {
+      return
+    }
+
+    // Clear existing timeout
+    if (autoPopulateTimeout) {
+      clearTimeout(autoPopulateTimeout)
+    }
+
+    // Set a new timeout to avoid too many API calls
+    const timeout = setTimeout(async () => {
+      if (itemName.trim().length < 3) return // Don't auto-populate for very short names
+
+      setIsAutoPopulating(true)
+      try {
+        const result = await autoPopulateItemDetails(itemName, profile.gemini_api_key)
+        
+        if (result.success) {
+          setNewItem(prev => ({
+            ...prev,
+            amount: result.amount,
+            unit: result.unit,
+            category: result.category,
+            notes: result.notes || prev.notes
+          }))
+        } else {
+          // Try fallback
+          const fallbackResult = fallbackAutoPopulate(itemName)
+          setNewItem(prev => ({
+            ...prev,
+            amount: fallbackResult.amount,
+            unit: fallbackResult.unit,
+            category: fallbackResult.category,
+            notes: fallbackResult.notes || prev.notes
+          }))
+        }
+      } catch (error) {
+        console.error('Auto-populate error:', error)
+        // Silently fail - don't show error toast for auto-populate
+      } finally {
+        setIsAutoPopulating(false)
+      }
+    }, 1000) // 1 second delay
+
+    setAutoPopulateTimeout(timeout)
+  }
+
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
@@ -1378,6 +1431,15 @@ export default function ListPage() {
       return currentOrderedCategories;
     });
   }, [items, listId, isDemoMode]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoPopulateTimeout) {
+        clearTimeout(autoPopulateTimeout)
+      }
+    }
+  }, [autoPopulateTimeout])
 
 
   if (isLoading) {
@@ -2193,7 +2255,7 @@ export default function ListPage() {
         {/* AI Quick Add Modal */}
         {showAiAdd && (
           <div 
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-fade-in"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-fade-in"
             onClick={() => {
               setShowAiAdd(false)
               setAiInput('')
@@ -2201,7 +2263,7 @@ export default function ListPage() {
             }}
           >
             <div 
-              className="glass-white p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-lg rounded-2xl animate-scale-in hover-lift"
+              className="glass-premium p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-scale-in hover-lift"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-4 mb-8">
@@ -2220,7 +2282,7 @@ export default function ListPage() {
                   onClick={() => setAiInputMode('text')}
                   className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                     aiInputMode === 'text'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg animate-pulse-glow'
                       : 'text-glass-muted hover:text-glass hover:bg-white/50'
                   }`}
                 >
@@ -2233,7 +2295,7 @@ export default function ListPage() {
                   onClick={() => setAiInputMode('voice')}
                   className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                     aiInputMode === 'voice'
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm'
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg animate-pulse-glow'
                       : 'text-glass-muted hover:text-glass hover:bg-white/50'
                   }`}
                 >
@@ -2257,7 +2319,7 @@ export default function ListPage() {
                       placeholder="Type your shopping list items..."
                       value={aiInput}
                       onChange={(e) => setAiInput(e.target.value)}
-                      className="w-full bg-white/80 border border-gray-200 rounded-xl px-5 py-4 text-glass placeholder-glass-muted resize-none focus-ring transition-all duration-300 hover:shadow-sm animate-scale-in"
+                      className="w-full glass-premium border-0 rounded-xl px-5 py-4 text-glass placeholder-glass-muted resize-none focus-ring transition-all duration-300 hover:shadow-lg animate-scale-in"
                       rows={4}
                       autoFocus
                     />
@@ -2376,7 +2438,7 @@ export default function ListPage() {
                   <button 
                     onClick={handleAiAdd}
                     disabled={isAiProcessing || !aiInput.trim()}
-                    className="flex-1 bg-gradient-to-r from-purple-500/10 to-pink-500/10 hover:from-purple-500/20 hover:to-pink-500/20 px-6 py-3 rounded-xl border border-purple-200 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium hover-lift micro-interaction transition-all duration-300 shadow-sm hover:shadow-md"
+                    className="flex-1 glass-premium px-6 py-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-purple-700 font-medium hover-lift micro-interaction transition-all duration-300 animate-pulse-glow"
                   >
                     {isAiProcessing ? (
                       <>
@@ -2399,7 +2461,7 @@ export default function ListPage() {
                     setAiInput('')
                     resetVoiceRecording()
                   }}
-                  className="bg-white/80 border border-gray-200 px-6 py-3 rounded-xl hover:bg-gray-50 hover-lift micro-interaction shadow-sm hover:shadow-md transition-all duration-300"
+                  className="glass-premium px-6 py-3 hover-lift micro-interaction"
                   disabled={isAiProcessing || isProcessingVoice}
                 >
                   Cancel
@@ -2423,11 +2485,11 @@ export default function ListPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center animate-bounce-in">
-                  <Plus className="w-7 h-7 text-primary animate-pulse" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-green-500/20 to-blue-500/20 flex items-center justify-center animate-bounce-in">
+                  <Plus className="w-7 h-7 text-green-600 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-glass-heading bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">Add New Item</h3>
+                  <h3 className="text-2xl font-bold text-glass-heading bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Add New Item</h3>
                   <p className="text-sm text-glass-muted animate-slide-up">Add an item to your shopping list</p>
                 </div>
               </div>
@@ -2435,14 +2497,31 @@ export default function ListPage() {
               <div className="space-y-5">
                 <div className="animate-slide-up">
                   <label className="block text-sm font-medium text-glass-muted mb-2 animate-fade-in">Item Name</label>
-                  <input
-                    type="text"
-                    placeholder="Enter item name"
-                    value={newItem.name}
-                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                    className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted focus-ring transition-all duration-300 hover:shadow-lg"
-                    autoFocus
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Enter item name"
+                      value={newItem.name}
+                      onChange={(e) => {
+                        const newName = e.target.value
+                        setNewItem({ ...newItem, name: newName })
+                        handleAutoPopulate(newName)
+                      }}
+                      className="w-full glass-premium border-0 rounded-lg px-4 py-3 text-glass placeholder-glass-muted focus-ring transition-all duration-300 hover:shadow-lg"
+                      autoFocus
+                    />
+                    {isAutoPopulating && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    )}
+                  </div>
+                  {profile?.ai_auto_populate_enabled && (
+                    <p className="text-xs text-glass-muted mt-1 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      AI will auto-fill details as you type
+                    </p>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-3 animate-slide-up stagger-1">
@@ -2585,11 +2664,11 @@ export default function ListPage() {
                 <button 
                   onClick={handleAddItem}
                   disabled={!newItem.name.trim() || isUploading}
-                  className="flex-1 glass-button px-4 py-2 bg-primary/20 hover:bg-primary/30 disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
+                  className="flex-1 glass-button px-4 py-2 bg-gradient-to-r from-green-500/20 to-blue-500/20 hover:from-green-500/30 hover:to-blue-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-green-700 font-medium"
                 >
                   {isUploading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
                       Adding...
                     </>
                   ) : (

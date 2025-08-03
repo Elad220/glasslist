@@ -23,6 +23,7 @@ const mockProfile: Profile = {
   ai_insights_enabled: false,
   ai_tips_enabled: false,
   ai_analytics_enabled: false,
+  ai_auto_populate_enabled: false,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 }
