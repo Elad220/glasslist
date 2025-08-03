@@ -60,6 +60,14 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
     await loadSuggestions()
   }
 
+  const handleForceRefresh = async () => {
+    if (loading) return
+    
+    // Force refresh even during cooldown
+    aiSuggestionsCooldown.forceRefresh()
+    await loadSuggestions()
+  }
+
   const loadSuggestions = async () => {
     if (!userId || !apiKey) return
 
@@ -189,19 +197,19 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
         </div>
         
         <button
-          onClick={handleManualRefresh}
-          disabled={loading || (!canRefresh && aiSuggestionsCooldown.isInCooldown())}
+          onClick={canRefresh ? handleManualRefresh : handleForceRefresh}
+          disabled={loading}
           className={`glass-button px-3 py-2 text-sm ${
             canRefresh 
               ? 'bg-purple-500/10 border-purple-200/30 hover:bg-purple-500/20' 
-              : 'bg-gray-500/10 border-gray-200/30 opacity-50 cursor-not-allowed'
+              : 'bg-amber-500/10 border-amber-200/30 hover:bg-amber-500/20'
           }`}
-          title={canRefresh ? "Refresh suggestions" : aiSuggestionsCooldown.getTimeRemainingText()}
+          title={canRefresh ? "Refresh suggestions" : `Force refresh (${aiSuggestionsCooldown.getTimeRemainingText()})`}
         >
           {loading ? (
             <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
           ) : (
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${!canRefresh ? 'text-amber-500' : ''}`} />
           )}
         </button>
       </div>

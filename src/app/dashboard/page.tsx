@@ -887,6 +887,28 @@ export default function DashboardPage() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Insights and Analytics */}
           <div className="lg:col-span-3 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+             {/* AI Suggestions */}
+             {user && profile?.ai_suggestions_enabled && user.id && (
+              <AISuggestions 
+                userId={user.id}
+                apiKey={profile?.gemini_api_key || ''}
+                onItemAdded={() => {
+                  // Refresh shopping lists when items are added
+                  if (!isDemoMode) {
+                    fetchShoppingLists(user.id)
+                  }
+                }}
+              />
+            )}
+            {/* AI Shopping Analytics */}
+            {user && profile?.ai_analytics_enabled && user.id && (
+              <AIShoppingAnalytics 
+                userId={user.id}
+                apiKey={profile?.gemini_api_key || ''}
+                analytics={analytics || {}}
+                shoppingLists={shoppingLists || []}
+              />
+            )}
             {/* AI-Powered Insights */}
             {user && profile?.ai_insights_enabled && user.id ? (
               <GenAIInsights 
@@ -948,15 +970,7 @@ export default function DashboardPage() {
               />
             )}
 
-            {/* AI Shopping Analytics */}
-            {user && profile?.ai_analytics_enabled && user.id && (
-              <AIShoppingAnalytics 
-                userId={user.id}
-                apiKey={profile?.gemini_api_key || ''}
-                analytics={analytics || {}}
-                shoppingLists={shoppingLists || []}
-              />
-            )}
+            
 
             {/* Recent Lists */}
             {Array.isArray(shoppingLists) && shoppingLists.length > 0 && (
@@ -1060,19 +1074,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* AI Suggestions */}
-            {user && profile?.ai_suggestions_enabled && user.id && (
-              <AISuggestions 
-                userId={user.id}
-                apiKey={profile?.gemini_api_key || ''}
-                onItemAdded={() => {
-                  // Refresh shopping lists when items are added
-                  if (!isDemoMode) {
-                    fetchShoppingLists(user.id)
-                  }
-                }}
-              />
-            )}
           </div>
         </div>
       </div>

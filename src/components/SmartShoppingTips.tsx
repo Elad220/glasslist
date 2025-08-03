@@ -89,6 +89,14 @@ export default function SmartShoppingTips({
     await generateTips()
   }
 
+  const handleForceRefresh = async () => {
+    if (loading) return
+    
+    // Force refresh even during cooldown
+    smartShoppingTipsCooldown.forceRefresh()
+    await generateTips()
+  }
+
   const generateTips = async () => {
     if (!userId) return
 
@@ -472,19 +480,19 @@ Example output:
         </div>
         
         <button
-          onClick={handleManualRefresh}
-          disabled={loading || (!canRefresh && smartShoppingTipsCooldown.isInCooldown())}
+          onClick={canRefresh ? handleManualRefresh : handleForceRefresh}
+          disabled={loading}
           className={`glass-button px-3 py-2 text-sm ${
             canRefresh 
               ? 'bg-yellow-500/10 border-yellow-200/30 hover:bg-yellow-500/20' 
-              : 'bg-gray-500/10 border-gray-200/30 opacity-50 cursor-not-allowed'
+              : 'bg-amber-500/10 border-amber-200/30 hover:bg-amber-500/20'
           }`}
-          title={canRefresh ? "Refresh tips" : smartShoppingTipsCooldown.getTimeRemainingText()}
+          title={canRefresh ? "Refresh tips" : `Force refresh (${smartShoppingTipsCooldown.getTimeRemainingText()})`}
         >
           {loading ? (
             <div className="animate-spin w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full"></div>
           ) : (
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${!canRefresh ? 'text-amber-500' : ''}`} />
           )}
         </button>
       </div>

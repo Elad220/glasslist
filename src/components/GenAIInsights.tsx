@@ -96,6 +96,18 @@ export default function GenAIInsights({
     }
   }
 
+  const handleForceRefresh = async () => {
+    if (loading) return
+    
+    // Force refresh even during cooldown
+    genAIInsightsCooldown.forceRefresh()
+    await generateInsights()
+    
+    if (onRefresh) {
+      onRefresh()
+    }
+  }
+
   const generateInsights = async () => {
     if (!userId) return
 
@@ -478,19 +490,19 @@ Example output:
         </div>
         
         <button
-          onClick={handleManualRefresh}
-          disabled={loading || (!canRefresh && genAIInsightsCooldown.isInCooldown())}
+          onClick={canRefresh ? handleManualRefresh : handleForceRefresh}
+          disabled={loading}
           className={`glass-button px-3 py-2 text-sm ${
             canRefresh 
               ? 'bg-blue-500/10 border-blue-200/30 hover:bg-blue-500/20' 
-              : 'bg-gray-500/10 border-gray-200/30 opacity-50 cursor-not-allowed'
+              : 'bg-amber-500/10 border-amber-200/30 hover:bg-amber-500/20'
           }`}
-          title={canRefresh ? "Refresh insights" : genAIInsightsCooldown.getTimeRemainingText()}
+          title={canRefresh ? "Refresh insights" : `Force refresh (${genAIInsightsCooldown.getTimeRemainingText()})`}
         >
           {loading ? (
             <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
           ) : (
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className={`w-4 h-4 ${!canRefresh ? 'text-amber-500' : ''}`} />
           )}
         </button>
       </div>
