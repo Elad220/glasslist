@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useCallback } from 'react'
-import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react'
+import { CheckCircle, XCircle, AlertCircle, Info, X, Check, Square } from 'lucide-react'
 
 interface ToastAction {
   label: string
@@ -15,18 +15,19 @@ interface Toast {
   message?: string
   duration?: number
   action?: ToastAction
+  customIcon?: React.ReactNode
 }
 
 interface ToastContextType {
   toasts: Toast[]
   showToast: (toast: Omit<Toast, 'id'>) => void
   hideToast: (id: string) => void
-  success: (title: string, message?: string, options?: { action?: ToastAction }) => void
+  success: (title: string, message?: string, options?: { action?: ToastAction; customIcon?: React.ReactNode }) => void
   error: (title: string, message?: string) => void
   warning: (title: string, message?: string) => void
   info: (title: string, message?: string) => void
   toast: {
-    success: (title: string, message?: string, options?: { action?: ToastAction }) => void
+    success: (title: string, message?: string, options?: { action?: ToastAction; customIcon?: React.ReactNode }) => void
     error: (title: string, message?: string) => void
     warning: (title: string, message?: string) => void
     info: (title: string, message?: string) => void
@@ -63,8 +64,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
 
-  const success = useCallback((title: string, message?: string, options?: { action?: ToastAction }) => {
-    showToast({ type: 'success', title, message, action: options?.action })
+  const success = useCallback((title: string, message?: string, options?: { action?: ToastAction; customIcon?: React.ReactNode }) => {
+    showToast({ type: 'success', title, message, action: options?.action, customIcon: options?.customIcon })
   }, [showToast])
 
   const error = useCallback((title: string, message?: string) => {
@@ -99,8 +100,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 function ToastContainer({ toasts, onHide }: { toasts: Toast[], onHide: (id: string) => void }) {
   if (toasts.length === 0) return null
 
-  const getIcon = (type: Toast['type']) => {
-    switch (type) {
+  const getIcon = (toast: Toast) => {
+    // If custom icon is provided, use it
+    if (toast.customIcon) {
+      return toast.customIcon
+    }
+    
+    // Otherwise use default icons based on type
+    switch (toast.type) {
       case 'success':
         return <CheckCircle className="w-5 h-5 text-green-600" />
       case 'error':
@@ -135,7 +142,7 @@ function ToastContainer({ toasts, onHide }: { toasts: Toast[], onHide: (id: stri
         >
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 pt-0.5 animate-bounce-in">
-              {getIcon(toast.type)}
+              {getIcon(toast)}
             </div>
             <div className="flex-1 min-w-0">
               <h4 className="font-semibold text-glass-heading text-sm">

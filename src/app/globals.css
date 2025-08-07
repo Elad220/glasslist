@@ -457,6 +457,8 @@ button:focus {
   user-select: none;
   touch-action: pan-x pan-y;
   transition: all 0.3s var(--ease-glass);
+  max-width: 140px;
+  min-width: fit-content;
 }
 
 .filter-pill-drag-handle {
@@ -479,15 +481,24 @@ button:focus {
   transition: none !important;
   -webkit-transition: none !important;
   transform: rotate(2deg) scale(1.02);
+  z-index: 9999 !important;
 }
 
 .filter-pill-dragging-placeholder {
   opacity: 0.4;
   transform: scale(0.95);
+  visibility: hidden;
 }
 
 .filter-pill-draggable:not(.filter-pill-dragging) {
   transition: all 0.3s var(--ease-glass);
+}
+
+/* Ensure stable layout during drag operations */
+.filter-pill-draggable {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 /* Mobile-specific drag improvements */
@@ -497,13 +508,13 @@ button:focus {
   }
   
   .filter-pill-drag-handle {
-    min-width: 48px;
-    min-height: 48px;
+    min-width: 32px;
+    min-height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: -8px;
-    padding: 8px;
+    margin: -4px;
+    padding: 4px;
     cursor: grab;
   }
   
@@ -513,6 +524,22 @@ button:focus {
   
   .filter-pill-draggable {
     touch-action: pan-x pan-y !important;
+    max-width: 120px;
+  }
+}
+
+/* Compact filter pills for better space utilization */
+@media (max-width: 640px) {
+  .filter-pill-draggable {
+    max-width: 100px;
+    font-size: 0.75rem;
+  }
+  
+  .filter-pill-drag-handle {
+    min-width: 24px;
+    min-height: 24px;
+    margin: -2px;
+    padding: 2px;
   }
 }
 
@@ -532,6 +559,12 @@ button:focus {
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
   will-change: transform;
+}
+
+/* Prevent layout shifts during drag operations */
+[data-dnd-kit-sortable] {
+  min-height: 0;
+  min-width: 0;
 }
 
 /* Status Indicators - Consistent Colors */

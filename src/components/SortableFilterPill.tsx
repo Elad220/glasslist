@@ -46,7 +46,7 @@ export default function SortableFilterPill({
           onClick()
         }
       }}
-      className={`filter-pill-draggable px-2.5 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+      className={`filter-pill-draggable px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 whitespace-nowrap cursor-pointer ${
         isDragging ? 'filter-pill-dragging' : ''
       } ${
         isActive
@@ -60,11 +60,11 @@ export default function SortableFilterPill({
         className="filter-pill-drag-handle"
         onClick={(e) => e.stopPropagation()}
       >
-        <GripVertical className="w-4 h-4 text-gray-400" />
+        <GripVertical className="w-3 h-3 text-gray-400" />
       </span>
-      <CategoryIcon className="w-3 h-3 flex-shrink-0" />
-      <span className="truncate">{category}</span>
-      <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[10px] min-w-[16px] text-center leading-none flex-shrink-0">
+      <CategoryIcon className="w-2.5 h-2.5 flex-shrink-0" />
+      <span className="truncate text-xs">{category}</span>
+      <span className="bg-glass-white-light px-1 py-0.5 rounded-full text-[9px] min-w-[14px] text-center leading-none flex-shrink-0">
         {categoryCount}
       </span>
     </div>

@@ -49,7 +49,8 @@ import {
   Trash,
   ThermometerSnowflake,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  ChevronUp
 } from 'lucide-react'
 
 import { 
@@ -231,6 +232,22 @@ export default function ListPage() {
   // Auto-populate state
   const [isAutoPopulating, setIsAutoPopulating] = useState(false)
   const [autoPopulateTimeout, setAutoPopulateTimeout] = useState<NodeJS.Timeout | null>(null)
+  
+  // Filter pills state
+  const [showAllCategories, setShowAllCategories] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Handle responsive behavior for filter pills
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const loadData = async () => {
     console.log('ListPage: loadData called with listId:', listId)
@@ -321,8 +338,6 @@ export default function ListPage() {
 
     const newCheckedState = !item.is_checked
 
-
-
     // Optimistic update
     setItems(items.map(item => 
       item.id === itemId ? { ...item, is_checked: newCheckedState } : item
@@ -336,7 +351,33 @@ export default function ListPage() {
           item.id === itemId ? { ...item, is_checked: !newCheckedState } : item
         ))
         toast.error('Update failed', 'Failed to update item status')
+      } else {
+        // Show success toast for item checked/unchecked
+        const action = newCheckedState ? 'checked' : 'unchecked'
+        const customIcon = newCheckedState ? (
+          <Check className="w-5 h-5 text-green-600" />
+        ) : (
+          <Square className="w-5 h-5 text-gray-600" />
+        )
+        toast.success(
+          `Item ${action}`, 
+          `${item.name} has been ${action}`,
+          { customIcon }
+        )
       }
+    } else {
+      // Show success toast even in demo mode
+      const action = newCheckedState ? 'checked' : 'unchecked'
+      const customIcon = newCheckedState ? (
+        <Check className="w-5 h-5 text-green-600" />
+      ) : (
+        <Square className="w-5 h-5 text-gray-600" />
+      )
+      toast.success(
+        `Item ${action}`, 
+        `${item.name} has been ${action}`,
+        { customIcon }
+      )
     }
   }
 
@@ -1642,41 +1683,70 @@ export default function ListPage() {
                 onDragEnd={onDragEnd}
                 modifiers={[]}
               >
-                <div className="flex flex-nowrap gap-1.5 overflow-x-auto pb-2 scrollbar-hide"
-                  style={{ 
-                    WebkitOverflowScrolling: 'touch',
-                    overscrollBehavior: 'contain'
-                  }}
-                >
-                  <button
-                    onClick={() => setCategoryFilter('all')}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                      categoryFilter === 'all' 
-                        ? 'bg-primary/20 text-primary border border-primary/30' 
-                        : 'glass-button'
-                    }`}
-                  >
-                    All Aisles
-                  </button>
+                <div className="space-y-2">
+                  {/* All Aisles button - positioned outside SortableContext for stability */}
+                  <div className="flex-shrink-0 h-8 flex items-center">
+                    <button
+                      onClick={() => setCategoryFilter('all')}
+                      className={`px-2 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
+                        categoryFilter === 'all' 
+                          ? 'bg-primary/20 text-primary border border-primary/30' 
+                          : 'glass-button'
+                      }`}
+                    >
+                      All Aisles
+                    </button>
+                  </div>
+                  
+                  {/* Main filter pills row */}
                   <SortableContext
                     items={orderedCategories}
                     strategy={horizontalListSortingStrategy}
                   >
-                    {orderedCategories.map((category) => {
-                      const categoryCount = items.filter(item => item.category === category).length
-                      const CategoryIcon = categoryIcons[category] || Package2
-                      return (
-                        <SortableFilterPill
-                          key={category}
-                          category={category}
-                          categoryCount={categoryCount}
-                          CategoryIcon={CategoryIcon}
-                          isActive={categoryFilter === category}
-                          onClick={() => setCategoryFilter(category)}
-                        />
-                      )
-                    })}
+                    <div className="flex flex-wrap gap-1 pb-2 overflow-x-auto scrollbar-hide min-h-[32px]"
+                      style={{ 
+                        WebkitOverflowScrolling: 'touch',
+                        overscrollBehavior: 'contain'
+                      }}
+                    >
+                      {(showAllCategories ? orderedCategories : orderedCategories.slice(0, isMobile ? 6 : 8)).map((category) => {
+                        const categoryCount = items.filter(item => item.category === category).length
+                        const CategoryIcon = categoryIcons[category] || Package2
+                        return (
+                          <SortableFilterPill
+                            key={category}
+                            category={category}
+                            categoryCount={categoryCount}
+                            CategoryIcon={CategoryIcon}
+                            isActive={categoryFilter === category}
+                            onClick={() => setCategoryFilter(category)}
+                          />
+                        )
+                      })}
+                    </div>
                   </SortableContext>
+                  
+                  {/* Show more/less toggle */}
+                  {orderedCategories.length > (isMobile ? 6 : 8) && (
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => setShowAllCategories(!showAllCategories)}
+                        className="glass-button px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 hover:bg-primary/10 transition-colors"
+                      >
+                        {showAllCategories ? (
+                          <>
+                            <ChevronUp className="w-3 h-3" />
+                            Show Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3 h-3" />
+                            Show More ({orderedCategories.length - (isMobile ? 6 : 8)} more)
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </DndContext>
             </div>
@@ -1909,11 +1979,24 @@ export default function ListPage() {
                         // Normal Mode Layout - Compact
                         <div 
                           key={item.id} 
-                          className={`category-list-item flex items-center gap-3 p-3 transition-all duration-300 text-sm border-b border-glass-white-border last:border-b-0 bg-white/30 hover:bg-glass-white-light hover:shadow-lg animate-list-item hover-lift ${item.is_checked ? 'opacity-60' : ''}`}
+                          className={`category-list-item flex items-center gap-3 p-3 transition-all duration-300 text-sm border-b border-glass-white-border last:border-b-0 bg-white/30 hover:bg-glass-white-light hover:shadow-lg animate-list-item hover-lift ${item.is_checked ? 'opacity-60' : ''} cursor-pointer`}
                           style={{ animationDelay: `${categoryItems.indexOf(item) * 0.05}s` }}
+                          onClick={() => handleToggleItem(item.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              handleToggleItem(item.id)
+                            }
+                          }}
+                          tabIndex={0}
+                          role="button"
+                          aria-label={`${item.is_checked ? 'Uncheck' : 'Check'} ${item.name}`}
                         >
                           <button
-                            onClick={() => handleToggleItem(item.id)}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleToggleItem(item.id)
+                            }}
                             className={`category-checkbox w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 mr-2 ${item.is_checked ? 'bg-green-500 border-green-500' : 'border-glass-white-border hover:border-primary'}`}
                             aria-label={item.is_checked ? 'Uncheck item' : 'Check item'}
                           >
@@ -1943,14 +2026,20 @@ export default function ListPage() {
                           </div>
                           <div className="flex items-center gap-1 ml-2">
                             <button 
-                              onClick={() => handleEditItem(item)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEditItem(item)
+                              }}
                               className="p-2 hover:bg-primary/10 rounded-lg transition-colors flex-shrink-0"
                               title="Edit item"
                             >
                               <Edit className="w-4 h-4 text-primary" />
                             </button>
                             <button 
-                              onClick={() => handleDeleteItem(item.id)}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteItem(item.id)
+                              }}
                               className="p-2 hover:bg-red-100/20 rounded-lg transition-colors flex-shrink-0"
                               title="Delete item"
                             >
