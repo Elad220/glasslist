@@ -4,7 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ShoppingCart, Mail, Lock, User, Eye, EyeOff, ArrowLeft, AlertCircle, ArrowRight, Sparkles, Shield, CheckCircle } from 'lucide-react'
-import { signIn, signUp } from '@/lib/supabase/auth'
+import { signIn, signUp, signInWithGoogle, handleGoogleSignInError } from '@/lib/supabase/auth'
+import GoogleSignInButton from '@/components/GoogleSignInButton'
 
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
@@ -13,6 +14,7 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const router = useRouter()
@@ -120,6 +122,32 @@ export default function AuthPage() {
       confirmPassword: ''
     })
     setIsLogin(true)
+  }
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const { data, error } = await signInWithGoogle()
+      
+      if (error) {
+        const friendlyError = await handleGoogleSignInError(error)
+        setError(friendlyError)
+      } else if (isDemoMode) {
+        setSuccess('Demo mode: Google sign-in successful! Redirecting to dashboard...')
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 1000)
+      }
+      // For real OAuth, the redirect happens automatically
+    } catch (err) {
+      console.error('Google sign-in error:', err)
+      setError('An unexpected error occurred during Google sign-in')
+    } finally {
+      setIsGoogleLoading(false)
+    }
   }
 
   return (
@@ -285,7 +313,7 @@ export default function AuthPage() {
             <div className="animate-slide-up stagger-6">
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || isGoogleLoading}
                 className="w-full glass-button py-3 text-lg font-semibold button-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
@@ -302,9 +330,30 @@ export default function AuthPage() {
               </button>
             </div>
 
+            {/* Divider */}
+            <div className="animate-slide-up stagger-7">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-glass-white-border"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-glass-dark text-glass-muted">or</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Google Sign-In Button */}
+            <div className="animate-slide-up stagger-8">
+              <GoogleSignInButton
+                isLoading={isGoogleLoading}
+                onSignIn={handleGoogleSignIn}
+                disabled={isLoading}
+              />
+            </div>
+
             {/* Demo Login Button */}
             {isDemoMode && (
-              <div className="animate-slide-up stagger-7">
+              <div className="animate-slide-up stagger-9">
                 <button
                   type="button"
                   onClick={handleDemoLogin}
@@ -317,7 +366,7 @@ export default function AuthPage() {
           </form>
 
           {/* Toggle Mode */}
-          <div className="mt-8 pt-6 border-t border-glass-white-border animate-slide-up stagger-8">
+          <div className="mt-8 pt-6 border-t border-glass-white-border animate-slide-up stagger-10">
             <p className="text-center text-glass-muted">
               {isLogin ? "Don't have an account?" : "Already have an account?"}
               <button
@@ -331,7 +380,7 @@ export default function AuthPage() {
         </div>
 
         {/* Trust Indicators */}
-        <div className="mt-8 text-center animate-slide-up stagger-9">
+        <div className="mt-8 text-center animate-slide-up stagger-11">
           <div className="glass-card p-6">
             <div className="flex justify-center items-center gap-4 mb-4">
               <div className="flex items-center gap-2 text-glass-muted">
