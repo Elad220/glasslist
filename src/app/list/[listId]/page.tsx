@@ -194,6 +194,9 @@ export default function ListPage() {
   const [aiInput, setAiInput] = useState('')
   const [isAiProcessing, setIsAiProcessing] = useState(false)
   const [aiInputMode, setAiInputMode] = useState<'text' | 'voice'>('text')
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false)
+  const [parsedItems, setParsedItems] = useState<any[]>([])
+  const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set())
   
   // Edit form state for items only
   const [editItemForm, setEditItemForm] = useState({
@@ -542,44 +545,23 @@ export default function ListPage() {
         // Simple demo parsing
         const words = aiInput.toLowerCase().split(' ')
         const demoItems = words.map((word, index) => ({
-          id: (Date.now() + index).toString(),
-          list_id: listId,
           name: word.charAt(0).toUpperCase() + word.slice(1),
           amount: 1,
-          unit: 'pcs',
+          unit: 'pcs' as const,
           category: 'Other',
-          notes: '',
-          is_checked: false,
-          image_url: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          position: 0
+          notes: ''
         }))
-        setItems([...items, ...demoItems])
-        toast.success('AI items added', `Added ${demoItems.length} items from your input`)
+        setParsedItems(demoItems)
+        setSelectedItems(new Set(demoItems.map((_, index) => index)))
+        setShowConfirmDialog(true)
       } else {
         // Real AI parsing - use the user's actual profile
         if (profile?.gemini_api_key) {
           const result = await parseShoppingListWithAI(aiInput, profile.gemini_api_key)
           if (result.success && result.items) {
-            const itemsToCreate = result.items.map(item => ({
-              list_id: listId,
-              name: item.name,
-              amount: item.amount,
-              unit: item.unit as any,
-              category: item.category,
-              notes: item.notes || null,
-              is_checked: false
-            }))
-
-            const { data: createdItems, error } = await createManyItems(itemsToCreate)
-            if (error || !createdItems) {
-              toast.error('AI parsing failed', 'Failed to add items to your list')
-              return
-            }
-
-            setItems([...items, ...createdItems])
-            toast.success('AI parsing complete', `Added ${createdItems.length} items to your list`)
+            setParsedItems(result.items)
+            setSelectedItems(new Set(result.items.map((_, index) => index)))
+            setShowConfirmDialog(true)
           } else {
             toast.error('AI parsing failed', result.error || 'Unable to parse your input. Try being more specific.')
           }
@@ -587,14 +569,89 @@ export default function ListPage() {
           toast.warning('API key required', 'Please add your Gemini API key in Settings to use AI features')
         }
       }
-      
-      setAiInput('')
-      setShowAiAdd(false)
     } catch (error) {
       console.error('AI parsing error:', error)
       toast.error('AI parsing error', 'Something went wrong. Please try again.')
     } finally {
       setIsAiProcessing(false)
+    }
+  }
+
+  const handleConfirmAddItems = async () => {
+    const selectedItemsArray = parsedItems.filter((_, index) => selectedItems.has(index))
+    if (!selectedItemsArray.length) {
+      toast.warning('No items selected', 'Please select at least one item to add')
+      return
+    }
+
+    setIsAiProcessing(true)
+    try {
+      const itemsToCreate = selectedItemsArray.map(item => ({
+        list_id: listId,
+        name: item.name,
+        amount: item.amount,
+        unit: item.unit as any,
+        category: item.category,
+        notes: item.notes || null,
+        is_checked: false
+      }))
+
+      if (isDemoMode) {
+        const demoItems = itemsToCreate.map((item, index) => ({
+          ...item,
+          id: (Date.now() + index).toString(),
+          image_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          position: 0
+        }))
+        setItems([...items, ...demoItems])
+        toast.success('AI items added', `Added ${selectedItemsArray.length} items from your input`)
+      } else {
+        const { data: createdItems, error } = await createManyItems(itemsToCreate)
+        if (error || !createdItems) {
+          toast.error('AI parsing failed', 'Failed to add items to your list')
+          return
+        }
+
+        setItems([...items, ...createdItems])
+        toast.success('AI parsing complete', `Added ${selectedItemsArray.length} items to your list`)
+      }
+      
+      setAiInput('')
+      setShowAiAdd(false)
+      setShowConfirmDialog(false)
+      setParsedItems([])
+    } catch (error) {
+      console.error('AI parsing error:', error)
+      toast.error('AI parsing error', 'Something went wrong. Please try again.')
+    } finally {
+      setIsAiProcessing(false)
+    }
+  }
+
+  const handleCancelAddItems = () => {
+    setShowConfirmDialog(false)
+    setParsedItems([])
+    setSelectedItems(new Set())
+    setIsAiProcessing(false)
+  }
+
+  const handleItemToggle = (index: number) => {
+    const newSelected = new Set(selectedItems)
+    if (newSelected.has(index)) {
+      newSelected.delete(index)
+    } else {
+      newSelected.add(index)
+    }
+    setSelectedItems(newSelected)
+  }
+
+  const handleSelectAll = () => {
+    if (selectedItems.size === parsedItems.length) {
+      setSelectedItems(new Set())
+    } else {
+      setSelectedItems(new Set(parsedItems.map((_, index) => index)))
     }
   }
 
@@ -1213,9 +1270,8 @@ export default function ListPage() {
           { name: 'Chicken Breast', amount: 2, unit: 'lb', category: 'Meat', notes: 'Free range' }
         ];
         
-        setVoiceParsedItems(demoItems);
-        setSelectedVoiceItems(new Set(demoItems.map((_, index) => index.toString())));
-        setShowVoiceResults(true);
+        setParsedItems(demoItems);
+        setShowConfirmDialog(true);
         setShowAiAdd(false);
         toast.success('Voice analysis complete', 'Demo mode: simulated items from voice recording');
         return;
@@ -1237,9 +1293,9 @@ export default function ListPage() {
       console.log('Gemini analysis result:', result);
       
       if (result.success && result.items && result.items.length > 0) {
-        setVoiceParsedItems(result.items);
-        setSelectedVoiceItems(new Set(result.items.map((item: any, index: number) => index.toString())));
-        setShowVoiceResults(true);
+        setParsedItems(result.items);
+        setSelectedItems(new Set(result.items.map((_, index) => index)));
+        setShowConfirmDialog(true);
         setShowAiAdd(false);
         toast.success('Voice analysis complete', `Found ${result.items.length} items in your recording`);
       } else {
@@ -2552,6 +2608,125 @@ export default function ListPage() {
                   }}
                   className="glass-premium px-6 py-3 hover-lift micro-interaction"
                   disabled={isAiProcessing || isProcessingVoice}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AI Quick Add Confirmation Dialog */}
+        {showConfirmDialog && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999] animate-fade-in"
+            onClick={() => handleCancelAddItems()}
+          >
+            <div 
+              className="glass-premium p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-scale-in hover-lift"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-r from-green-500/20 to-blue-500/20 flex items-center justify-center animate-bounce-in">
+                  <CheckCircle className="w-7 h-7 text-green-600 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-glass-heading bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Confirm Items</h3>
+                  <p className="text-sm text-glass-muted animate-slide-up">Review and select the items to add to your list</p>
+                </div>
+              </div>
+
+              {/* Select All Controls */}
+              <div className="flex items-center justify-between mb-6 p-4 glass-premium rounded-lg animate-slide-up">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleSelectAll}
+                    className="flex items-center gap-2 text-sm font-medium text-glass hover:text-primary transition-colors"
+                  >
+                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                      selectedItems.size === parsedItems.length 
+                        ? 'bg-primary border-primary' 
+                        : selectedItems.size > 0 
+                        ? 'bg-primary/50 border-primary' 
+                        : 'border-glass-muted hover:border-primary'
+                    }`}>
+                      {selectedItems.size === parsedItems.length ? (
+                        <Check className="w-3 h-3 text-white" />
+                      ) : selectedItems.size > 0 ? (
+                        <div className="w-2 h-2 bg-white rounded-sm" />
+                      ) : null}
+                    </div>
+                    {selectedItems.size === parsedItems.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <span className="text-sm text-glass-muted">
+                  {selectedItems.size} of {parsedItems.length} selected
+                </span>
+              </div>
+              
+              <div className="space-y-3 mb-8 max-h-96 overflow-y-auto custom-scrollbar">
+                {parsedItems.map((item, index) => (
+                  <div 
+                    key={index} 
+                    className={`glass-premium p-4 rounded-lg animate-slide-up cursor-pointer transition-all hover:shadow-lg ${
+                      selectedItems.has(index) ? 'ring-2 ring-primary/30 bg-primary/5' : ''
+                    }`} 
+                    style={{ animationDelay: `${index * 50}ms` }}
+                    onClick={() => handleItemToggle(index)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                        selectedItems.has(index) 
+                          ? 'bg-primary border-primary' 
+                          : 'border-glass-muted hover:border-primary'
+                      }`}>
+                        {selectedItems.has(index) && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                      <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                        <Package className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-glass">{item.name}</h4>
+                        <div className="flex items-center gap-2 text-sm text-glass-muted">
+                          <span>{item.amount} {item.unit}</span>
+                          <span>•</span>
+                          <span className="px-2 py-1 bg-glass-white-light rounded-full text-xs">
+                            {item.category}
+                          </span>
+                        </div>
+                        {item.notes && (
+                          <p className="text-xs text-glass-muted mt-1">{item.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex gap-3 animate-slide-up">
+                <button 
+                  onClick={handleConfirmAddItems}
+                  disabled={isAiProcessing || selectedItems.size === 0}
+                  className="flex-1 glass-premium px-6 py-3 bg-gradient-to-r from-green-500/20 to-blue-500/20 hover:from-green-500/30 hover:to-blue-500/30 disabled:opacity-50 flex items-center justify-center gap-2 text-green-700 font-medium hover-lift micro-interaction transition-all duration-300"
+                >
+                  {isAiProcessing ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                      Adding Items...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Add {selectedItems.size} Item{selectedItems.size !== 1 ? 's' : ''}
+                    </>
+                  )}
+                </button>
+                <button 
+                  onClick={handleCancelAddItems}
+                  className="glass-premium px-6 py-3 hover-lift micro-interaction"
+                  disabled={isAiProcessing}
                 >
                   Cancel
                 </button>
