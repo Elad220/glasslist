@@ -6,14 +6,17 @@ import { getAISuggestions, addSuggestedItemToList, type SuggestedItem } from '..
 import { useToast } from '../lib/toast/context'
 import { supabase } from '../lib/supabase/client'
 import { aiSuggestionsCooldown } from '../lib/ai/cooldown'
+import { isAIFeatureEnabled } from '../lib/ai/preferences'
+import type { Profile } from '../lib/supabase/types'
 
 interface AISuggestionsProps {
   userId: string
   apiKey: string
+  profile: Profile | null
   onItemAdded?: () => void
 }
 
-export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggestionsProps) {
+export default function AISuggestions({ userId, apiKey, profile, onItemAdded }: AISuggestionsProps) {
   const [suggestions, setSuggestions] = useState<SuggestedItem[]>([])
   const [loading, setLoading] = useState(false)
   const [selectedList, setSelectedList] = useState<string>('')
@@ -155,7 +158,7 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
 
 
 
-  if (!apiKey) {
+  if (!apiKey || !isAIFeatureEnabled(profile, 'ai_suggestions_enabled')) {
     return (
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-4">
@@ -171,9 +174,14 @@ export default function AISuggestions({ userId, apiKey, onItemAdded }: AISuggest
         <div className="glass p-4 rounded-lg opacity-50">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-glass">API Key Required</h4>
+              <h4 className="font-medium text-glass">
+                {!apiKey ? 'API Key Required' : 'Feature Disabled'}
+              </h4>
               <p className="text-sm text-glass-muted">
-                Add your Gemini API key in settings to enable AI suggestions
+                {!apiKey 
+                  ? 'Add your Gemini API key in settings to enable AI suggestions'
+                  : 'Enable AI suggestions in your settings to see recommendations'
+                }
               </p>
             </div>
             <div className="w-6 h-6 rounded-full bg-glass-muted"></div>

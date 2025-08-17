@@ -172,6 +172,12 @@ export type Database = {
       profiles: {
         Row: {
           ai_auto_populate_enabled: boolean | null
+          ai_quick_add_enabled: boolean | null
+          ai_voice_enabled: boolean | null
+          ai_suggestions_enabled: boolean | null
+          ai_analytics_enabled: boolean | null
+          ai_tips_enabled: boolean | null
+          ai_insights_enabled: boolean | null
           avatar_url: string | null
           created_at: string
           email: string
@@ -182,6 +188,12 @@ export type Database = {
         }
         Insert: {
           ai_auto_populate_enabled?: boolean | null
+          ai_quick_add_enabled?: boolean | null
+          ai_voice_enabled?: boolean | null
+          ai_suggestions_enabled?: boolean | null
+          ai_analytics_enabled?: boolean | null
+          ai_tips_enabled?: boolean | null
+          ai_insights_enabled?: boolean | null
           avatar_url?: string | null
           created_at?: string
           email: string
@@ -192,6 +204,12 @@ export type Database = {
         }
         Update: {
           ai_auto_populate_enabled?: boolean | null
+          ai_quick_add_enabled?: boolean | null
+          ai_voice_enabled?: boolean | null
+          ai_suggestions_enabled?: boolean | null
+          ai_analytics_enabled?: boolean | null
+          ai_tips_enabled?: boolean | null
+          ai_insights_enabled?: boolean | null
           avatar_url?: string | null
           created_at?: string
           email?: string

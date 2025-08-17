@@ -19,6 +19,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { supabase } from '../lib/supabase/client'
 import { useToast } from '../lib/toast/context'
 import { smartShoppingTipsCooldown } from '../lib/ai/cooldown'
+import { isAIFeatureEnabled } from '../lib/ai/preferences'
+import type { Profile } from '../lib/supabase/types'
 
 interface ShoppingTip {
   id: string
@@ -37,6 +39,7 @@ interface ShoppingTip {
 interface SmartShoppingTipsProps {
   userId: string
   apiKey: string
+  profile: Profile | null
   analytics: any
   shoppingLists: any[]
 }
@@ -44,6 +47,7 @@ interface SmartShoppingTipsProps {
 export default function SmartShoppingTips({ 
   userId, 
   apiKey, 
+  profile,
   analytics, 
   shoppingLists 
 }: SmartShoppingTipsProps) {
@@ -465,6 +469,39 @@ Example output:
   }
 
 
+
+  if (!apiKey || !isAIFeatureEnabled(profile, 'ai_tips_enabled')) {
+    return (
+      <div className="glass-card p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-yellow-500/20 to-orange-500/20 flex items-center justify-center">
+            <Lightbulb className="w-5 h-5 text-yellow-500" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-glass-heading">Smart Shopping Tips</h3>
+            <p className="text-sm text-glass-muted">AI-powered shopping advice</p>
+          </div>
+        </div>
+        
+        <div className="glass p-4 rounded-lg opacity-50">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-medium text-glass">
+                {!apiKey ? 'API Key Required' : 'Feature Disabled'}
+              </h4>
+              <p className="text-sm text-glass-muted">
+                {!apiKey 
+                  ? 'Add your Gemini API key in settings to enable AI tips'
+                  : 'Enable AI Shopping Tips in your settings to see recommendations'
+                }
+              </p>
+            </div>
+            <div className="w-6 h-6 rounded-full bg-glass-muted"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="glass-card p-6">

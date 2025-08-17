@@ -71,6 +71,7 @@ import SortableFilterPill from '@/components/SortableFilterPill'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 import { parseShoppingListWithAI, analyzeVoiceRecording } from '@/lib/ai/gemini'
 import { autoPopulateItemDetails, fallbackAutoPopulate } from '@/lib/ai/auto-populate'
+import { isAIFeatureEnabled } from '@/lib/ai/preferences'
 import { uploadItemImage, createImagePreview, revokeImagePreview } from '@/lib/supabase/storage'
 import { useToast } from '@/lib/toast/context'
 import { 
@@ -550,7 +551,7 @@ export default function ListPage() {
         setShowConfirmDialog(true)
       } else {
         // Real AI parsing - use the user's actual profile
-        if (profile?.gemini_api_key) {
+        if (profile?.gemini_api_key && isAIFeatureEnabled(profile, 'ai_quick_add_enabled')) {
           const result = await parseShoppingListWithAI(aiInput, profile.gemini_api_key)
           if (result.success && result.items) {
             setParsedItems(result.items)
@@ -559,8 +560,10 @@ export default function ListPage() {
           } else {
             toast.error('AI parsing failed', result.error || 'Unable to parse your input. Try being more specific.')
           }
-        } else {
+        } else if (!profile?.gemini_api_key) {
           toast.warning('API key required', 'Please add your Gemini API key in Settings to use AI features')
+        } else {
+          toast.warning('Feature disabled', 'Please enable AI Quick Add in Settings to use this feature')
         }
       }
     } catch (error) {
@@ -1268,6 +1271,9 @@ export default function ListPage() {
       });
       
       // Send to Gemini for analysis
+      if (!isAIFeatureEnabled(profile, 'ai_voice_enabled')) {
+        throw new Error('AI voice recording is disabled. Please enable it in Settings.')
+      }
       const result = await analyzeVoiceRecording(base64Audio, profile.gemini_api_key);
       
       console.log('Gemini analysis result:', result);
@@ -1388,6 +1394,9 @@ export default function ListPage() {
     setIsProcessingVoice(true);
     try {
       // Use the existing AI parsing function for text input
+      if (!isAIFeatureEnabled(profile, 'ai_quick_add_enabled')) {
+        throw new Error('AI Quick Add is disabled. Please enable it in Settings.')
+      }
       const result = await parseShoppingListWithAI(voiceFallbackInput, profile?.gemini_api_key || '');
       
       if (result.success && result.items && result.items.length > 0) {
@@ -1421,6 +1430,7 @@ export default function ListPage() {
     // Set a new timeout to avoid too many API calls
     const timeout = setTimeout(async () => {
       if (itemName.trim().length < 3) return // Don't auto-populate for very short names
+      if (!isAIFeatureEnabled(profile, 'ai_auto_populate_enabled')) return // Feature disabled
 
       setIsAutoPopulating(true)
       try {

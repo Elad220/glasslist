@@ -38,6 +38,12 @@ const mockProfile = {
   avatar_url: null,
   gemini_api_key: null,
   ai_auto_populate_enabled: false,
+  ai_quick_add_enabled: true,
+  ai_voice_enabled: true,
+  ai_suggestions_enabled: true,
+  ai_analytics_enabled: true,
+  ai_tips_enabled: true,
+  ai_insights_enabled: true,
   created_at: '2024-01-15T10:00:00Z',
   updated_at: '2024-01-15T10:00:00Z'
 }
@@ -59,7 +65,13 @@ export default function SettingsPage() {
     full_name: '',
     email: '',
     gemini_api_key: '',
-    ai_auto_populate_enabled: false
+    ai_auto_populate_enabled: false,
+    ai_quick_add_enabled: true,
+    ai_voice_enabled: true,
+    ai_suggestions_enabled: true,
+    ai_analytics_enabled: true,
+    ai_tips_enabled: true,
+    ai_insights_enabled: true
   })
 
   useEffect(() => {
@@ -81,7 +93,13 @@ export default function SettingsPage() {
               full_name: profileData.full_name || '',
               email: profileData.email || '',
               gemini_api_key: profileData.gemini_api_key || '',
-              ai_auto_populate_enabled: profileData.ai_auto_populate_enabled ?? false
+              ai_auto_populate_enabled: profileData.ai_auto_populate_enabled ?? false,
+              ai_quick_add_enabled: profileData.ai_quick_add_enabled ?? true,
+              ai_voice_enabled: profileData.ai_voice_enabled ?? true,
+              ai_suggestions_enabled: profileData.ai_suggestions_enabled ?? true,
+              ai_analytics_enabled: profileData.ai_analytics_enabled ?? true,
+              ai_tips_enabled: profileData.ai_tips_enabled ?? true,
+              ai_insights_enabled: profileData.ai_insights_enabled ?? true
             })
           }
         } else {
@@ -91,7 +109,13 @@ export default function SettingsPage() {
               full_name: mockProfile.full_name || '',
               email: mockProfile.email || '',
               gemini_api_key: mockProfile.gemini_api_key || '',
-              ai_auto_populate_enabled: mockProfile.ai_auto_populate_enabled ?? false
+              ai_auto_populate_enabled: mockProfile.ai_auto_populate_enabled ?? false,
+              ai_quick_add_enabled: mockProfile.ai_quick_add_enabled ?? true,
+              ai_voice_enabled: mockProfile.ai_voice_enabled ?? true,
+              ai_suggestions_enabled: mockProfile.ai_suggestions_enabled ?? true,
+              ai_analytics_enabled: mockProfile.ai_analytics_enabled ?? true,
+              ai_tips_enabled: mockProfile.ai_tips_enabled ?? true,
+              ai_insights_enabled: mockProfile.ai_insights_enabled ?? true
             })
         }
       } catch (error) {
@@ -129,7 +153,13 @@ export default function SettingsPage() {
             const updateData = {
               full_name: formData.full_name,
               gemini_api_key: formData.gemini_api_key || null,
-              ai_auto_populate_enabled: formData.ai_auto_populate_enabled
+              ai_auto_populate_enabled: formData.ai_auto_populate_enabled,
+              ai_quick_add_enabled: formData.ai_quick_add_enabled,
+              ai_voice_enabled: formData.ai_voice_enabled,
+              ai_suggestions_enabled: formData.ai_suggestions_enabled,
+              ai_analytics_enabled: formData.ai_analytics_enabled,
+              ai_tips_enabled: formData.ai_tips_enabled,
+              ai_insights_enabled: formData.ai_insights_enabled
             }
             
             const { data: updatedProfile, error } = await updateProfile(user.id, updateData)
@@ -402,16 +432,68 @@ export default function SettingsPage() {
                   <div className="glass p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-medium text-glass">Quick Add</h4>
+                        <h4 className="font-medium text-glass">AI Quick Add</h4>
                         <p className="text-sm text-glass-muted">
                           Parse natural language into shopping list items
                         </p>
+                        {isDemoMode && (
+                          <p className="text-xs text-blue-500 mt-1">
+                            Demo mode: Toggle functionality simulated
+                          </p>
+                        )}
                       </div>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                        formData.gemini_api_key ? 'bg-green-500' : 'bg-glass-muted'
-                      }`}>
-                        {formData.gemini_api_key && <CheckCircle className="w-4 h-4 text-white" />}
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          ai_quick_add_enabled: !formData.ai_quick_add_enabled
+                        })}
+                        disabled={!formData.gemini_api_key}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 ${
+                          formData.ai_quick_add_enabled && formData.gemini_api_key
+                            ? 'bg-green-500' 
+                            : 'bg-glass-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.ai_quick_add_enabled && formData.gemini_api_key ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="glass p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-glass">AI Voice Recording</h4>
+                        <p className="text-sm text-glass-muted">
+                          Analyze voice recordings to create shopping list items
+                        </p>
+                        {isDemoMode && (
+                          <p className="text-xs text-blue-500 mt-1">
+                            Demo mode: Toggle functionality simulated
+                          </p>
+                        )}
                       </div>
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          ai_voice_enabled: !formData.ai_voice_enabled
+                        })}
+                        disabled={!formData.gemini_api_key}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 ${
+                          formData.ai_voice_enabled && formData.gemini_api_key
+                            ? 'bg-green-500' 
+                            : 'bg-glass-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.ai_voice_enabled && formData.gemini_api_key ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
                   </div>
 
@@ -433,15 +515,152 @@ export default function SettingsPage() {
                           ...formData,
                           ai_auto_populate_enabled: !formData.ai_auto_populate_enabled
                         })}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 ${
-                          formData.ai_auto_populate_enabled 
+                        disabled={!formData.gemini_api_key}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 ${
+                          formData.ai_auto_populate_enabled && formData.gemini_api_key
                             ? 'bg-green-500' 
                             : 'bg-glass-muted'
                         }`}
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            formData.ai_auto_populate_enabled ? 'translate-x-6' : 'translate-x-1'
+                            formData.ai_auto_populate_enabled && formData.gemini_api_key ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="glass p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-glass">AI Suggestions</h4>
+                        <p className="text-sm text-glass-muted">
+                          Get smart recommendations based on your shopping patterns
+                        </p>
+                        {isDemoMode && (
+                          <p className="text-xs text-blue-500 mt-1">
+                            Demo mode: Toggle functionality simulated
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          ai_suggestions_enabled: !formData.ai_suggestions_enabled
+                        })}
+                        disabled={!formData.gemini_api_key}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 ${
+                          formData.ai_suggestions_enabled && formData.gemini_api_key
+                            ? 'bg-green-500' 
+                            : 'bg-glass-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.ai_suggestions_enabled && formData.gemini_api_key ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="glass p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-glass">AI Analytics</h4>
+                        <p className="text-sm text-glass-muted">
+                          Advanced shopping insights and trend analysis
+                        </p>
+                        {isDemoMode && (
+                          <p className="text-xs text-blue-500 mt-1">
+                            Demo mode: Toggle functionality simulated
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          ai_analytics_enabled: !formData.ai_analytics_enabled
+                        })}
+                        disabled={!formData.gemini_api_key}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 ${
+                          formData.ai_analytics_enabled && formData.gemini_api_key
+                            ? 'bg-green-500' 
+                            : 'bg-glass-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.ai_analytics_enabled && formData.gemini_api_key ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="glass p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-glass">AI Shopping Tips</h4>
+                        <p className="text-sm text-glass-muted">
+                          Personalized shopping advice and recommendations
+                        </p>
+                        {isDemoMode && (
+                          <p className="text-xs text-blue-500 mt-1">
+                            Demo mode: Toggle functionality simulated
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          ai_tips_enabled: !formData.ai_tips_enabled
+                        })}
+                        disabled={!formData.gemini_api_key}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 ${
+                          formData.ai_tips_enabled && formData.gemini_api_key
+                            ? 'bg-green-500' 
+                            : 'bg-glass-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.ai_tips_enabled && formData.gemini_api_key ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="glass p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium text-glass">AI Insights</h4>
+                        <p className="text-sm text-glass-muted">
+                          Intelligent pattern analysis and behavioral insights
+                        </p>
+                        {isDemoMode && (
+                          <p className="text-xs text-blue-500 mt-1">
+                            Demo mode: Toggle functionality simulated
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setFormData({
+                          ...formData,
+                          ai_insights_enabled: !formData.ai_insights_enabled
+                        })}
+                        disabled={!formData.gemini_api_key}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 ${
+                          formData.ai_insights_enabled && formData.gemini_api_key
+                            ? 'bg-green-500' 
+                            : 'bg-glass-muted'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            formData.ai_insights_enabled && formData.gemini_api_key ? 'translate-x-6' : 'translate-x-1'
                           }`}
                         />
                       </button>

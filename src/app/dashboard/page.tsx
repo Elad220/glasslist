@@ -55,6 +55,12 @@ const mockProfile: Profile = {
   avatar_url: null,
   gemini_api_key: null,
   ai_auto_populate_enabled: true,
+  ai_quick_add_enabled: true,
+  ai_voice_enabled: true,
+  ai_suggestions_enabled: true,
+  ai_analytics_enabled: true,
+  ai_tips_enabled: true,
+  ai_insights_enabled: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
 }
@@ -850,6 +856,7 @@ export default function DashboardPage() {
               <AISuggestions 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
+                profile={profile}
                 onItemAdded={() => {
                   // Refresh shopping lists when items are added
                   if (!isDemoMode) {
@@ -863,6 +870,7 @@ export default function DashboardPage() {
               <AIShoppingAnalytics 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
+                profile={profile}
                 analytics={analytics || {}}
                 shoppingLists={shoppingLists || []}
               />
@@ -872,6 +880,7 @@ export default function DashboardPage() {
               <GenAIInsights 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
+                profile={profile}
                 analytics={analytics || {}}
                 shoppingLists={shoppingLists || []}
                 onRefresh={() => {
@@ -923,6 +932,7 @@ export default function DashboardPage() {
               <SmartShoppingTips 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
+                profile={profile}
                 analytics={analytics || {}}
                 shoppingLists={shoppingLists || []}
               />

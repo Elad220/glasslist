@@ -21,6 +21,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { supabase } from '../lib/supabase/client'
 import { useToast } from '../lib/toast/context'
 import { genAIInsightsCooldown } from '../lib/ai/cooldown'
+import { isAIFeatureEnabled } from '../lib/ai/preferences'
+import type { Profile } from '../lib/supabase/types'
 
 interface Insight {
   type: 'trend' | 'recommendation' | 'pattern' | 'alert' | 'achievement'
@@ -38,6 +40,7 @@ interface Insight {
 interface GenAIInsightsProps {
   userId: string
   apiKey: string
+  profile: Profile | null
   analytics: any
   shoppingLists: any[]
   onRefresh?: () => void
@@ -46,6 +49,7 @@ interface GenAIInsightsProps {
 export default function GenAIInsights({ 
   userId, 
   apiKey, 
+  profile,
   analytics, 
   shoppingLists, 
   onRefresh 
@@ -448,7 +452,7 @@ Example output:
     return insights
   }
 
-  if (!apiKey) {
+  if (!apiKey || !isAIFeatureEnabled(profile, 'ai_insights_enabled')) {
     return (
       <div className="glass-card p-6">
         <div className="flex items-center gap-3 mb-4">
@@ -464,9 +468,14 @@ Example output:
         <div className="glass p-4 rounded-lg opacity-50">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-glass">API Key Required</h4>
+              <h4 className="font-medium text-glass">
+                {!apiKey ? 'API Key Required' : 'Feature Disabled'}
+              </h4>
               <p className="text-sm text-glass-muted">
-                Add your Gemini API key in settings to enable AI insights
+                {!apiKey 
+                  ? 'Add your Gemini API key in settings to enable AI insights'
+                  : 'Enable AI Insights in your settings to see pattern analysis'
+                }
               </p>
             </div>
             <div className="w-6 h-6 rounded-full bg-glass-muted"></div>
