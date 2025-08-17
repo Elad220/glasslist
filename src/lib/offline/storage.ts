@@ -233,9 +233,6 @@ class OfflineStorage {
         description: list.description || null,
         is_archived: list.is_archived || false,
         category_order: list.category_order || null,
-        is_shared: list.is_shared || false,
-        share_code: list.share_code || null,
-        created_by: list.created_by || null,
         created_at: 'created_at' in list ? list.created_at : new Date().toISOString(),
         updated_at: new Date().toISOString()
       } as ShoppingList,

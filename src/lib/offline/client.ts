@@ -73,9 +73,6 @@ class OfflineClient {
           .filter(list => !pendingDeletions.has(list.id)) // Filter out pending deletions
           .map(list => ({
             ...list,
-            category_order: (list as any).category_order || null,
-            share_code: (list as any).share_code || null,
-            created_by: (list as any).created_by || null,
             items: (list.items || []).map(item => ({
               ...item,
               list_id: list.id // Add missing list_id to items
@@ -274,7 +271,7 @@ class OfflineClient {
       // Sort by position and creation date
       items.sort((a, b) => {
         if (a.position !== b.position) {
-          return a.position - b.position
+          return (a.position || 0) - (b.position || 0)
         }
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       })
@@ -596,7 +593,9 @@ class OfflineClient {
           if (itemRecord.data.is_checked) {
             completedItems++
           }
-          categories.add(itemRecord.data.category)
+          if (itemRecord.data.category) {
+            categories.add(itemRecord.data.category)
+          }
         }
       }
 
@@ -621,6 +620,13 @@ class OfflineClient {
       }
     }
   }
+
+  // ==============================================================================
+  // ENHANCED SHARING OPERATIONS
+  // ==============================================================================
+
+
+
 }
 
 // Export singleton instance
@@ -678,5 +684,5 @@ export async function getUserAnalytics(userId: string) {
 // Re-export types for convenience
 export type { 
   OfflineClientResponse, 
-  OfflineClientMultiResponse 
+  OfflineClientMultiResponse
 } 

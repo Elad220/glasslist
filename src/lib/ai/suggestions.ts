@@ -90,16 +90,16 @@ export async function getAISuggestions(
       
       if (existing) {
         existing.count++
-        existing.categories.add(item.category)
-        existing.units.add(item.unit)
+        if (item.category) existing.categories.add(item.category)
+        if (item.unit) existing.units.add(item.unit)
         if (item.created_at > existing.lastPurchased) {
           existing.lastPurchased = item.created_at
         }
       } else {
         itemFrequency.set(key, {
           count: 1,
-          categories: new Set([item.category]),
-          units: new Set([item.unit]),
+          categories: new Set(item.category ? [item.category] : []),
+          units: new Set(item.unit ? [item.unit] : []),
           lastPurchased: item.created_at
         })
       }

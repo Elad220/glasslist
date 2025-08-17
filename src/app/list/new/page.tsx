@@ -8,9 +8,6 @@ import {
   ArrowLeft, 
   Plus, 
   ShoppingCart, 
-  Users, 
-  Lock, 
-  Globe,
   Save,
   Sparkles,
   Eye,
@@ -27,7 +24,6 @@ export default function NewListPage() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    is_shared: false,
     template: 'blank'
   })
 
@@ -92,9 +88,7 @@ export default function NewListPage() {
         const insertData = {
           user_id: user.id,
           name: formData.name,
-          description: formData.description,
-          is_shared: formData.is_shared,
-          share_code: formData.is_shared ? Math.random().toString(36).substring(2, 10).toUpperCase() : null
+          description: formData.description
         }
         
         const { data, error } = await supabase
@@ -196,63 +190,6 @@ export default function NewListPage() {
           </div>
         </div>
 
-        {/* Sharing Settings */}
-        <div className="glass-card p-6 mb-6">
-          <h2 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Sharing Settings
-          </h2>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 glass rounded-lg">
-              <div className="flex items-center gap-3">
-                <Lock className="w-5 h-5 text-glass-muted" />
-                <div>
-                  <h3 className="font-medium text-glass">Private List</h3>
-                  <p className="text-sm text-glass-muted">Only you can access this list</p>
-                </div>
-              </div>
-              <input
-                type="radio"
-                name="sharing"
-                checked={!formData.is_shared}
-                onChange={() => setFormData({ ...formData, is_shared: false })}
-                className="w-4 h-4 text-primary"
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 glass rounded-lg">
-              <div className="flex items-center gap-3">
-                <Globe className="w-5 h-5 text-glass-muted" />
-                <div>
-                  <h3 className="font-medium text-glass">Shared List</h3>
-                  <p className="text-sm text-glass-muted">
-                    Generate a share link for family and friends
-                  </p>
-                </div>
-              </div>
-              <input
-                type="radio"
-                name="sharing"
-                checked={formData.is_shared}
-                onChange={() => setFormData({ ...formData, is_shared: true })}
-                className="w-4 h-4 text-primary"
-              />
-            </div>
-
-            {formData.is_shared && (
-              <div className="glass p-4 rounded-lg mt-3 border border-primary/20">
-                <div className="flex items-center gap-2 text-primary mb-2">
-                  <Users className="w-4 h-4" />
-                  <span className="text-sm font-medium">Sharing Enabled</span>
-                </div>
-                <p className="text-xs text-glass-muted">
-                  A unique share code will be generated. You can invite others by sharing this code or link.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
 
         {/* Template Selection */}
         <div className="glass-card p-6 mb-6">

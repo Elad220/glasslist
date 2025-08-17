@@ -10,15 +10,12 @@ import {
   Trash2, 
   Check, 
   ShoppingCart, 
-  Users, 
-  Share2,
   Eye,
   Sparkles,
   Search,
   Filter,
   SortAsc,
   MoreVertical,
-  Copy,
   Mail,
   Calendar,
   Package,
@@ -113,8 +110,6 @@ const mockList = {
   id: '1',
   name: 'Weekly Groceries',
   description: 'Regular weekly shopping items',
-  is_shared: true,
-  share_code: 'DEMO1234',
   user_role: 'owner',
   created_at: '2024-01-15T10:00:00Z',
   list_members: [
@@ -175,7 +170,6 @@ export default function ListPage() {
   const [isShoppingMode, setIsShoppingMode] = useState(false)
   const [showAddItem, setShowAddItem] = useState(false)
   const [showAiAdd, setShowAiAdd] = useState(false)
-  const [showSharing, setShowSharing] = useState(false)
   const [showEditItem, setShowEditItem] = useState(false)
   const [editingItem, setEditingItem] = useState<any>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -740,19 +734,6 @@ export default function ListPage() {
     }
   }
 
-  const handleShareList = async () => {
-    if (!list?.share_code) return
-    
-    try {
-      const shareUrl = `${window.location.origin}/join/${list.share_code}`
-      await navigator.clipboard.writeText(shareUrl)
-      
-      toast.success('Link copied!', 'Share link copied to clipboard')
-    } catch (error) {
-      toast.error('Copy failed', 'Unable to copy link to clipboard')
-    }
-  }
-
   const handleExportList = async () => {
     try {
       // Validate required data before proceeding
@@ -770,7 +751,6 @@ export default function ListPage() {
         list: {
           name: list.name || 'Untitled List',
           description: list.description || '',
-          is_shared: Boolean(list.is_shared),
           created_at: list.created_at || new Date().toISOString()
         },
         items: items.map(item => ({
@@ -1610,15 +1590,6 @@ export default function ListPage() {
                 </div>
               )}
               
-              {list.is_shared && (
-                <button 
-                  onClick={() => setShowSharing(!showSharing)}
-                  className="glass-button p-3"
-                  title="Manage sharing"
-                >
-                  <Users className="w-5 h-5" />
-                </button>
-              )}
               
               <button 
                 onClick={() => setIsShoppingMode(!isShoppingMode)}
@@ -2326,76 +2297,6 @@ export default function ListPage() {
           </div>
         )}
 
-        {/* Sharing Panel */}
-        {showSharing && list.is_shared && (
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
-            onClick={() => setShowSharing(false)}
-          >
-            <div 
-              className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-bold text-glass-heading mb-4">Share List</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-glass-muted">Share Code</label>
-                  <div className="flex gap-2 mt-1">
-                    <input
-                      type="text"
-                      value={list.share_code}
-                      readOnly
-                      className="flex-1 glass border-0 rounded-lg px-3 py-2 text-glass"
-                    />
-                    <button 
-                      onClick={handleShareList}
-                      className="glass-button p-2"
-                      title="Copy share link"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm text-glass-muted">Members ({list.list_members?.length || 0})</label>
-                  <div className="space-y-2 mt-2">
-                    {list.list_members?.map((member: any) => (
-                      <div key={member.id} className="flex items-center gap-3 p-2 glass rounded-lg">
-                        <div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-primary">
-                            {member.profiles.full_name?.charAt(0) || '?'}
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-glass">{member.profiles.full_name}</p>
-                          <p className="text-xs text-glass-muted">{member.role}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-3 mt-6">
-                <button 
-                  onClick={handleShareList}
-                  className="glass-button px-4 py-2 bg-primary/20 flex items-center gap-2"
-                >
-                  <Share2 className="w-4 h-4" />
-                  Copy Link
-                </button>
-                <button 
-                  onClick={() => setShowSharing(false)}
-                  className="glass-button px-4 py-2"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* AI Quick Add Modal */}
         {showAiAdd && (

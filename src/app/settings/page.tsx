@@ -37,10 +37,6 @@ const mockProfile = {
   full_name: 'Demo User',
   avatar_url: null,
   gemini_api_key: null,
-  ai_suggestions_enabled: false,
-  ai_insights_enabled: false,
-  ai_tips_enabled: false,
-  ai_analytics_enabled: false,
   ai_auto_populate_enabled: false,
   created_at: '2024-01-15T10:00:00Z',
   updated_at: '2024-01-15T10:00:00Z'
@@ -63,10 +59,6 @@ export default function SettingsPage() {
     full_name: '',
     email: '',
     gemini_api_key: '',
-    ai_suggestions_enabled: false,
-    ai_insights_enabled: false,
-    ai_tips_enabled: false,
-    ai_analytics_enabled: false,
     ai_auto_populate_enabled: false
   })
 
@@ -89,10 +81,6 @@ export default function SettingsPage() {
               full_name: profileData.full_name || '',
               email: profileData.email || '',
               gemini_api_key: profileData.gemini_api_key || '',
-              ai_suggestions_enabled: profileData.ai_suggestions_enabled ?? false,
-              ai_insights_enabled: profileData.ai_insights_enabled ?? false,
-              ai_tips_enabled: profileData.ai_tips_enabled ?? false,
-              ai_analytics_enabled: profileData.ai_analytics_enabled ?? false,
               ai_auto_populate_enabled: profileData.ai_auto_populate_enabled ?? false
             })
           }
@@ -103,10 +91,6 @@ export default function SettingsPage() {
               full_name: mockProfile.full_name || '',
               email: mockProfile.email || '',
               gemini_api_key: mockProfile.gemini_api_key || '',
-              ai_suggestions_enabled: mockProfile.ai_suggestions_enabled ?? false,
-              ai_insights_enabled: mockProfile.ai_insights_enabled ?? false,
-              ai_tips_enabled: mockProfile.ai_tips_enabled ?? false,
-              ai_analytics_enabled: mockProfile.ai_analytics_enabled ?? false,
               ai_auto_populate_enabled: mockProfile.ai_auto_populate_enabled ?? false
             })
         }
@@ -145,28 +129,12 @@ export default function SettingsPage() {
             const updateData = {
               full_name: formData.full_name,
               gemini_api_key: formData.gemini_api_key || null,
-              ai_suggestions_enabled: formData.ai_suggestions_enabled,
-              ai_insights_enabled: formData.ai_insights_enabled,
-              ai_tips_enabled: formData.ai_tips_enabled,
-              ai_analytics_enabled: formData.ai_analytics_enabled,
               ai_auto_populate_enabled: formData.ai_auto_populate_enabled
             }
             
             const { data: updatedProfile, error } = await updateProfile(user.id, updateData)
           
           if (error) {
-            // Check if the error is about missing AI-related columns
-            if (error.message && error.message.includes('column') && 
-                (error.message.includes('ai_suggestions_enabled') || 
-                 error.message.includes('ai_insights_enabled') || 
-                 error.message.includes('ai_tips_enabled') || 
-                 error.message.includes('ai_analytics_enabled'))) {
-              console.log('Database migration needed for AI feature toggles')
-              // Still show success but with a note about the toggles
-              setSaveStatus('success')
-              toast.success('Settings saved', 'Profile updated (AI toggles stored locally)')
-              return
-            }
             throw new Error(error.message || 'Failed to update profile')
           }
           
@@ -444,138 +412,6 @@ export default function SettingsPage() {
                       }`}>
                         {formData.gemini_api_key && <CheckCircle className="w-4 h-4 text-white" />}
                       </div>
-                    </div>
-                  </div>
-                  
-                  <div className="glass p-4 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-glass">Smart Suggestions</h4>
-                        <p className="text-sm text-glass-muted">
-                          AI-powered item recommendations based on your shopping patterns
-                        </p>
-                        {isDemoMode && (
-                          <p className="text-xs text-blue-500 mt-1">
-                            Demo mode: Toggle functionality simulated
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setFormData({
-                          ...formData,
-                          ai_suggestions_enabled: !formData.ai_suggestions_enabled
-                        })}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 ${
-                          formData.ai_suggestions_enabled 
-                            ? 'bg-green-500' 
-                            : 'bg-glass-muted'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            formData.ai_suggestions_enabled ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="glass p-4 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-glass">AI Insights</h4>
-                        <p className="text-sm text-glass-muted">
-                          Intelligent analysis of your shopping patterns and trends
-                        </p>
-                        {isDemoMode && (
-                          <p className="text-xs text-blue-500 mt-1">
-                            Demo mode: Toggle functionality simulated
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setFormData({
-                          ...formData,
-                          ai_insights_enabled: !formData.ai_insights_enabled
-                        })}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 ${
-                          formData.ai_insights_enabled 
-                            ? 'bg-green-500' 
-                            : 'bg-glass-muted'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            formData.ai_insights_enabled ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="glass p-4 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-glass">Smart Shopping Tips</h4>
-                        <p className="text-sm text-glass-muted">
-                          Personalized shopping advice and efficiency recommendations
-                        </p>
-                        {isDemoMode && (
-                          <p className="text-xs text-blue-500 mt-1">
-                            Demo mode: Toggle functionality simulated
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setFormData({
-                          ...formData,
-                          ai_tips_enabled: !formData.ai_tips_enabled
-                        })}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 ${
-                          formData.ai_tips_enabled 
-                            ? 'bg-green-500' 
-                            : 'bg-glass-muted'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            formData.ai_tips_enabled ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="glass p-4 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-glass">AI Analytics</h4>
-                        <p className="text-sm text-glass-muted">
-                          Advanced shopping analytics and trend analysis
-                        </p>
-                        {isDemoMode && (
-                          <p className="text-xs text-blue-500 mt-1">
-                            Demo mode: Toggle functionality simulated
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        onClick={() => setFormData({
-                          ...formData,
-                          ai_analytics_enabled: !formData.ai_analytics_enabled
-                        })}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 ${
-                          formData.ai_analytics_enabled 
-                            ? 'bg-green-500' 
-                            : 'bg-glass-muted'
-                        }`}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            formData.ai_analytics_enabled ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
                     </div>
                   </div>
 

@@ -7,203 +7,247 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
+  }
   public: {
     Tables: {
-      profiles: {
+      backup_list_invitations: {
         Row: {
-          id: string
-          email: string
-          full_name: string | null
-          avatar_url: string | null
-          gemini_api_key: string | null
-          ai_suggestions_enabled: boolean
-          ai_insights_enabled: boolean
-          ai_tips_enabled: boolean
-          ai_analytics_enabled: boolean
-          ai_auto_populate_enabled: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id: string
-          email: string
-          full_name?: string | null
-          avatar_url?: string | null
-          gemini_api_key?: string | null
-          ai_suggestions_enabled?: boolean
-          ai_insights_enabled?: boolean
-          ai_tips_enabled?: boolean
-          ai_analytics_enabled?: boolean
-          ai_auto_populate_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string
-          full_name?: string | null
-          avatar_url?: string | null
-          gemini_api_key?: string | null
-          ai_suggestions_enabled?: boolean
-          ai_insights_enabled?: boolean
-          ai_tips_enabled?: boolean
-          ai_analytics_enabled?: boolean
-          ai_auto_populate_enabled?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      shopping_lists: {
-        Row: {
-          id: string
-          user_id: string
-          name: string
-          description: string | null
-          is_archived: boolean
-          category_order: Json | null
-          is_shared: boolean | null
-          share_code: string | null
-          created_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          name: string
-          description?: string | null
-          is_archived?: boolean
-          category_order?: Json | null
-          is_shared?: boolean | null
-          share_code?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          name?: string
-          description?: string | null
-          is_archived?: boolean
-          category_order?: Json | null
-          is_shared?: boolean | null
-          share_code?: string | null
-          created_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      list_members: {
-        Row: {
-          id: string
-          list_id: string
-          user_id: string
-          role: string
-          joined_at: string
-          invited_by: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          list_id: string
-          user_id: string
-          role?: string
-          joined_at?: string
-          invited_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          list_id?: string
-          user_id?: string
-          role?: string
-          joined_at?: string
-          invited_by?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      list_invitations: {
-        Row: {
-          id: string
-          list_id: string
-          email: string
-          role: string
-          invited_by: string | null
-          share_code: string | null
-          expires_at: string | null
           accepted_at: string | null
-          created_at: string
+          created_at: string | null
+          email: string | null
+          expires_at: string | null
+          id: string | null
+          invited_by: string | null
+          list_id: string | null
+          role: string | null
+          share_code: string | null
         }
         Insert: {
-          id?: string
-          list_id: string
-          email: string
-          role?: string
-          invited_by?: string | null
-          share_code?: string | null
-          expires_at?: string | null
           accepted_at?: string | null
-          created_at?: string
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invited_by?: string | null
+          list_id?: string | null
+          role?: string | null
+          share_code?: string | null
         }
         Update: {
-          id?: string
-          list_id?: string
-          email?: string
-          role?: string
-          invited_by?: string | null
-          share_code?: string | null
-          expires_at?: string | null
           accepted_at?: string | null
-          created_at?: string
+          created_at?: string | null
+          email?: string | null
+          expires_at?: string | null
+          id?: string | null
+          invited_by?: string | null
+          list_id?: string | null
+          role?: string | null
+          share_code?: string | null
         }
+        Relationships: []
+      }
+      backup_list_members: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          id: string | null
+          invited_by: string | null
+          joined_at: string | null
+          last_active_at: string | null
+          list_id: string | null
+          notification_preferences: Json | null
+          role: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          last_active_at?: string | null
+          list_id?: string | null
+          notification_preferences?: Json | null
+          role?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string | null
+          invited_by?: string | null
+          joined_at?: string | null
+          last_active_at?: string | null
+          list_id?: string | null
+          notification_preferences?: Json | null
+          role?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       items: {
         Row: {
+          amount: number | null
+          category: string | null
+          created_at: string
           id: string
+          image_url: string | null
+          is_checked: boolean | null
           list_id: string
           name: string
-          amount: number
-          unit: UnitType
-          category: string
           notes: string | null
-          image_url: string | null
-          is_checked: boolean
-          position: number
-          created_at: string
+          position: number | null
+          unit: Database["public"]["Enums"]["unit_type"] | null
           updated_at: string
         }
         Insert: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string
           id?: string
+          image_url?: string | null
+          is_checked?: boolean | null
           list_id: string
           name: string
-          amount?: number
-          unit?: UnitType
-          category?: string
           notes?: string | null
-          image_url?: string | null
-          is_checked?: boolean
-          position?: number
-          created_at?: string
+          position?: number | null
+          unit?: Database["public"]["Enums"]["unit_type"] | null
           updated_at?: string
         }
         Update: {
+          amount?: number | null
+          category?: string | null
+          created_at?: string
           id?: string
+          image_url?: string | null
+          is_checked?: boolean | null
           list_id?: string
           name?: string
-          amount?: number
-          unit?: UnitType
-          category?: string
           notes?: string | null
-          image_url?: string | null
-          is_checked?: boolean
-          position?: number
-          created_at?: string
+          position?: number | null
+          unit?: Database["public"]["Enums"]["unit_type"] | null
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "shopping_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      migrations: {
+        Row: {
+          executed_at: string | null
+          id: number
+          name: string
+          rollback_script: string | null
+        }
+        Insert: {
+          executed_at?: string | null
+          id?: number
+          name: string
+          rollback_script?: string | null
+        }
+        Update: {
+          executed_at?: string | null
+          id?: number
+          name?: string
+          rollback_script?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          ai_auto_populate_enabled: boolean | null
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          gemini_api_key: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          ai_auto_populate_enabled?: boolean | null
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          gemini_api_key?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          ai_auto_populate_enabled?: boolean | null
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          gemini_api_key?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      shopping_lists: {
+        Row: {
+          activity_summary: Json | null
+          category_order: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          is_archived: boolean | null
+          last_activity_at: string | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_summary?: Json | null
+          category_order?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_archived?: boolean | null
+          last_activity_at?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_summary?: Json | null
+          category_order?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_archived?: boolean | null
+          last_activity_at?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shopping_lists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -211,27 +255,78 @@ export type Database = {
     }
     Functions: {
       get_user_analytics: {
-        Args: {
-          user_uuid: string
-        }
+        Args: { user_uuid: string }
         Returns: Json
       }
-      search_user_items: {
+      log_list_activity: {
         Args: {
-          user_uuid: string
-          search_term: string
-          limit_count?: number
+          p_activity_type: string
+          p_change_summary?: string
+          p_item_id?: string
+          p_list_id: string
+          p_new_values?: Json
+          p_old_values?: Json
+          p_target_user_id?: string
+          p_user_id: string
         }
+        Returns: string
+      }
+      search_user_items: {
+        Args: { limit_count?: number; search_term: string; user_uuid: string }
         Returns: {
-          name: string
           category: string
-          unit: UnitType
           frequency: number
+          name: string
+          unit: Database["public"]["Enums"]["unit_type"]
+        }[]
+      }
+      user_has_list_permission: {
+        Args: {
+          list_id_param: string
+          permission_name: string
+          user_id_param?: string
+        }
+        Returns: boolean
+      }
+      user_is_list_member: {
+        Args: { list_id_param: string; user_id_param?: string }
+        Returns: boolean
+      }
+      user_owns_list: {
+        Args: { list_id_param: string; user_id_param?: string }
+        Returns: boolean
+      }
+      validate_sharing_security: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          details: string
+          passed: boolean
+          test_name: string
         }[]
       }
     }
     Enums: {
-      unit_type: UnitType
+      unit_type:
+        | "pcs"
+        | "kg"
+        | "g"
+        | "L"
+        | "ml"
+        | "pack"
+        | "dozen"
+        | "box"
+        | "jar"
+        | "bottle"
+        | "can"
+        | "bag"
+        | "cup"
+        | "tbsp"
+        | "tsp"
+        | "oz"
+        | "lb"
+        | "bunch"
+        | "head"
+        | "slice"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -239,22 +334,136 @@ export type Database = {
   }
 }
 
-export type UnitType = 
-  | 'pcs' | 'kg' | 'g' | 'L' | 'ml' | 'pack' | 'dozen' | 'box' | 'jar' | 'bottle'
-  | 'can' | 'bag' | 'cup' | 'tbsp' | 'tsp' | 'oz' | 'lb' | 'bunch' | 'head' | 'slice'
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
 // Convenient type aliases
-export type Profile = Database['public']['Tables']['profiles']['Row']
-export type ShoppingList = Database['public']['Tables']['shopping_lists']['Row']
-export type Item = Database['public']['Tables']['items']['Row']
+export type Profile = Tables<"profiles">
+export type ShoppingList = Tables<"shopping_lists">
+export type Item = Tables<"items">
+export type UnitType = Database["public"]["Enums"]["unit_type"]
 
-export type NewProfile = Database['public']['Tables']['profiles']['Insert']
-export type NewShoppingList = Database['public']['Tables']['shopping_lists']['Insert']
-export type NewItem = Database['public']['Tables']['items']['Insert']
+export type NewProfile = TablesInsert<"profiles">
+export type NewShoppingList = TablesInsert<"shopping_lists">
+export type NewItem = TablesInsert<"items">
 
-export type UpdateProfile = Database['public']['Tables']['profiles']['Update']
-export type UpdateShoppingList = Database['public']['Tables']['shopping_lists']['Update']
-export type UpdateItem = Database['public']['Tables']['items']['Update']
+export type UpdateProfile = TablesUpdate<"profiles">
+export type UpdateShoppingList = TablesUpdate<"shopping_lists">
+export type UpdateItem = TablesUpdate<"items">
 
 // Extended types with relations
 export type ShoppingListWithItems = ShoppingList & {
@@ -270,27 +479,6 @@ export type ItemWithList = Item & {
   shopping_list: ShoppingList
 }
 
-// Sharing types
-export type ListMember = Database['public']['Tables']['list_members']['Row']
-export type NewListMember = Database['public']['Tables']['list_members']['Insert']
-export type UpdateListMember = Database['public']['Tables']['list_members']['Update']
-
-export type ListInvitation = Database['public']['Tables']['list_invitations']['Row']
-export type NewListInvitation = Database['public']['Tables']['list_invitations']['Insert']
-export type UpdateListInvitation = Database['public']['Tables']['list_invitations']['Update']
-
-// Extended types with relationships
-export type ShoppingListWithMembers = ShoppingList & {
-  list_members: Array<ListMember & {
-    profiles: Pick<Profile, 'full_name' | 'email' | 'avatar_url'>
-  }>
-  user_role?: string
-}
-
-export type ListMemberWithProfile = ListMember & {
-  profiles: Pick<Profile, 'full_name' | 'email' | 'avatar_url'>
-}
-
 // Analytics types
 export type UserAnalytics = {
   total_lists: number
@@ -302,4 +490,33 @@ export type UserAnalytics = {
     name: string
     count: number
   }> | null
-} 
+}
+
+export const Constants = {
+  public: {
+    Enums: {
+      unit_type: [
+        "pcs",
+        "kg",
+        "g",
+        "L",
+        "ml",
+        "pack",
+        "dozen",
+        "box",
+        "jar",
+        "bottle",
+        "can",
+        "bag",
+        "cup",
+        "tbsp",
+        "tsp",
+        "oz",
+        "lb",
+        "bunch",
+        "head",
+        "slice",
+      ],
+    },
+  },
+} as const

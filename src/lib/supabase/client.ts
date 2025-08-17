@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Database, ShoppingList, Item, NewItem, UpdateItem, ShoppingListWithMembers } from './types'
+import type { Database, ShoppingList, Item, NewItem, UpdateItem } from './types'
 import { getCurrentUser } from './auth'
 
 // Import offline-first client
@@ -82,10 +82,12 @@ export async function getShoppingListsOriginal(userId: string) {
         user_id, 
         name, 
         description, 
-        is_shared, 
         is_archived, 
         created_at, 
         updated_at,
+        activity_summary,
+        category_order,
+        last_activity_at,
         items (
           id,
           name,
@@ -193,26 +195,6 @@ export async function deleteShoppingListOriginal(listId: string) {
   return { error }
 }
 
-export async function getShoppingListByShareCode(shareCode: string) {
-  if (!supabase) return { data: null, error: 'Supabase not available' }
-
-  const { data, error } = await supabase
-    .from('shopping_lists')
-    .select(`
-      id,
-      name,
-      description,
-      user_id,
-      created_at,
-      list_members(count),
-      items(count)
-    `)
-    .eq('share_code', shareCode)
-    .eq('is_shared', true)
-    .single()
-
-  return { data, error }
-}
 
 // =============================================
 // ITEM OPERATIONS
@@ -447,41 +429,4 @@ export async function getUserAnalyticsOriginal(userId: string) {
 // LIST SHARING OPERATIONS
 // =============================================
 
-export async function joinListByShareCode(shareCode: string, userId: string) {
-  if (!supabase) return { data: null, error: 'Supabase not available' }
-
-  // First, find the list by share code
-  const { data: list, error: listError } = await getShoppingListByShareCode(shareCode)
-  if (listError || !list) {
-    return { data: null, error: 'Invalid or expired share code' }
-  }
-
-  // Check if user is already a member
-  const { data: existingMember, error: memberError } = await supabase
-    .from('list_members')
-    .select('id')
-    .eq('list_id', list.id)
-    .eq('user_id', userId)
-    .single()
-
-  if (existingMember) {
-    return { data: { list_id: list.id, already_member: true }, error: null }
-  }
-
-  // Add user as a member
-  const { data: newMember, error: insertError } = await supabase
-    .from('list_members')
-    .insert({
-      list_id: list.id,
-      user_id: userId,
-      role: 'editor'
-    })
-    .select()
-    .single()
-
-  if (insertError) {
-    return { data: null, error: 'Failed to join list' }
-  }
-
-  return { data: { list_id: list.id, already_member: false }, error: null }
-} 
+ 

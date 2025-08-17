@@ -15,12 +15,10 @@ import {
   Edit,
   Save,
   Trash2,
-  Share2,
   Globe,
   Lock,
   Search,
   Settings,
-  Users,
   Download,
   Upload,
   Sparkles,
@@ -56,10 +54,6 @@ const mockProfile: Profile = {
   full_name: 'Demo User',
   avatar_url: null,
   gemini_api_key: null,
-  ai_suggestions_enabled: true,
-  ai_insights_enabled: true,
-  ai_tips_enabled: true,
-  ai_analytics_enabled: true,
   ai_auto_populate_enabled: true,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString()
@@ -91,7 +85,6 @@ const mockShoppingLists = [
     description: 'Regular weekly shopping items',
     itemCount: 12,
     completedCount: 8,
-    is_shared: true,
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
     user_id: 'demo-user-123',
@@ -103,7 +96,6 @@ const mockShoppingLists = [
     description: 'Items for weekend party',
     itemCount: 8,
     completedCount: 3,
-    is_shared: false,
     created_at: '2024-01-20T14:30:00Z',
     updated_at: '2024-01-20T14:30:00Z',
     user_id: 'demo-user-123',
@@ -115,7 +107,6 @@ const mockShoppingLists = [
     description: 'Special ingredients for holiday meal',
     itemCount: 15,
     completedCount: 15,
-    is_shared: true,
     created_at: '2024-01-10T09:15:00Z',
     updated_at: '2024-01-10T09:15:00Z',
     user_id: 'demo-user-123',
@@ -170,11 +161,9 @@ export default function DashboardPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [listToDelete, setListToDelete] = useState<any>(null)
   const [showSearchModal, setShowSearchModal] = useState(false)
-  const [showJoinModal, setShowJoinModal] = useState(false)
   const [showTemplatesModal, setShowTemplatesModal] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [shareCode, setShareCode] = useState('')
   const [importFile, setImportFile] = useState<File | null>(null)
   const [importProgress, setImportProgress] = useState(false)
   const router = useRouter()
@@ -185,7 +174,6 @@ export default function DashboardPage() {
   const [editListForm, setEditListForm] = useState({
     name: '',
     description: '',
-    is_shared: false
   })
 
   useEffect(() => {
@@ -351,7 +339,6 @@ export default function DashboardPage() {
     setEditListForm({
       name: list?.name || '',
       description: list?.description || '',
-      is_shared: list?.is_shared || false
     })
     setShowEditList(true)
   }
@@ -465,29 +452,6 @@ export default function DashboardPage() {
     setShowSearchModal(true)
   }
 
-  const handleJoinList = async () => {
-    if (!shareCode.trim()) {
-      toast.error('Missing share code', 'Please enter a share code')
-      return
-    }
-
-    try {
-      if (isDemoMode) {
-        // Simulate joining in demo mode
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        toast.success('List joined!', 'You\'ve successfully joined the shared list')
-        setShowJoinModal(false)
-        setShareCode('')
-        // In real app, would refresh the lists
-      } else {
-        // Real implementation would call the join function
-        toast.info('Feature available', 'List joining will be available when you sign up!')
-      }
-    } catch (error) {
-      console.error('Error joining list:', error)
-      toast.error('Join failed', 'Unable to join the list. Please check the share code.')
-    }
-  }
 
   const handleCreateFromTemplate = async (template: typeof listTemplates[0]) => {
     try {
@@ -602,8 +566,7 @@ export default function DashboardPage() {
         list: {
           name: list?.name || 'Unknown List',
           description: list?.description || '',
-          is_shared: list?.is_shared || false,
-          created_at: list?.created_at || new Date().toISOString()
+              created_at: list?.created_at || new Date().toISOString()
         },
         items: items,
         exportDate: new Date().toISOString(),
@@ -788,12 +751,6 @@ export default function DashboardPage() {
                     <div className="pr-20">
                       <div className="flex items-center gap-3 mb-1">
                         <h3 className="font-semibold text-glass-heading">{list?.name || 'Unnamed List'}</h3>
-                        {list?.is_shared && (
-                          <div className="flex items-center gap-1 text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                            <Share2 className="w-3 h-3" />
-                            Shared
-                          </div>
-                        )}
                       </div>
                       <p className="text-glass-muted text-sm mb-3">{list?.description || 'No description'}</p>
                       <div className="flex items-center gap-4 text-xs text-glass-muted mb-3">
@@ -889,7 +846,7 @@ export default function DashboardPage() {
           {/* Insights and Analytics */}
           <div className="lg:col-span-3 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
              {/* AI Suggestions */}
-             {user && profile?.ai_suggestions_enabled && user.id && (
+             {user && user.id && (
               <AISuggestions 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
@@ -902,7 +859,7 @@ export default function DashboardPage() {
               />
             )}
             {/* AI Shopping Analytics */}
-            {user && profile?.ai_analytics_enabled && user.id && (
+            {user && user.id && (
               <AIShoppingAnalytics 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
@@ -911,7 +868,7 @@ export default function DashboardPage() {
               />
             )}
             {/* AI-Powered Insights */}
-            {user && profile?.ai_insights_enabled && user.id ? (
+            {user && user.id ? (
               <GenAIInsights 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
@@ -949,7 +906,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   
-                  {!profile?.ai_insights_enabled && (
+                  {!profile?.gemini_api_key && (
                     <div className="mt-4 p-3 glass rounded-lg border border-blue-200/30">
                       <div className="flex items-center gap-2 text-sm text-blue-600">
                         <Sparkles className="w-4 h-4" />
@@ -962,7 +919,7 @@ export default function DashboardPage() {
             )}
 
             {/* Smart Shopping Tips */}
-            {user && profile?.ai_tips_enabled && user.id && (
+            {user && user.id && (
               <SmartShoppingTips 
                 userId={user.id}
                 apiKey={profile?.gemini_api_key || ''}
@@ -996,9 +953,6 @@ export default function DashboardPage() {
                           {list?.itemCount || 0} items • {formatDate(list?.updated_at)}
                         </p>
                       </div>
-                                              {list?.is_shared && (
-                        <Share2 className="w-4 h-4 text-primary" />
-                      )}
                     </Link>
                   ))}
                 </div>
@@ -1033,13 +987,6 @@ export default function DashboardPage() {
                   Search Lists
                 </button>
                 
-                <button 
-                  onClick={() => setShowJoinModal(true)}
-                  className="glass-button w-full p-3 flex items-center gap-2 justify-center"
-                >
-                  <Users className="w-4 h-4" />
-                  Join Shared List
-                </button>
                 
                 <div className="grid grid-cols-2 gap-2">
                   <Link 
@@ -1122,20 +1069,6 @@ export default function DashboardPage() {
                 />
               </div>
               
-              <div>
-                <label className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={editListForm.is_shared}
-                    onChange={(e) => setEditListForm({ ...editListForm, is_shared: e.target.checked })}
-                    className="w-4 h-4 text-primary"
-                  />
-                  <span className="text-glass">Enable sharing</span>
-                </label>
-                <p className="text-xs text-glass-muted mt-1">
-                  Allow others to access this list via share link
-                </p>
-              </div>
             </div>
             
             <div className="flex gap-3 mt-6">
@@ -1292,62 +1225,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Join List Modal */}
-      {showJoinModal && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
-          onClick={() => {
-            setShowJoinModal(false)
-            setShareCode('')
-          }}
-        >
-          <div 
-            className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto m-auto shadow-2xl animate-in fade-in-0 zoom-in-95 duration-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-glass-heading mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Join Shared List
-            </h3>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-glass-muted mb-2">Share Code</label>
-              <input
-                type="text"
-                value={shareCode}
-                onChange={(e) => setShareCode(e.target.value.toUpperCase())}
-                className="w-full glass-input font-mono"
-                placeholder="Enter 6-character code"
-                maxLength={10}
-                autoFocus
-              />
-              <p className="text-xs text-glass-muted mt-2">
-                Enter the share code provided by the list owner
-              </p>
-            </div>
-            
-            <div className="flex gap-3">
-              <button 
-                onClick={handleJoinList}
-                disabled={!shareCode.trim()}
-                className="flex-1 glass-button px-4 py-2 bg-primary/20 disabled:opacity-50 flex items-center gap-2 justify-center"
-              >
-                <Users className="w-4 h-4" />
-                Join List
-              </button>
-              <button 
-                onClick={() => {
-                  setShowJoinModal(false)
-                  setShareCode('')
-                }}
-                className="flex-1 glass-button px-4 py-2"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Templates Modal */}
       {showTemplatesModal && (
